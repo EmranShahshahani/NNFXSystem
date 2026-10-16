@@ -132,7 +132,7 @@ class SelectionPipeline:
         key = cfg.digest()
         done = self.ck.data["evaluated"].get(key)
         if done is not None:
-            return dict(done)
+            return dict(done) | {"label": label}
         t: TrialResult = self.ev.evaluate(cfg, stage=stage, label=label)
         row = t.row() | {"score": t.score, "config": cfg.model_dump(mode="json")}
         self.ck.data["evaluated"][key] = row
@@ -324,3 +324,50 @@ class SelectionPipeline:
             row = self._eval(self.base.with_overrides(ov), "random_control", f"random#{k}")
             out.append(float(row["expectancy_r"]))
         return out
+
+
+# ---------------------------------------------------------------- plateau sweep
+SLOT_KINDS = {
+    "baseline": "baseline",
+    "c1": "confirmation",
+    "c2": "confirmation",
+    "volume": "volume",
+    "exit": "exit",
+    "continuation": "confirmation",
+}
+
+
+def sweep_neighbourhood(
+    finalist: SystemConfig, slot: str, evaluator: Evaluator
+) -> tuple[Any, list[dict[str, Any]]]:
+    """Criterion 11: the finalist's +/-1-step grid neighbours in one slot, one parameter at a time.
+
+    Each neighbour is a counted trial (stage ``plateau``). The finalist's own value
+    is inserted into an axis when the published default is not a grid point.
+    """
+    from nnfx.research.overfitting import plateau
+
+    spec: SlotSpec | None = getattr(finalist.slots, slot)
+    if spec is None:
+        raise ValueError(f"finalist has no {slot} slot to sweep")
+    ind = create(SLOT_KINDS[slot], spec.name, spec.params)  # type: ignore[arg-type]
+    names = sorted(ind.grid)
+    if not names:
+        raise ValueError(f"{slot}/{spec.name} exposes no grid")
+    peak = tuple(ind.params[k] for k in names)
+    axes = [sorted({*ind.grid[k], ind.params[k]}) for k in names]
+    points = {peak}
+    for d, axis in enumerate(axes):
+        i = axis.index(peak[d])
+        for j in (i - 1, i + 1):
+            if 0 <= j < len(axis):
+                points.add(tuple(axis[j] if q == d else peak[q] for q in range(len(peak))))
+    results: dict[tuple[Any, ...], float] = {}
+    rows = []
+    for pt in sorted(points, key=repr):
+        params = {**ind.params, **dict(zip(names, pt, strict=True))}
+        cfg = finalist.with_overrides({f"slots.{slot}": {"name": spec.name, "params": params}})
+        t = evaluator.evaluate(cfg, stage="plateau", label=f"{slot}={spec.name}{params}")
+        results[pt] = t.metrics.expectancy_r
+        rows.append(t.row() | {"point": dict(zip(names, pt, strict=True))})
+    return plateau(results, axes, peak), rows

@@ -2,6 +2,9 @@
 baskets:
   fx_28: fx_28          # expanded in code to the 28 majors/crosses, standard naming
   crypto_core: ["BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT", "XRP/USDT:USDT", "BNB/USDT:USDT"]
+  # Nobitex spot (fetch with: nnfx fetch --feed nobitex --symbol BTC/USDT ...). Long only.
+  # IRT markets quote in rials and need USDT/IRT bars for conversion to the account currency.
+  nobitex: ["BTC/USDT", "ETH/USDT", "BTC/IRT", "ETH/IRT", "USDT/IRT"]
 
 defaults:
   fx_spot:
@@ -19,3 +22,8 @@ overrides:
   "SOL/USDT:USDT": { btc_beta: 1.4, depth: 5000000 }
   "XRP/USDT:USDT": { btc_beta: 1.2, depth: 5000000 }
   "BNB/USDT:USDT": { btc_beta: 0.9, depth: 5000000 }
+  "BTC/USDT": { market_class: crypto_spot, btc_beta: 1.0 }
+  "ETH/USDT": { market_class: crypto_spot, btc_beta: 1.1 }
+  "BTC/IRT": { market_class: crypto_spot, btc_beta: 1.0 }
+  "ETH/IRT": { market_class: crypto_spot, btc_beta: 1.1 }
+  "USDT/IRT": { market_class: crypto_spot }

@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NNFX Workbench</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1b1f24; --muted: #5d6673; --line: #dde1e6;
+  --accent: #2f6fdb; --up: #1a8a5a; --down: #c8423b; --base: #d08a12; --soft: #eef1f5;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111418; --panel: #181c21; --ink: #e6e9ed; --muted: #98a2ae; --line: #2a3038;
+    --accent: #6c9cf0; --up: #3cbf86; --down: #ef6b63; --base: #e7a93a; --soft: #20252c; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; align-items: center; gap: 24px; padding: 12px 20px;
+  border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+header h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
+nav button { background: none; border: 0; color: var(--muted); font: inherit; padding: 6px 10px;
+  border-radius: 6px; cursor: pointer; }
+nav button.on { color: var(--ink); background: var(--soft); font-weight: 600; }
+main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 20px; align-items: start; }
+.grid > * { min-width: 0; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } main { padding: 16px; }
+  header { flex-wrap: wrap; gap: 8px 16px; padding: 10px 16px; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  margin: 0 0 10px; font-weight: 600; }
+.panel + .panel, .kpis + .panel, .note + .panel { margin-top: 16px; }
+.ds { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; align-items: start; margin: 6px 0; }
+.ds small { grid-column: 2; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+label { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+label.row { justify-content: space-between; }
+select, input[type=number] { background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 6px; padding: 4px 6px; font: inherit; max-width: 160px; }
+button.primary { width: 100%; margin-top: 12px; padding: 10px; border: 0; border-radius: 8px;
+  background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+button.primary:disabled { opacity: .5; cursor: wait; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.kpi .v.small { font-size: 15px; padding-top: 4px; }
+.kpi .v { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.kpi .k { color: var(--muted); font-size: 12px; }
+.chart { width: 100%; height: 260px; display: block; }
+.tablewrap { overflow: auto; max-height: 420px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel); }
+td.num { text-align: right; }
+.pos { color: var(--up); } .neg { color: var(--down); }
+.muted { color: var(--muted); }
+.note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+.err { color: var(--down); white-space: pre-wrap; font-family: var(--mono); font-size: 12px; }
+pre { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; margin: 0; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 3px 10px;
+  cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
+.chip.on { color: var(--ink); border-color: var(--accent); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+.legend i { display: inline-block; width: 10px; height: 3px; vertical-align: middle; margin-right: 5px; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NNFX Workbench</h1>
+  <nav id="tabs">
+    <button data-tab="backtest" class="on">Backtest</button>
+    <button data-tab="indicators">Indicators</button>
+    <button data-tab="research">Research</button>
+    <button data-tab="live">Live</button>
+  </nav>
+</header>
+<main>
+  <!-- ======================= backtest -->
+  <section id="tab-backtest">
+    <div class="grid">
+      <div>
+        <div class="panel"><h2>Data</h2><div id="datasets" class="muted">loading…</div>
+          <label><input type="checkbox" id="zero_costs"> zero costs</label>
+          <div class="note">Files under data/sample and data/cache. Browser runs are exploration only: no trial is logged.</div>
+        </div>
+        <div class="panel"><h2>Slots</h2><div id="slots"></div></div>
+        <div class="panel"><h2>Rules</h2><div id="rules"></div></div>
+        <div class="panel"><h2>Money management</h2><div id="risk"></div>
+          <button class="primary" id="run">Run backtest</button>
+          <div id="bt-error" class="err"></div>
+        </div>
+      </div>
+      <div id="bt-out">
+        <div class="panel muted">Pick data and press <b>Run backtest</b>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= indicators -->
+  <section id="tab-indicators" class="hidden">
+    <div class="panel"><h2>Indicator pool</h2>
+      <div class="chips" id="ind-filter"></div>
+      <div class="tablewrap" style="max-height:none"><table id="ind-table"></table></div>
+    </div>
+  </section>
+
+  <!-- ======================= research -->
+  <section id="tab-research" class="hidden"><div id="research-out" class="muted">loading…</div></section>
+
+  <!-- ======================= live -->
+  <section id="tab-live" class="hidden"><div id="live-out" class="muted">loading…</div></section>
+</main>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+};
+const api = async (path, body) => {
+  const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+};
+const fmt = (x, d = 2) => x == null ? "–" : Number(x).toFixed(d);
+const pct = (x, d = 1) => x == null ? "–" : (100 * x).toFixed(d) + "%";
+const signed = (x, d = 3) => x == null ? "–" : (x >= 0 ? "+" : "") + Number(x).toFixed(d);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// ---------------------------------------------------------------- tabs
+const loaded = {};
+document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll("main > section").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + b.dataset.tab));
+  if (!loaded[b.dataset.tab]) { loaded[b.dataset.tab] = true; ({ indicators: loadIndicators, research: loadResearch, live: loadLive })[b.dataset.tab]?.(); }
+}));
+
+// ---------------------------------------------------------------- svg charts
+function lineChart(svg, { n, series, markers = [], labels = [], yfmt = v => v.toPrecision(5), log = false }) {
+  const W = svg.clientWidth || 800, H = svg.clientHeight || 260, L = 60, R = 10, T = 10, B = 24;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.innerHTML = "";
+  let lo = Infinity, hi = -Infinity;
+  for (const s of series) for (const v of s.ys) if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  if (!isFinite(lo)) return;
+  if (hi === lo) { hi += 1; lo -= 1; }
+  const pad = (hi - lo) * 0.05; lo -= pad; hi += pad;
+  const x = i => L + (W - L - R) * (n > 1 ? i / (n - 1) : 0.5);
+  const y = v => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
+  const NS = "http://www.w3.org/2000/svg";
+  const add = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
+  for (let k = 0; k <= 4; k++) {
+    const v = lo + (hi - lo) * k / 4;
+    add("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: css("--line"), "stroke-width": 1 });
+    add("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end", fill: css("--muted"), "font-size": 11 }).textContent = yfmt(v);
+  }
+  for (const [i, t] of labels) add("text", { x: x(i), y: H - 6, "text-anchor": "middle", fill: css("--muted"), "font-size": 11 }).textContent = t;
+  for (const s of series) {
+    let d = "", pen = false;
+    s.ys.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1); pen = true; });
+    add("path", { d, fill: "none", stroke: s.color, "stroke-width": s.width || 1.5, "stroke-linejoin": "round" });
+  }
+  for (const m of markers) {
+    const cx = x(m.i), cy = y(m.v);
+    const pts = m.dir > 0 ? `${cx},${cy - 7} ${cx - 5},${cy + 3} ${cx + 5},${cy + 3}` : `${cx},${cy + 7} ${cx - 5},${cy - 3} ${cx + 5},${cy - 3}`;
+    const e = add(m.kind === "exit" ? "circle" : "polygon", m.kind === "exit" ? { cx, cy, r: 3.5, fill: "none", stroke: m.color, "stroke-width": 1.5 } : { points: pts, fill: m.color });
+    const tt = document.createElementNS(NS, "title"); tt.textContent = m.title; e.append(tt);
+  }
+}
+const yearLabels = ts => { const out = []; let last = ""; ts.forEach((t, i) => { const yr = t.slice(0, 4); if (yr !== last) { out.push([i, yr]); last = yr; } }); return out.length > 12 ? out.filter((_, k) => k % Math.ceil(out.length / 12) === 0) : out; };
+
+// ---------------------------------------------------------------- backtest form
+let CAT = [], CFG = null;
+const SLOT_KIND = { atr: "volatility", baseline: "baseline", c1: "confirmation", c2: "confirmation", volume: "volume", exit: "exit", continuation: "confirmation" };
+const OPTIONAL = new Set(["c2", "volume", "exit", "continuation"]);
+
+async function initBacktest() {
+  try {
+    const [ds, cat, cfg] = await Promise.all([api("/api/datasets"), api("/api/catalogue"), api("/api/config")]);
+    CAT = cat; CFG = cfg;
+    const box = $("#datasets"); box.innerHTML = ""; box.classList.remove("muted");
+    if (!ds.length) box.append(el("div", { class: "muted" }, "No CSVs found. Use nnfx fetch or nnfx import-tv."));
+    ds.forEach((d, i) => box.append(el("label", { class: "ds" }, el("input", { type: "checkbox", "data-i": i, checked: i < 2 }), el("span", {}, `${d.symbol} `, el("span", { class: "muted" }, d.timeframe)), el("small", {}, d.path))));
+    box._ds = ds;
+    const slots = $("#slots");
+    for (const [slot, kind] of Object.entries(SLOT_KIND)) {
+      const sel = el("select", { "data-slot": slot });
+      if (OPTIONAL.has(slot)) sel.append(el("option", { value: "" }, "none"));
+      for (const e of CAT.filter(e => e.kind === kind && e.implemented)) sel.append(el("option", { value: e.name }, e.name));
+      sel.value = cfg.slots[slot]?.name ?? "";
+      slots.append(el("label", { class: "row" }, slot, sel));
+    }
+    const rules = $("#rules");
+    for (const [k, v] of Object.entries(cfg.rules)) {
+      if (typeof v === "boolean") rules.append(el("label", {}, el("input", { type: "checkbox", "data-rule": k, checked: v }), k.replaceAll("_", " ")));
+      else if (k === "one_candle_rule") { const s = el("select", { "data-rule": k }, ...["off", "A", "B"].map(o => el("option", { value: o }, o))); s.value = v; rules.append(el("label", { class: "row" }, "one candle rule", s)); }
+      else if (typeof v === "number") rules.append(el("label", { class: "row" }, k.replaceAll("_", " "), el("input", { type: "number", step: "any", value: v, "data-rule": k })));
+    }
+    const risk = $("#risk");
+    for (const [k, v] of Object.entries(cfg.risk)) {
+      if (typeof v === "boolean") risk.append(el("label", {}, el("input", { type: "checkbox", "data-risk": k, checked: v }), k.replaceAll("_", " ")));
+      else if (typeof v === "number") risk.append(el("label", { class: "row" }, k.replaceAll("_", " "), el("input", { type: "number", step: "any", value: v, "data-risk": k })));
+    }
+  } catch (e) { $("#bt-error").textContent = e.message; }
+}
+
+function collect() {
+  const ds = $("#datasets")._ds || [];
+  const datasets = [...document.querySelectorAll("#datasets input[data-i]:checked")].map(i => ds[+i.dataset.i]);
+  const overrides = {};
+  document.querySelectorAll("[data-slot]").forEach(s => {
+    const slot = s.dataset.slot, cur = CFG.slots[slot];
+    if ((cur?.name ?? "") === s.value) return;
+    overrides["slots." + slot] = s.value ? { name: s.value, params: {} } : null;
+  });
+  const read = (n) => n.type === "checkbox" ? n.checked : n.type === "number" ? Number(n.value) : n.value;
+  document.querySelectorAll("[data-rule]").forEach(n => { const v = read(n); if (v !== CFG.rules[n.dataset.rule]) overrides["rules." + n.dataset.rule] = v; });
+  document.querySelectorAll("[data-risk]").forEach(n => { const v = read(n); if (v !== CFG.risk[n.dataset.risk]) overrides["risk." + n.dataset.risk] = v; });
+  return { datasets, overrides, zero_costs: $("#zero_costs").checked };
+}
+
+$("#run").addEventListener("click", async () => {
+  const b = $("#run"); b.disabled = true; b.textContent = "Running…"; $("#bt-error").textContent = "";
+  try { renderBacktest(await api("/api/backtest", collect())); }
+  catch (e) { $("#bt-error").textContent = e.message; }
+  finally { b.disabled = false; b.textContent = "Run backtest"; }
+});
+
+function renderBacktest(r) {
+  const m = r.metrics, out = $("#bt-out"); out.innerHTML = "";
+  const kpi = (k, v, cls = "") => el("div", { class: "kpi" }, el("div", { class: "v " + cls }, v), el("div", { class: "k" }, k));
+  const lo = m.expectancy_ci[0], hi = m.expectancy_ci[1];
+  out.append(el("div", { class: "kpis" },
+    kpi("entries", m.n_entries), kpi("E[R] per entry", signed(m.expectancy_r), m.expectancy_r >= 0 ? "pos" : "neg"),
+    kpi("95% BCa interval", `${signed(lo, 2)} to ${signed(hi, 2)}`, "small"), kpi("win rate", pct(m.win_rate)),
+    kpi("profit factor", fmt(m.profit_factor)), kpi("Sharpe", fmt(m.sharpe)), kpi("max drawdown", pct(m.max_drawdown), "neg"),
+    kpi("return", pct(m.total_return), m.total_return >= 0 ? "pos" : "neg")));
+  if (m.provisional) out.append(el("div", { class: "note" }, "Provisional: fewer than 500 entries. ", m.flags.map(f => `[${f}] `)));
+
+  const eq = el("div", { class: "panel" }, el("h2", {}, "Equity"));
+  const svgE = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svgE.classList.add("chart"); eq.append(svgE); out.append(eq);
+  lineChart(svgE, { n: r.equity.length, series: [{ ys: r.equity.map(p => p[1]), color: css("--accent"), width: 2 }], labels: yearLabels(r.equity.map(p => p[0])), yfmt: v => Math.round(v).toLocaleString() });
+
+  const syms = Object.keys(r.charts);
+  const pricePanel = el("div", { class: "panel" }, el("h2", {}, "Price, baseline and trades"));
+  const chips = el("div", { class: "chips" });
+  const svgP = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svgP.classList.add("chart"); svgP.style.height = "320px";
+  pricePanel.append(chips, svgP, el("div", { class: "legend" },
+    el("span", {}, el("i", { style: `background:${css("--ink")}` }), "close"),
+    el("span", {}, el("i", { style: `background:${css("--base")}` }), "baseline"),
+    el("span", {}, "▲▼ entry (green long, red short) · ○ exit")));
+  out.append(pricePanel);
+  const draw = (sym) => {
+    chips.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.s === sym));
+    const c = r.charts[sym], pos = new Map(c.t.map((t, i) => [t.slice(0, 10), i]));
+    const markers = [];
+    for (const t of r.trades.filter(t => t.symbol === sym && t.leg !== "runner")) {
+      const i = pos.get(t.entry_time.slice(0, 10)), j = pos.get(t.exit_time.slice(0, 10));
+      const col = t.direction > 0 ? css("--up") : css("--down");
+      if (i != null) markers.push({ i, v: t.entry_price, dir: t.direction, color: col, title: `${t.direction > 0 ? "long" : "short"} ${t.entry_type} @ ${t.entry_price}` });
+      if (j != null) markers.push({ i: j, v: t.exit_price, kind: "exit", color: col, title: `exit ${t.exit_reason} @ ${t.exit_price}, ${signed(t.r_multiple, 2)}R` });
+    }
+    lineChart(svgP, { n: c.t.length, series: [{ ys: c.c, color: css("--ink"), width: 1.2 }, { ys: c.baseline, color: css("--base"), width: 1.6 }], markers, labels: yearLabels(c.t) });
+  };
+  syms.forEach(s => chips.append(el("button", { class: "chip", "data-s": s, onclick: () => draw(s) }, s)));
+  draw(syms[0]);
+
+  const cols = ["symbol", "leg", "direction", "entry_type", "entry_time", "exit_time", "entry_price", "exit_price", "r_multiple", "exit_reason", "bars_held"];
+  const tbl = el("table", {}, el("tr", {}, cols.map(c => el("th", {}, c.replace("_", " ")))),
+    r.trades.map(t => el("tr", {}, cols.map(c => {
+      let v = t[c]; if (c.endsWith("_time")) v = v.slice(0, 10); if (c === "direction") v = v > 0 ? "long" : "short";
+      if (c === "r_multiple") return el("td", { class: "num " + (v >= 0 ? "pos" : "neg") }, signed(v, 2));
+      return el("td", { class: typeof v === "number" ? "num" : "" }, typeof v === "number" ? +v.toPrecision(6) : v);
+    }))));
+  out.append(el("div", { class: "panel" }, el("h2", {}, `Trades (${r.trades.length} legs)`), el("div", { class: "tablewrap" }, tbl)));
+  const blk = Object.entries(r.blocked).concat(Object.entries(r.rejected).map(([k, v]) => ["rejected: " + k, v]));
+  out.append(el("div", { class: "panel" }, el("h2", {}, "Run"),
+    el("pre", {}, `${r.summary}\nconfig ${r.config_digest.slice(0, 16)} · outputs ${r.digest}\n` + (blk.length ? "blocked/rejected: " + blk.map(([k, v]) => `${k} ${v}`).join(", ") : "nothing blocked"))));
+}
+
+// ---------------------------------------------------------------- indicators
+async function loadIndicators() {
+  const cat = CAT.length ? CAT : await api("/api/catalogue");
+  const kinds = ["all", "volatility", "baseline", "confirmation", "volume", "exit"];
+  const f = $("#ind-filter"), t = $("#ind-table");
+  const show = (k) => {
+    f.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.k === k));
+    t.innerHTML = ""; t.append(el("tr", {}, ["slot", "name", "family", "published defaults", "grid"].map(h => el("th", {}, h))));
+    for (const e of cat.filter(e => k === "all" || e.kind === k))
+      t.append(el("tr", {}, el("td", {}, e.kind), el("td", {}, el("b", {}, e.name)), el("td", { class: "muted" }, e.family),
+        el("td", {}, Object.entries(e.defaults).map(([a, b]) => `${a}=${b}`).join(", ")),
+        el("td", { class: "muted" }, Object.entries(e.grid).map(([a, b]) => `${a}: ${b.join("/")}`).join("  "))));
+  };
+  kinds.forEach(k => f.append(el("button", { class: "chip", "data-k": k, onclick: () => show(k) }, `${k} (${k === "all" ? cat.length : cat.filter(e => e.kind === k).length})`)));
+  show("all");
+}
+
+// ---------------------------------------------------------------- research
+async function loadResearch() {
+  const out = $("#research-out");
+  try {
+    const r = await api("/api/research"); out.innerHTML = ""; out.classList.remove("muted");
+    const touched = new Set(r.holdout.map(h => h.market));
+    out.append(el("div", { class: "kpis" },
+      ...[["logged trials", r.trial_count], ["validation passes", r.validation_passes], ["FX holdout", touched.has("fx") ? "touched" : "sealed"], ["crypto holdout", touched.has("crypto") ? "touched" : "sealed"]]
+        .map(([k, v]) => el("div", { class: "kpi" }, el("div", { class: "v" }, v), el("div", { class: "k" }, k)))));
+    if (typeof r.thresholds === "object") {
+      const c = r.thresholds.criteria;
+      out.append(el("div", { class: "panel" }, el("h2", {}, `Pre-registered thresholds (frozen ${r.thresholds.frozen_on || ""})`),
+        el("div", { class: "tablewrap", style: "max-height:none" }, el("table", {}, el("tr", {}, el("th", {}, "#"), el("th", {}, "criterion"), el("th", {}, "rule")),
+          Object.entries(c).map(([k, v]) => { const [n, ...rest] = k.split("_"); return el("tr", {}, el("td", {}, n), el("td", {}, rest.join(" ")), el("td", { class: "muted" }, v.op ? `${v.op} ${v.value}` : v.multiplier ? `criteria 1 and 3 hold at ×${v.multiplier} costs` : (typeof v.requires === "string" ? v.requires : JSON.stringify(v)))); })))));
+    } else out.append(el("div", { class: "panel err" }, r.thresholds));
+    const cols = ["id", "stage", "market", "segment", "symbols"];
+    const rows = r.trials.slice().reverse();
+    out.append(el("div", { class: "panel" }, el("h2", {}, "Trials log (newest first)"),
+      rows.length ? el("div", { class: "tablewrap" }, el("table", {}, el("tr", {}, cols.concat(["E[R]", "Sharpe", "entries"]).map(c => el("th", {}, c))),
+        rows.map(t => el("tr", {}, cols.map(c => el("td", {}, Array.isArray(t[c]) ? t[c].join(" ") : t[c])),
+          el("td", { class: "num" }, signed(t.metrics?.expectancy_r)), el("td", { class: "num" }, fmt(t.metrics?.sharpe)), el("td", { class: "num" }, t.metrics?.entries ?? "–")))))
+        : el("div", { class: "muted" }, "No trials yet. Run nnfx ablate / nnfx select on real data.")));
+  } catch (e) { out.innerHTML = ""; out.append(el("div", { class: "err" }, e.message)); }
+}
+
+// ---------------------------------------------------------------- live
+async function loadLive() {
+  const out = $("#live-out");
+  try {
+    const r = await api("/api/live"); out.innerHTML = ""; out.classList.remove("muted");
+    const b = r.broker;
+    out.append(el("div", { class: "kpis" },
+      el("div", { class: "kpi" }, el("div", { class: "v" }, r.cycles.length), el("div", { class: "k" }, "journal cycles shown")),
+      el("div", { class: "kpi" }, el("div", { class: "v" }, b ? Object.keys(b.positions || b.open || {}).length : "–"), el("div", { class: "k" }, "open positions")),
+      el("div", { class: "kpi" }, el("div", { class: "v" }, r.reports.length), el("div", { class: "k" }, "daily reports"))));
+    const last = r.reports[r.reports.length - 1];
+    out.append(el("div", { class: "panel" }, el("h2", {}, last ? `Latest daily report · ${last.name}` : "Daily report"), last ? el("pre", {}, last.text) : el("div", { class: "muted" }, "No report yet. Run nnfx live to produce one.")));
+    if (r.cycles.length) out.append(el("div", { class: "panel" }, el("h2", {}, `Recent cycles · ${r.journal}`),
+      el("div", { class: "tablewrap" }, el("pre", {}, r.cycles.slice().reverse().map(c => JSON.stringify(c)).join("\n")))));
+    if (b) out.append(el("div", { class: "panel" }, el("h2", {}, "PaperBroker state"), el("div", { class: "tablewrap" }, el("pre", {}, JSON.stringify(b, null, 1)))));
+  } catch (e) { out.innerHTML = ""; out.append(el("div", { class: "err" }, e.message)); }
+}
+
+initBacktest();
+</script>
+</body>
+</html>

@@ -491,3 +491,35 @@ def test_verdict_missing_evidence_and_trial_count_mismatch():
     )
     assert next(r for r in crypto.rows if r.criterion.startswith("13")).status == "FAIL"
     assert next(r for r in crypto.rows if r.criterion.startswith("14")).status == "N/A"
+
+
+def test_plateau_sweep_counts_every_neighbour(tmp_path: Path):
+    from nnfx.research.selection import sweep_neighbourhood
+
+    ev = evaluator(tmp_path / "research")
+    cfg = CFG.with_overrides({"slots.c1": {"name": "macd", "params": {}}})
+    res, rows = sweep_neighbourhood(cfg, "c1", ev)
+    # macd grid: fast (8,12,16), slow (21,26,34); peak (12,26) has 4 one-step neighbours.
+    assert res.peak == (12, 26) and len(rows) == 5 and len(res.neighbours) == 4
+    assert ev.research.trial_count() == 5
+    with pytest.raises(ValueError):
+        sweep_neighbourhood(cfg.with_overrides({"slots.c2": None}), "c2", ev)
+
+
+def test_cli_verdict_uses_frozen_thresholds_and_logged_count(tmp_path: Path, capsys):
+    import json as _json
+    import shutil
+
+    from nnfx.cli import main
+
+    root = tmp_path / "research"
+    root.mkdir()
+    shutil.copy(Path("research/thresholds.frozen.json"), root / "thresholds.frozen.json")
+    ev = tmp_path / "ev.json"
+    from dataclasses import asdict
+
+    ev.write_text(_json.dumps(asdict(_evidence())))
+    rc = main(["verdict", "--evidence", str(ev), "--research", str(root)])
+    out = capsys.readouterr().out
+    # 120 trials claimed, 0 logged: DSR fails, so the verdict fails.
+    assert rc == 1 and "log has 0" in out and "VERDICT: FAIL" in out

@@ -190,4 +190,5 @@ def registered(kind: SlotKind | None = None) -> list[tuple[SlotKind, str]]:
 
 
 def _ensure_loaded() -> None:
-    import nnfx.indicators.library  # noqa: F401  (registers the catalogue)
+    import nnfx.indicators.library
+    import nnfx.indicators.library_ext  # noqa: F401

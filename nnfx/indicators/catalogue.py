@@ -8,34 +8,8 @@ from nnfx.config import SlotSpec
 from nnfx.indicators.base import REGISTRY, SlotKind, registered
 
 # Doc 05 candidates not yet wrapped. Kept here so the pool's gaps are visible.
-PLANNED: dict[SlotKind, tuple[str, ...]] = {
-    "baseline": ("t3", "vidya", "ssl_channel_baseline", "range_filter", "ehlers_supersmoother"),
-    "confirmation": (
-        "schaff_trend_cycle",
-        "coral_trend",
-        "half_trend",
-        "qqe",
-        "wave_trend",
-        "tdfi",
-        "kase_permission",
-        "ergodic_tvi",
-        "trend_trigger_factor",
-        "smi",
-        "ttm_trend",
-    ),
-    "volume": (
-        "vpci",
-        "damiani_volatmeter",
-        "volume_zone_oscillator",
-        "chaikin_money_flow",
-        "mfi",
-        "klinger",
-        "obv_slope",
-        "vhf",
-    ),
-    "exit": ("rex", "qqe_exit", "braid_filter", "aroon_exit", "waddah_dead_zone"),
-    "volatility": ("keltner_width", "garman_klass", "yang_zhang"),
-}
+# Empty: every doc 05 candidate is registered (``library`` and ``library_ext``).
+PLANNED: dict[SlotKind, tuple[str, ...]] = {}
 
 
 @dataclass(frozen=True)

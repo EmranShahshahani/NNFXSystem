@@ -65,14 +65,22 @@ tests. Tickets 00-09 had full acceptance criteria in the ticket file; tickets
 
 ## Not done / needs real data
 
-* The Dukascopy, Stooq and ccxt feeds are implemented and tested offline only;
-  this build environment cannot reach those hosts. First real fetch writes the
-  committed manifests.
+* The Dukascopy, Stooq, ccxt and Nobitex/UDF feeds are implemented and tested
+  offline only; this build environment's network policy blocks those hosts. The
+  Nobitex client follows its published API docs (``apiv2.nobitex.ir/market/udf/history``).
+  First real fetch writes the committed manifests.
+* TradingView has no public market-data API; ``nnfx import-tv`` reads its chart
+  export instead. Bitycle publishes only a partner (business) API, so no client
+  was written; if it exposes a UDF datafeed, ``--feed udf --base-url`` covers it.
 * No real-data research run has been made, so no trial has been logged and the
   holdout is untouched. `nnfx ablate` and `SelectionPipeline` are ready for it.
-* The selection pipeline evaluates published defaults; per-parameter grids exist
-  on every indicator and `overfitting.plateau` scores them, but sweeping a
-  finalist's grid neighbourhood is a separate (counted) step to run.
-* Doc 05 indicators not yet wrapped are listed in `indicators/catalogue.py: PLANNED`.
+* The selection pipeline evaluates published defaults; `nnfx plateau` then sweeps
+  the finalist's grid neighbourhood (each point a counted trial) for criterion 11.
+* `nnfx verdict` scores an evidence JSON; assembling every evidence field
+  (walk-forward, PBO across the selection's configurations, cost stress, holdout)
+  from a real run is still a manual sequence of the existing functions.
+* All 64 doc 05 indicators are wrapped (`library.py`, `library_ext.py`). Kase
+  permission stochastic is a daily approximation (higher-timeframe window);
+  directional indicators placed in the volume slot gate on reading strength.
 * Out of scope per spec: live venue adapters, venue choice, numeric kill-switch
   and exposure thresholds, news/rollover avoidance, sub-daily timeframes.

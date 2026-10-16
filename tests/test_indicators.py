@@ -304,7 +304,8 @@ def test_catalogue_populated_from_doc_05():
     cat = catalogue()
     impl = [e for e in cat if e.implemented]
     assert len(impl) == len(REGISTRY) and all(e.grid for e in impl)
-    assert {e.kind for e in cat if not e.implemented} == set(PROTOCOLS)
+    assert not [e for e in cat if not e.implemented]  # doc 05 pool fully wrapped
+    assert {e.kind for e in impl} == set(PROTOCOLS)
     assert all(3 <= len(v) <= 5 for e in impl for v in e.grid.values() if len(v) > 2) or True
     for e in impl:
         for vals in e.grid.values():
