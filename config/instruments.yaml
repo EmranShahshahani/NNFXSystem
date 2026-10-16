@@ -1,0 +1,21 @@
+# Instrument basket and per-symbol overrides. Changing the universe is a config edit.
+baskets:
+  fx_28: fx_28          # expanded in code to the 28 majors/crosses, standard naming
+  crypto_core: ["BTC/USDT:USDT", "ETH/USDT:USDT", "SOL/USDT:USDT", "XRP/USDT:USDT", "BNB/USDT:USDT"]
+
+defaults:
+  fx_spot:
+    size_step: "1000"     # 0.01 lots
+    min_size: "1000"
+  crypto_perp:
+    max_leverage: 20.0
+    maintenance_margin_rate: 0.005
+  crypto_spot:
+    can_short: false
+
+overrides:
+  "BTC/USDT:USDT": { btc_beta: 1.0, depth: 50000000 }
+  "ETH/USDT:USDT": { btc_beta: 1.1, depth: 20000000 }
+  "SOL/USDT:USDT": { btc_beta: 1.4, depth: 5000000 }
+  "XRP/USDT:USDT": { btc_beta: 1.2, depth: 5000000 }
+  "BNB/USDT:USDT": { btc_beta: 0.9, depth: 5000000 }

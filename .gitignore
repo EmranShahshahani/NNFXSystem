@@ -1,0 +1,40 @@
+# --- Never in version control ------------------------------------------------
+# Virtualenvs and tool caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Secrets. .env.example is the documented template and IS committed.
+.env
+.env.*
+!.env.example
+
+# Market data: the bar cache is gigabytes and is re-fetched per workstation.
+data/cache/
+data/raw/
+*.bi5
+*.parquet
+
+# Run outputs: regenerated from code + config + data, never source of truth.
+runs/
+reports/*
+!reports/.gitkeep
+.scratch/runs/
+checkpoints/
+
+# --- Deliberately NOT ignored (ADR 08) ---------------------------------------
+# research/*.jsonl                 append-only research state (trial count,
+#                                  validation passes, holdout touches). If this
+#                                  were machine-local, the DSR would be computed
+#                                  against an undercount - silently optimistic.
+# data/manifests/                  checksums of fetched history, so a second
+#                                  workstation can detect vendor revisions.
+# research/thresholds.frozen.json  pre-registered acceptance criteria.
+# uv.lock                          the exact pinned environment.
+# Do not add a pattern above that matches any of these.

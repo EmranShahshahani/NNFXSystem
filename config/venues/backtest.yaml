@@ -1,0 +1,31 @@
+# Cost-model profile for the BacktestBroker. One file per venue profile; the
+# same system config can be pointed at another. Values are planning estimates
+# to be audited monthly against real fills (doc 03 §10).
+default: {}
+
+market_classes:
+  fx_spot:
+    spread_bps: 1.0              # ~1 pip on EURUSD
+    rollover_spread_mult: 3.0    # spreads widen at the 17:00 NY rollover
+    commission_per_lot: 7.0      # round-turn-ish, charged per side here as 3.5 x 2
+    lot_size: 100000
+    swap_long_annual: -0.01
+    swap_short_annual: -0.01
+    swap_triple_weekday: 2
+    slippage_bps: 0.5
+    stop_slippage_mult: 2.0
+  crypto_perp:
+    spread_bps: 1.0
+    commission_rate: 0.0005      # taker
+    funding_rate_8h: 0.0001      # used only when bars carry no funding history
+    slippage_bps: 2.0
+    stop_slippage_mult: 2.0
+    reference_depth: 50000000    # BTC: alts slip by sqrt(BTC depth / their depth)
+  crypto_spot:
+    spread_bps: 1.0
+    commission_rate: 0.001
+    slippage_bps: 2.0
+    reference_depth: 50000000
+
+symbols:
+  GBPJPY: { market_class: fx_spot, spread_bps: 2.0 }

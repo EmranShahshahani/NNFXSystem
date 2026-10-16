@@ -1,0 +1,58 @@
+# The entire system's behaviour (doc 02 §5). Two configs differing only in
+# `slots` are two different trading systems. Unknown keys fail at load time.
+slots:
+  atr:      { name: atr,        params: { period: 14 } }
+  baseline: { name: kama,       params: { period: 10, fast: 2, slow: 30 } }
+  c1:       { name: supertrend, params: { period: 10, multiplier: 3.0 } }
+  c2:       { name: vortex,     params: { period: 14 } }
+  volume:   { name: adx,        params: { period: 14, threshold: 20.0 } }
+  exit:     { name: chandelier, params: { period: 22, multiplier: 3.0 } }
+  # continuation: { name: ssl, params: { period: 10 } }   # optional 7th slot
+
+rules:
+  bridge_too_far:     true
+  bridge_multiple:    1.0
+  seven_candle_rule:  true
+  seven_candle_bars:  7
+  seven_candle_inclusive: true   # A6: signal bar counts as bar 1
+  one_candle_rule:    "off"      # A7: "off" | "A" | "B" - off until the ablation decides
+  pullback:           true
+  baseline_entries:   true
+  continuation:       true
+  c2_required:        true
+  c2_mode:            state      # A4: agree (state) by default; "signal" is testable
+  volume_required:    true
+  allow_long:         true
+  allow_short:        true       # false = the long-only spot benchmark
+
+risk:
+  risk_per_position:      0.01
+  positions_per_entry:    2
+  stop_atr_multiple:      1.5
+  tp1_atr_multiple:       1.0
+  trail_atr_multiple:     1.5
+  trail_step_atr:         0.5
+  atr_frozen_at_entry:    true    # A3
+  trail_uses_live_atr:    true    # A11
+  max_positions_per_ccy:  2       # provisional (A8)
+  sizing_tolerance:       0.25
+  min_liquidation_atr:    3.0
+  leverage:               1.0
+  # kill_switch_drawdown: set from the Monte Carlo bootstrap, then approve:
+  # kill_switch_approved: true
+
+session:
+  close_tz: "America/New_York"
+  close_hour: 17
+  continuous_close_tz: "UTC"
+  continuous_close_hour: 0
+
+costs:
+  enabled: true
+  stress_multiplier: 1.0
+  funding: true
+  swap: true
+
+account:
+  initial_equity: 10000
+  currency: USD

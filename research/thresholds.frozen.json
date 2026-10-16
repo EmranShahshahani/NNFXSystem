@@ -1,0 +1,23 @@
+{
+  "status": "frozen",
+  "frozen_on": "2026-08-27",
+  "source": "docs/adr/03-nnfx-validation-protocol-v0.1.md section 8.2",
+  "note": "Pre-registered before any performance test. Do not edit. .gitattributes marks this file -merge so any change surfaces as a conflict a human must resolve.",
+  "criteria": {
+    "1_expectancy_ci_lower": {"op": ">", "value": 0.0, "interval": "BCa 95%"},
+    "2_effective_sample": {"op": ">=", "value": 400},
+    "3_expectancy_point": {"op": ">=", "value": 0.10, "unit": "R after full modelled costs"},
+    "4_deflated_sharpe": {"op": ">=", "value": 0.95, "meaning": "P(true SR > 0) after deflation against the logged trial count"},
+    "5_pbo": {"op": "<", "value": 0.30},
+    "6_walk_forward_efficiency": {"op": ">=", "value": 0.5, "note": "practitioner heuristic, not theoretically grounded"},
+    "7_mar": {"op": ">=", "value": 0.5},
+    "8_bootstrap_p95_drawdown": {"op": "<", "value": 0.35},
+    "9_random_control_percentile": {"op": ">", "value": 0.90, "samples": 100},
+    "10_cost_stress": {"multiplier": 1.5, "requires": ["1_expectancy_ci_lower", "3_expectancy_point"]},
+    "11_parameter_plateau": {"op": ">=", "value": 0.60, "neighbourhood": "+/-1 grid step per parameter"},
+    "12_holdout_degradation": {"op": ">=", "value": 0.50},
+    "13_regime_coverage": {"markets": ["crypto"], "requires": ["bull", "bear"], "op": ">", "value": 0.0},
+    "14_instrument_breadth": {"markets": ["fx"], "op": ">", "value": 0.60},
+    "15_cross_market": {"requires": "same configuration directionally consistent in the second market"}
+  }
+}

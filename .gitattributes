@@ -1,0 +1,14 @@
+# LF everywhere, so a CRLF flip cannot masquerade as a golden-journal diff.
+* text=auto eol=lf
+*.bi5 binary
+*.parquet binary
+
+# Append-only research and journal logs: union merge concatenates both sides'
+# appends instead of conflicting. Safe ONLY because counts are derived by
+# distinct id (ADR 08 §2a); run `nnfx research reconcile` after a merge.
+research/*.jsonl merge=union
+journal/*.jsonl merge=union
+
+# Frozen thresholds: never auto-merge. A conflict here means somebody is moving
+# a goalpost and a human must look at it (ADR 08 §2c, doc 03 §8.3).
+research/thresholds.frozen.json -merge
