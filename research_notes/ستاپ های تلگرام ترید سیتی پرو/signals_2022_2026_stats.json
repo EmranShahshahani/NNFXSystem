@@ -24,13 +24,13 @@
  "B_posts_with_photo": 292,
  "B_posts_image_only_like": 2,
  "by_setup_type": {
-  "range_breakout_trigger": 558,
+  "range_breakout_trigger": 526,
   "pattern": 94,
-  "other": 58,
+  "other": 57,
+  "momentum_trigger_rsi": 35,
   "fakeout": 17,
   "indecision_trigger": 10,
-  "pullback": 3,
-  "momentum_trigger_rsi": 2
+  "pullback": 3
  },
  "by_symbol_top30": {
   "BTCUSDT": 122,
@@ -117,13 +117,13 @@
    "indecision_trigger": 2
   },
   "2026": {
-   "range_breakout_trigger": 325,
+   "range_breakout_trigger": 293,
    "fakeout": 16,
-   "other": 9,
+   "other": 8,
    "pullback": 2,
    "pattern": 46,
    "indecision_trigger": 8,
-   "momentum_trigger_rsi": 2
+   "momentum_trigger_rsi": 35
   }
  },
  "by_entry_type": {
@@ -153,11 +153,12 @@
   "yes": 740
  },
  "rows_with_stop": 8,
- "rows_with_targets": 42,
+ "rows_with_targets": 62,
  "n_targets_dist": {
-  "1": 41,
-  "0": 700,
-  "2": 1
+  "1": 56,
+  "0": 680,
+  "2": 4,
+  "3": 2
  },
  "rows_with_stated_rr": 4,
  "stated_rr_values": {
@@ -165,18 +166,22 @@
   "5": 2,
   "2": 1
  },
- "rows_with_validity_level": 4,
+ "rows_with_validity_level": 12,
  "rows_with_box": 6,
  "confirmation_counts": {
+  "volume": 173,
   "candle close beyond level": 141,
-  "volume": 41,
+  "RSI": 113,
   "BTC context": 40,
   "multiple touches": 22,
+  "weekend caution": 21,
   "HH/HL or LH/LL structure": 19,
-  "setup candle": 10,
-  "RSI": 7,
-  "BTC dominance": 6,
-  "confirmation candle": 2
+  "BTC dominance": 18,
+  "setup candle": 18,
+  "confirmation candle": 14,
+  "order book": 5,
+  "New York session": 4,
+  "SMA25": 1
  },
  "rows_with_outcome": 53,
  "rows_with_outcome_by_year": {
@@ -204,21 +209,21 @@
  },
  "stop_dist_over_box": {},
  "first_target_dist_pct": {
-  "n": 31,
+  "n": 43,
   "median": 8.788,
   "p25": 5.524,
-  "p75": 23.218,
+  "p75": 16.667,
   "min": 2.121,
   "max": 1300.0
  },
  "implied_R_first_target": {},
  "validity_level_dist_pct": {
-  "n": 2,
-  "median": 5.321,
-  "p25": 2.965,
+  "n": 6,
+  "median": 5.204,
+  "p25": 2.313,
   "p75": 7.677,
-  "min": 2.965,
-  "max": 7.677
+  "min": 1.386,
+  "max": 8.263
  },
  "box_width_pct_of_trigger": {
   "n": 5,

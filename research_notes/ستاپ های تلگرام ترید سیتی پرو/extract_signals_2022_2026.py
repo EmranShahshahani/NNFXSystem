@@ -507,6 +507,7 @@ def extract_post(p) -> tuple[list[dict], str]:
                 # positive statement of a breakout call with level only on chart (e.g. "شکست سقف باکس بهمون پوزیشن لانگ میده")
                 if has_break and re.search(r"پوزیشن (?:لانگ|شورت)? ?(?:میده|میدهد|باز کنیم|باز میکنیم|بگیریم)|تریگر (?:لانگ|شورت)|میتونیم[^/]{0,30}پوزیشن|میتونین[^/]{0,30}اقدام|میتوانید[^/]{0,30}اقدام|اقدام (?:کنین|کنید|کنیم|بفرمایید|بنمایید)|میشه (?:لانگ|شورت)", seg):
                     rows.append(mkrow(p, sym, tf, sd, None, stype, et, bc, tg, cf, sp[0] if sp else None, vl, bx, rr, "level not stated in text (chart only)", "low", seg))
+                    rows[-1]["_ci"] = ci
                 continue
             n_l = len(lv)
             for i, n in enumerate(lv):
@@ -518,7 +519,46 @@ def extract_post(p) -> tuple[list[dict], str]:
                     conf = "low" if conf != "high" else "medium"
                 r = mkrow(p, sym, tf, sd, n["v"], stype, et, bc, tg, cf, sp[0] if sp else None, vl, bx, rr, "", conf, seg)
                 r["trigger_role"] = role
+                r["_ci"] = ci
                 rows.append(r)
+    # ---- post-level context: confirmations / targets / validity stated in neighbouring clauses
+    POSTCONF = ("volume", "RSI", "SMA", "setup candle", "BTC dominance", "New York session", "weekend caution", "order book", "confirmation candle")
+    clause_side = [ {h[1] for h in side_hits(c)} for c in clauses ]
+    for r in rows:
+        ci = r.get("_ci")
+        if ci is None:
+            continue
+        extra = []
+        for cj, c in enumerate(clauses):
+            if cj == ci:
+                continue
+            if clause_side[cj] and r["side"] not in clause_side[cj]:
+                continue
+            for x in confirmations(c, t):
+                if x.startswith(POSTCONF):
+                    extra.append(x)
+        if extra:
+            cur = [x for x in r["confirmations"].split("; ") if x]
+            r["confirmations"] = "; ".join(dict.fromkeys(cur + extra))
+        # following side-less clause(s): targets and validity level
+        for cj in (ci + 1, ci + 2):
+            if cj >= len(clauses) or clause_side[cj]:
+                break
+            nums = classify_numbers(clauses[cj], None)
+            for n in nums:
+                if n["role"] == "target" or (n["role"] == "level" and re.search(r"به سمت|بسمت|حرکت", clauses[cj][n["end"]:n["end"] + 40] + clauses[cj][max(0, n["pos"] - 25):n["pos"]])):
+                    r["_targets"].append(n["v"])
+                elif n["role"] == "valid" and not r["validity_level"]:
+                    r["validity_level"] = fmt(n["v"])
+        # momentum (RSI) framing of the same trade
+        same = [c for cj, c in enumerate(clauses) if cj == ci or not clause_side[cj] or r["side"] in clause_side[cj]]
+        if r["setup_type"] in ("range_breakout_trigger", "other") and any(
+                re.search(r"rsi", c, re.I) and re.search(r"اوربای|اورسل|overbuy|oversell|over-extend|بالای 70|بالا 70|زیر 30|تریگر مومنتوم|در rsi", c, re.I)
+                and re.search(r"تریگر|تاییدیه|تایید|پوزیشن|مومنتوم", c) for c in same):
+            r["setup_type"] = "momentum_trigger_rsi"
+        if r["setup_type"] in ("range_breakout_trigger", "other") and any(
+                re.search(r"sma|ema", c, re.I) and re.search(r"پولبک|حمایت|برسه|رسیدن", c) for c in same):
+            r["setup_type"] = "ma_pullback"
     # sanity on targets/stops relative to trigger & side
     for r in rows:
         trig = r["_trig"]
