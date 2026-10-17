@@ -2,37 +2,87 @@
  "universe_posts_2022_2026": 18599,
  "B_file_posts": 597,
  "post_status_counts": {
-  "chart_only": 448,
-  "no_setup": 15519,
+  "chart_only": 291,
+  "no_setup": 15673,
   "repost": 1831,
   "pin_notice": 328,
-  "setup": 463,
+  "setup": 466,
   "result_report": 10
  },
- "setup_posts": 455,
- "setup_posts_not_in_B": 111,
- "setup_rows": 722,
- "setup_rows_with_trigger_price": 676,
- "unique_rows_not_restated": 653,
- "chart_only_posts": 448,
+ "setup_posts": 460,
+ "setup_posts_not_in_B": 112,
+ "setup_rows": 728,
+ "setup_rows_with_trigger_price": 681,
+ "unique_rows_not_restated": 659,
+ "chart_only_posts": 291,
  "chart_only_by_year": {
-  "2022": 122,
-  "2023": 39,
-  "2024": 104,
-  "2025": 148,
-  "2026": 35
+  "2022": 114,
+  "2023": 33,
+  "2024": 72,
+  "2025": 68,
+  "2026": 4
  },
+ "chart_only_by_kind": {
+  "photo/media with symbol only": 127,
+  "TradingView chart snapshot link": 15,
+  "symbol hashtag only (chart image not captured)": 61,
+  "video link (YouTube)": 5,
+  "TradingView published idea link (analysis off-channel)": 83
+ },
+ "chart_only_by_kind_year": {
+  "2022": {
+   "photo/media with symbol only": 101,
+   "TradingView chart snapshot link": 3,
+   "symbol hashtag only (chart image not captured)": 8,
+   "video link (YouTube)": 2
+  },
+  "2023": {
+   "symbol hashtag only (chart image not captured)": 10,
+   "TradingView chart snapshot link": 4,
+   "photo/media with symbol only": 3,
+   "TradingView published idea link (analysis off-channel)": 16
+  },
+  "2024": {
+   "TradingView published idea link (analysis off-channel)": 29,
+   "symbol hashtag only (chart image not captured)": 26,
+   "photo/media with symbol only": 9,
+   "video link (YouTube)": 3,
+   "TradingView chart snapshot link": 5
+  },
+  "2025": {
+   "TradingView chart snapshot link": 3,
+   "symbol hashtag only (chart image not captured)": 16,
+   "TradingView published idea link (analysis off-channel)": 38,
+   "photo/media with symbol only": 11
+  },
+  "2026": {
+   "photo/media with symbol only": 3,
+   "symbol hashtag only (chart image not captured)": 1
+  }
+ },
+ "setup_posts_with_photo": 299,
+ "result_report_posts": [
+  17667,
+  20794,
+  21066,
+  21174,
+  21440,
+  21477,
+  22109,
+  22520,
+  26173,
+  26181
+ ],
  "B_posts_with_photo": 292,
  "B_posts_image_only_like": 2,
  "by_setup_type": {
-  "range_breakout_trigger": 539,
+  "range_breakout_trigger": 545,
   "pattern": 98,
   "momentum_trigger_rsi": 42,
   "fakeout": 17,
   "pullback": 10,
   "indecision_trigger": 10,
-  "other": 5,
-  "ma_pullback": 1
+  "other": 6
  },
  "by_symbol_top30": {
   "BTCUSDT": 93,
@@ -56,8 +106,8 @@
   "NEARUSDT": 12,
   "BCHUSDT": 12,
   "IOSTUSDT": 11,
-  "COMPUSDT": 11,
   "HYPEUSDT": 11,
+  "COMPUSDT": 9,
   "FILUSDT": 9,
   "FETUSDT": 9,
   "GALAUSDT": 8,
@@ -66,34 +116,35 @@
   "ENAUSDT": 8,
   "XLMUSDT": 7
  },
- "n_symbols": 92,
+ "n_symbols": 95,
  "by_timeframe": {
-  "4h": 249,
+  "4h": 251,
   "1h": 211,
-  "(blank)": 109,
+  "(blank)": 111,
   "15m": 78,
-  "1d": 69,
+  "1d": 71,
   "1w": 3,
   "4h/1h": 2,
   "1h/4h": 1
  },
  "by_side": {
-  "short": 330,
-  "long": 392
+  "short": 332,
+  "long": 395,
+  "": 1
  },
  "by_year_rows": {
   "2022": 304,
   "2023": 6,
   "2024": 4,
-  "2025": 14,
-  "2026": 394
+  "2025": 16,
+  "2026": 398
  },
  "by_year_posts": {
   "2022": 161,
   "2023": 5,
   "2024": 4,
-  "2025": 6,
-  "2026": 279
+  "2025": 8,
+  "2026": 282
  },
  "by_year_setup_type": {
   "2022": {
@@ -112,63 +163,64 @@
    "fakeout": 1
   },
   "2025": {
-   "range_breakout_trigger": 12,
-   "indecision_trigger": 2
+   "range_breakout_trigger": 13,
+   "indecision_trigger": 2,
+   "other": 1
   },
   "2026": {
-   "range_breakout_trigger": 308,
+   "range_breakout_trigger": 313,
    "fakeout": 14,
    "pullback": 4,
    "momentum_trigger_rsi": 42,
    "pattern": 15,
-   "ma_pullback": 1,
    "indecision_trigger": 8,
    "other": 2
   }
  },
  "by_entry_type": {
   "market": 9,
-  "(blank)": 10,
-  "stop": 702,
+  "(blank)": 12,
+  "stop": 706,
   "limit": 1
  },
  "by_break_confirmation": {
-  "(blank)": 34,
-  "break": 497,
+  "(blank)": 36,
+  "break": 501,
   "close": 191
  },
  "by_trigger_role": {
-  "(blank)": 592,
-  "risky/early": 75,
-  "main": 54,
+  "(blank)": 614,
+  "risky/early": 66,
+  "main": 47,
   "first sign": 1
  },
  "by_confidence": {
-  "high": 594,
-  "low": 45,
-  "medium": 83
+  "high": 596,
+  "low": 47,
+  "medium": 85
  },
  "conditional": {
   "no": 2,
-  "yes": 720
+  "yes": 726
  },
  "rows_with_stop": 8,
  "rows_with_targets": 54,
  "n_targets_dist": {
   "1": 53,
-  "0": 668,
+  "0": 674,
   "2": 1
  },
- "rows_with_stated_rr": 2,
+ "rows_with_stated_rr": 3,
  "stated_rr_values": {
   "5": 1,
-  "2": 1
+  "2": 1,
+  "3": 1
  },
  "rows_with_validity_level": 9,
- "rows_with_box": 22,
+ "rows_with_box": 24,
  "confirmation_counts": {
   "candle close beyond level": 188,
-  "volume": 162,
+  "volume": 163,
   "RSI": 101,
   "weekend caution": 23,
   "multiple touches": 19,
@@ -234,10 +286,10 @@
   "max": 11.031
  },
  "box_width_pct_of_trigger": {
-  "n": 22,
-  "median": 3.899,
-  "p25": 3.038,
-  "p75": 7.609,
+  "n": 24,
+  "median": 3.982,
+  "p25": 3.414,
+  "p75": 8.542,
   "min": 0.713,
   "max": 15.036
  }

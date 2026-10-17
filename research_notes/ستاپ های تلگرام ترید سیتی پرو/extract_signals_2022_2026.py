@@ -92,7 +92,7 @@ TF_HASH = re.compile(r"^(\d+)\s*(m|min|h|d|w|M)$", re.I)
 
 def norm_symbol(raw: str) -> str:
     s = raw.upper().replace(" ", "").replace("/", "")
-    s = s.replace("IOSDTUSDT", "IOSTUSDT").replace("USTD", "USDT").replace("DHIBAUSTD", "DHIBAUSDT")
+    s = s.replace("PENGUSDT", "PENGUUSDT").replace("IOSDTUSDT", "IOSTUSDT").replace("USTD", "USDT").replace("DHIBAUSTD", "DHIBAUSDT")
     if s in NON_USDT or s.endswith("USDT") or s.endswith("USD") and len(s) == 6:
         return s
     return s + "USDT"
@@ -210,7 +210,7 @@ def split_clauses(t: str):
 
 
 TRIG_PRE = (r"(?:شکست|شکستن|شکوندن|بشکنه|بریک ?اوت|break|بالای|بالا ی|زیر|زیره|پایین|تثبیت|بعد از|بعداز|بعد|after|under|above|zire"
-            r"|تریگر|تريگر|trigger|نقطه ورود|ورود|منتظر|از دست رفتن|استاپ بای|استاپ سل|اوردر استاپ|حمایت|مقاومت|سقف|کف|ناحیه|لول|محدوده|ضلع)")
+            r"|تریگر|تريگر|trigger|نقطه ورود|ورود|پوزیشن (?:لانگ|شورت)|منتظر|از دست رفتن|استاپ بای|استاپ سل|اوردر استاپ|حمایت|مقاومت|سقف|کف|ناحیه|لول|محدوده|ضلع)")
 TRIG_POST = r"^\s*(?:\$|دلار)?\s*(?:را|رو|رو هم)?\s*(?:بشکن|بشکون|بشکنه|از دست|شکسته|تثبیت|بریک|break|استاپ بای|استاپ سل|شکست)"
 INFO_PRE = r"(?:حواستون|حواسمون|نیم نگاهی|نگاهی|(?<!بعد )(?<!بعد)از مقاومت|(?<!بعد )(?<!بعد)از حمایت|(?<!بعد )(?<!بعد)از سقف|(?<!بعد )(?<!بعد)از کف|(?<!بعد )(?<!بعد)از ناحیه|رسیدن به|رسید به|برخورد با|حمایت شدن از|ریجکت شدن از|مقاومت اول|حمایت اول|قیمت حدود|حوالی|با قیمت|نزدیک)\s*(?:به)?\s*(?:حمایت|مقاومت|ناحیه|لول)?\s*$"
 INFO_POST = r"^\s*(?:\$|دلار)?\s*(?:را|رو)?\s*(?:به خوبی |خوب |خیلی خوب )?(?:حفظ|نگه|ریجکت|حمایت شد|واکنش|خریدوفروش|رسیده|رسید\b|برخورد|باشه\b|باشد\b|باشید)"
@@ -365,9 +365,9 @@ def trigger_role(seg: str, pos: int, end: int, idx: int, n: int) -> str:
     win = s[end:end + 45] + " " + s[max(0, pos - 30):pos]
     if re.search(r"به ترتیب", s) and n >= 2 and re.search(r"ریسکی", s) and re.search(r"اصلی|مطمئن", s):
         return "risky" if idx == 0 else "main"
-    if re.search(r"ریسکی|زودهنگام|زود هنگام|اول(?:ین)? تریگر|اولین|risky", win):
+    if re.search(r"ریسکی|زودهنگام|زود هنگام|اول(?:ین)? تریگر|تریگر اول|risky", win):
         return "risky/early"
-    if re.search(r"اصلی|مطمئن|مطمعن|سیف|safe|تایید", win):
+    if re.search(r"(?:تریگر|ورود|لانگ|شورت|تایید|تاییدیه) اصلی|اصلی ترین|مطمئن|مطمعن|سیف|safe", win):
         return "main"
     if re.search(r"ریسکی|risky", s) and n == 1:
         return "risky/early"
@@ -486,7 +486,7 @@ def extract_post(p) -> tuple[list[dict], str]:
     for c in clauses:
         c_ = re.sub(r"بدی نیست|بد نیست", "خوبه", c)
         if re.search(NEG_RE, c_) or re.search(MGMT_RE, c_):
-            cl2.extend(x.strip() for x in re.split(r"\s(?=(?:اما|ولی)\s)|،|\s,\s|\s(?=و برای)", c_) if x and x.strip())
+            cl2.extend(x.strip() for x in re.split(r"\s(?=(?:اما|ولی)\s)|،|\s,\s|\s(?=و (?:برای|فعلا|تا زمانی))", c_) if x and x.strip())
         else:
             cl2.append(c_)
     clauses = cl2
@@ -776,6 +776,15 @@ def summarise_outcome(f):
 
 
 # --------------------------------------------------------------------------- main
+_PH = {}
+
+
+def r_has_photo(pid, universe):
+    if not _PH:
+        _PH.update({p["id"]: bool(p.get("has_photo")) for p in universe})
+    return _PH.get(pid, False)
+
+
 def main():
     B = load(B_FILE)
     A = load(ALL_FILE)
@@ -811,8 +820,16 @@ def main():
                 r["_reposts"] = reposts.get(p["id"], [])
             all_rows.extend(rows)
         elif st == "chart_only":
-            r = mkrow(p, find_symbol(norm(p["text"] or "")), find_tf(norm(p["text"] or "")), "", None, "", "", "", [], [], None, "", "", "",
-                      "chart/image-only post: no setup text", "low")
+            tx = p["text"] or ""
+            if not re.search(r"#[A-Za-z]|tradingview\.com/(?:x|chart)/|Pair\s*:", tx):
+                per_post_status[p["id"]] = "no_setup"
+                continue
+            mu = re.search(r"tradingview\.com/chart/([A-Z0-9]+)/", tx)
+            kind = ("video link (YouTube)" if re.search(r"youtu", tx) else "TradingView chart snapshot link" if re.search(r"tradingview\.com/x/", tx)
+                    else "TradingView published idea link (analysis off-channel)" if mu
+                    else "photo/media with symbol only" if (p.get("has_photo") or p.get("has_video")) else "symbol hashtag only (chart image not captured)")
+            r = mkrow(p, mu.group(1) if mu else find_symbol(norm(tx)), find_tf(norm(tx)), "", None, "", "", "", [], [], None, "", "", "",
+                      "chart-only post, no setup text: " + kind, "low")
             r["record_type"] = "chart_only"
             r["_reposts"] = reposts.get(p["id"], [])
             r["conditional"] = ""
@@ -902,6 +919,10 @@ def main():
         "unique_rows_not_restated": sum(1 for r in setups if not r.get("restated_from")),
         "chart_only_posts": len(chart_only),
         "chart_only_by_year": dict(Counter(r["date_utc"][:4] for r in chart_only)),
+        "chart_only_by_kind": dict(Counter(r["notes"].split(": ", 1)[1] for r in chart_only)),
+        "chart_only_by_kind_year": {y: dict(Counter(r["notes"].split(": ", 1)[1] for r in chart_only if r["date_utc"][:4] == y)) for y in sorted({r["date_utc"][:4] for r in chart_only})},
+        "setup_posts_with_photo": sum(1 for pid in {r["post_id"] for r in all_rows} if r_has_photo(pid, universe)),
+        "result_report_posts": [p["id"] for p in universe if per_post_status.get(p["id"]) == "result_report"],
         "B_posts_with_photo": sum(bool(p["has_photo"]) for p in B),
         "B_posts_image_only_like": sum(1 for p in B if len(re.sub(r"https?://\S+|#\S+|\s|\W", "", norm(p["text"] or ""))) < 25),
         "by_setup_type": dict(Counter(r["setup_type"] for r in setups).most_common()),
@@ -1101,6 +1122,12 @@ MANUAL: dict[int, dict] = {
     27159: {"fill_blank": {"short": 0.6743}, "set": {"box": "0.6743-0.7012"}},
     27170: {"drop_side_trig": {"long": [0.04074]}},
     27403: {"drop": True},
+    24491: {"add": [{"side": "", "trig": None, "symbol": "ARUSDT", "timeframe": "", "setup_type": "range_breakout_trigger", "entry_type": "",
+                     "break_confirmation": "", "stated_rr": "3", "notes": "image card 'تریگر ورود ARUSDT | ریسک به ریوارد 3'; side/levels only on the image", "confidence": "low"}]},
+    25795: {"set": {"setup_type": "range_breakout_trigger", "notes": "break of 1.5451 range top; SMA99 (falling) approaching price is the obstacle"}},
+    25809: {"add": [{"side": "long", "trig": 361.2, "symbol": "XMRUSDT", "timeframe": "1d", "box": "315.19-361.2", "notes": "header says XRPUSDT, text is XMR; no trade inside the daily range, breakout either side", "confidence": "medium"},
+                    {"side": "short", "trig": 315.19, "symbol": "XMRUSDT", "timeframe": "1d", "box": "315.19-361.2", "notes": "header says XRPUSDT, text is XMR; breakout either side", "confidence": "medium"}]},
+    26070: {"set": {"symbol": "LTCUSDT", "notes": "header says COMPUSDT, text is Litecoin (لایت کوین)"}},
     25792: {"add": [{"side": "short", "trig": 68088.0, "trigger_role": "risky/early", "notes": "momentum is bullish so no logical short now; if a sharp drop: first short trigger 68088", "confidence": "medium"}]},
     25962: {"add": [{"side": "long", "trig": 0.1337, "confirmations": ["volume"], "notes": "long if price moves to the 0.1337 top with rising volume (break of top)", "confidence": "medium"}]},
     27498: {"add": [{"side": "long", "trig": 0.29, "box": "0.28-0.29", "entry_type": "stop", "confirmations": ["order book"],

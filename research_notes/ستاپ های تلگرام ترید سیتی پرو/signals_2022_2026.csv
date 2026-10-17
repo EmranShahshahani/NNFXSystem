@@ -1,103 +1,101 @@
 ﻿post_id,date_utc,symbol,timeframe,side,setup_type,trigger_price,entry_type,stop,targets,stated_rr,confirmations,outcome_reported,confidence,record_type,trigger_role,break_confirmation,conditional,validity_level,box,restated_from,outcome_post_ids,repost_ids,in_B_file,has_photo,url,notes,clause_fa
-8154,2022-01-01 07:05:05,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8154,chart/image-only post: no setup text,
-8155,2022-01-01 07:05:24,FTMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8155,chart/image-only post: no setup text,
-8156,2022-01-01 07:05:43,KAVAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8156,chart/image-only post: no setup text,
-8157,2022-01-01 07:06:01,MASKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8157,chart/image-only post: no setup text,
-8158,2022-01-01 07:06:19,ROSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8158,chart/image-only post: no setup text,
-8168,2022-01-02 06:54:06,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8168,chart/image-only post: no setup text,
-8169,2022-01-02 06:54:22,BATUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8169,chart/image-only post: no setup text,
-8170,2022-01-02 06:54:39,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8170,chart/image-only post: no setup text,
-8171,2022-01-02 06:55:02,ONTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8171,chart/image-only post: no setup text,
-8172,2022-01-02 06:55:20,SHIBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8172,chart/image-only post: no setup text,
-8174,2022-01-03 07:03:53,ZECUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8174,chart/image-only post: no setup text,
-8175,2022-01-03 07:04:18,YFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8175,chart/image-only post: no setup text,
-8176,2022-01-03 07:04:41,PEOPLEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8176,chart/image-only post: no setup text,
-8177,2022-01-03 07:05:00,AAVEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8177,chart/image-only post: no setup text,
-8178,2022-01-03 07:05:29,UNIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8178,chart/image-only post: no setup text,
-8181,2022-01-04 10:26:58,ALGOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8181,chart/image-only post: no setup text,
-8182,2022-01-04 10:27:08,CHRUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8182,chart/image-only post: no setup text,
-8183,2022-01-04 10:27:18,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8183,chart/image-only post: no setup text,
-8184,2022-01-04 10:27:26,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8184,chart/image-only post: no setup text,
-8185,2022-01-04 10:27:35,FLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8185,chart/image-only post: no setup text,
-8192,2022-01-05 09:49:40,BTTUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8192,chart/image-only post: no setup text,
-8203,2022-01-06 09:27:19,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8203,chart/image-only post: no setup text,
-8205,2022-01-06 09:28:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8205,chart/image-only post: no setup text,
-8206,2022-01-06 09:28:36,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8206,chart/image-only post: no setup text,
-8207,2022-01-06 09:29:00,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8207,chart/image-only post: no setup text,
-8208,2022-01-06 09:33:43,USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8208,chart/image-only post: no setup text,
-8210,2022-01-06 23:19:37,MOHEMMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8210,chart/image-only post: no setup text,
-8212,2022-01-07 08:59:00,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8212,chart/image-only post: no setup text,
-8213,2022-01-07 09:00:04,ENJUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8213,chart/image-only post: no setup text,
-8214,2022-01-07 09:00:28,DOTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8214,chart/image-only post: no setup text,
-8215,2022-01-07 09:00:46,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8215,chart/image-only post: no setup text,
-8216,2022-01-07 09:01:03,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8216,chart/image-only post: no setup text,
-8293,2022-01-08 09:32:09,IOSTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8293,chart/image-only post: no setup text,
-8294,2022-01-08 09:32:18,BTTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8294,chart/image-only post: no setup text,
-8295,2022-01-08 09:32:26,LTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8295,chart/image-only post: no setup text,
-8296,2022-01-08 09:32:35,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8296,chart/image-only post: no setup text,
-8297,2022-01-08 09:32:45,ALGOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8297,chart/image-only post: no setup text,
-8309,2022-01-09 07:22:12,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8309,chart/image-only post: no setup text,
-8310,2022-01-09 07:22:31,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8310,chart/image-only post: no setup text,
-8311,2022-01-09 07:23:00,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8311,chart/image-only post: no setup text,
-8312,2022-01-09 07:23:16,SXPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8312,chart/image-only post: no setup text,
-8313,2022-01-09 07:23:34,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8313,chart/image-only post: no setup text,
-8331,2022-01-10 11:08:16,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8331,chart/image-only post: no setup text,
-8332,2022-01-10 11:08:33,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8332,chart/image-only post: no setup text,
-8333,2022-01-10 11:08:53,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8333,chart/image-only post: no setup text,
-8334,2022-01-10 11:09:19,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8334,chart/image-only post: no setup text,
-8335,2022-01-10 11:09:44,SHIBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8335,chart/image-only post: no setup text,
-8345,2022-01-11 10:51:34,DOTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8345,chart/image-only post: no setup text,
-8346,2022-01-11 10:52:00,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8346,chart/image-only post: no setup text,
-8347,2022-01-11 10:52:33,QTUMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8347,chart/image-only post: no setup text,
-8348,2022-01-11 10:53:00,XLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8348,chart/image-only post: no setup text,
-8349,2022-01-11 10:53:27,XTZUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8349,chart/image-only post: no setup text,
-8359,2022-01-12 08:28:27,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8359,chart/image-only post: no setup text,
-8360,2022-01-12 08:28:33,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8360,chart/image-only post: no setup text,
-8361,2022-01-12 08:28:38,IOSTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8361,chart/image-only post: no setup text,
-8362,2022-01-12 08:28:44,EOSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8362,chart/image-only post: no setup text,
-8363,2022-01-12 08:28:52,ZILUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8363,chart/image-only post: no setup text,
-8374,2022-01-12 16:32:07,VIPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8374,chart/image-only post: no setup text,
-8388,2022-01-13 11:27:18,AVAXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8388,chart/image-only post: no setup text,
-8389,2022-01-13 11:27:33,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8389,chart/image-only post: no setup text,
-8390,2022-01-13 11:27:50,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8390,chart/image-only post: no setup text,
-8391,2022-01-13 11:28:10,UNIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8391,chart/image-only post: no setup text,
-8392,2022-01-13 11:28:34,XLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8392,chart/image-only post: no setup text,
-8400,2022-01-14 11:19:14,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8400,chart/image-only post: no setup text,
-8401,2022-01-14 11:19:19,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8401,chart/image-only post: no setup text,
-8402,2022-01-14 11:19:23,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8402,chart/image-only post: no setup text,
-8403,2022-01-14 11:19:30,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8403,chart/image-only post: no setup text,
-8404,2022-01-14 11:19:34,BAKEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8404,chart/image-only post: no setup text,
-8408,2022-01-15 08:25:40,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8408,chart/image-only post: no setup text,
-8409,2022-01-15 08:25:47,TLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8409,chart/image-only post: no setup text,
-8410,2022-01-15 08:25:53,TOMOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8410,chart/image-only post: no setup text,
-8411,2022-01-15 08:25:58,KAVAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8411,chart/image-only post: no setup text,
-8412,2022-01-15 08:26:04,UNFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8412,chart/image-only post: no setup text,
-8424,2022-01-16 10:10:23,RUNEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8424,chart/image-only post: no setup text,
-8425,2022-01-16 10:10:43,AKROUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8425,chart/image-only post: no setup text,
-8426,2022-01-16 10:10:51,ZECUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8426,chart/image-only post: no setup text,
-8427,2022-01-16 10:11:19,EOSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8427,chart/image-only post: no setup text,
-8428,2022-01-16 10:11:32,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8428,chart/image-only post: no setup text,
-8434,2022-01-17 09:33:08,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8434,chart/image-only post: no setup text,
-8435,2022-01-17 09:33:14,ENJUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8435,chart/image-only post: no setup text,
-8436,2022-01-17 09:33:20,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8436,chart/image-only post: no setup text,
-8437,2022-01-17 09:33:25,EGLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8437,chart/image-only post: no setup text,
-8438,2022-01-17 09:33:31,CRVUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8438,chart/image-only post: no setup text,
-8449,2022-01-18 10:06:12,UNFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8449,chart/image-only post: no setup text,
-8450,2022-01-18 10:06:19,VETUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8450,chart/image-only post: no setup text,
-8451,2022-01-18 10:06:26,SXPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8451,chart/image-only post: no setup text,
-8452,2022-01-18 10:06:33,TRXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8452,chart/image-only post: no setup text,
-8453,2022-01-18 10:06:40,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8453,chart/image-only post: no setup text,
-8468,2022-01-20 08:46:03,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8468,chart/image-only post: no setup text,
-8469,2022-01-20 08:46:09,SXPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8469,chart/image-only post: no setup text,
-8470,2022-01-20 08:46:16,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8470,chart/image-only post: no setup text,
-8471,2022-01-20 08:46:21,EGLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8471,chart/image-only post: no setup text,
-8472,2022-01-20 08:46:26,CHRUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8472,chart/image-only post: no setup text,
-8479,2022-01-21 18:20:28,CAKEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8479,chart/image-only post: no setup text,
-8483,2022-01-22 08:35:53,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8483,chart/image-only post: no setup text,
-8484,2022-01-22 08:35:59,KAVAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8484,chart/image-only post: no setup text,
-8485,2022-01-22 08:36:08,EGLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8485,chart/image-only post: no setup text,
-8486,2022-01-22 08:36:15,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8486,chart/image-only post: no setup text,
-8487,2022-01-22 08:36:21,ALGOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8487,chart/image-only post: no setup text,
+8154,2022-01-01 07:05:05,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8154,"chart-only post, no setup text: photo/media with symbol only",
+8155,2022-01-01 07:05:24,FTMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8155,"chart-only post, no setup text: photo/media with symbol only",
+8156,2022-01-01 07:05:43,KAVAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8156,"chart-only post, no setup text: photo/media with symbol only",
+8157,2022-01-01 07:06:01,MASKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8157,"chart-only post, no setup text: photo/media with symbol only",
+8158,2022-01-01 07:06:19,ROSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8158,"chart-only post, no setup text: photo/media with symbol only",
+8168,2022-01-02 06:54:06,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8168,"chart-only post, no setup text: photo/media with symbol only",
+8169,2022-01-02 06:54:22,BATUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8169,"chart-only post, no setup text: photo/media with symbol only",
+8170,2022-01-02 06:54:39,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8170,"chart-only post, no setup text: photo/media with symbol only",
+8171,2022-01-02 06:55:02,ONTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8171,"chart-only post, no setup text: photo/media with symbol only",
+8172,2022-01-02 06:55:20,SHIBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8172,"chart-only post, no setup text: photo/media with symbol only",
+8174,2022-01-03 07:03:53,ZECUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8174,"chart-only post, no setup text: photo/media with symbol only",
+8175,2022-01-03 07:04:18,YFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8175,"chart-only post, no setup text: photo/media with symbol only",
+8176,2022-01-03 07:04:41,PEOPLEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8176,"chart-only post, no setup text: photo/media with symbol only",
+8177,2022-01-03 07:05:00,AAVEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8177,"chart-only post, no setup text: photo/media with symbol only",
+8178,2022-01-03 07:05:29,UNIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8178,"chart-only post, no setup text: photo/media with symbol only",
+8181,2022-01-04 10:26:58,ALGOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8181,"chart-only post, no setup text: photo/media with symbol only",
+8182,2022-01-04 10:27:08,CHRUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8182,"chart-only post, no setup text: photo/media with symbol only",
+8183,2022-01-04 10:27:18,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8183,"chart-only post, no setup text: photo/media with symbol only",
+8184,2022-01-04 10:27:26,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8184,"chart-only post, no setup text: photo/media with symbol only",
+8185,2022-01-04 10:27:35,FLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8185,"chart-only post, no setup text: photo/media with symbol only",
+8192,2022-01-05 09:49:40,BTTUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8192,"chart-only post, no setup text: TradingView chart snapshot link",
+8203,2022-01-06 09:27:19,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8203,"chart-only post, no setup text: photo/media with symbol only",
+8205,2022-01-06 09:28:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8205,"chart-only post, no setup text: photo/media with symbol only",
+8206,2022-01-06 09:28:36,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8206,"chart-only post, no setup text: photo/media with symbol only",
+8207,2022-01-06 09:29:00,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8207,"chart-only post, no setup text: photo/media with symbol only",
+8208,2022-01-06 09:33:43,USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8208,"chart-only post, no setup text: TradingView chart snapshot link",
+8210,2022-01-06 23:19:37,MOHEMMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8210,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+8212,2022-01-07 08:59:00,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8212,"chart-only post, no setup text: photo/media with symbol only",
+8213,2022-01-07 09:00:04,ENJUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8213,"chart-only post, no setup text: photo/media with symbol only",
+8214,2022-01-07 09:00:28,DOTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8214,"chart-only post, no setup text: photo/media with symbol only",
+8215,2022-01-07 09:00:46,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8215,"chart-only post, no setup text: photo/media with symbol only",
+8216,2022-01-07 09:01:03,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8216,"chart-only post, no setup text: photo/media with symbol only",
+8293,2022-01-08 09:32:09,IOSTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8293,"chart-only post, no setup text: photo/media with symbol only",
+8294,2022-01-08 09:32:18,BTTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8294,"chart-only post, no setup text: photo/media with symbol only",
+8295,2022-01-08 09:32:26,LTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8295,"chart-only post, no setup text: photo/media with symbol only",
+8296,2022-01-08 09:32:35,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8296,"chart-only post, no setup text: photo/media with symbol only",
+8297,2022-01-08 09:32:45,ALGOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8297,"chart-only post, no setup text: photo/media with symbol only",
+8309,2022-01-09 07:22:12,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8309,"chart-only post, no setup text: photo/media with symbol only",
+8310,2022-01-09 07:22:31,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8310,"chart-only post, no setup text: photo/media with symbol only",
+8311,2022-01-09 07:23:00,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8311,"chart-only post, no setup text: photo/media with symbol only",
+8312,2022-01-09 07:23:16,SXPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8312,"chart-only post, no setup text: photo/media with symbol only",
+8313,2022-01-09 07:23:34,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8313,"chart-only post, no setup text: photo/media with symbol only",
+8331,2022-01-10 11:08:16,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8331,"chart-only post, no setup text: photo/media with symbol only",
+8332,2022-01-10 11:08:33,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8332,"chart-only post, no setup text: photo/media with symbol only",
+8333,2022-01-10 11:08:53,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8333,"chart-only post, no setup text: photo/media with symbol only",
+8334,2022-01-10 11:09:19,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8334,"chart-only post, no setup text: photo/media with symbol only",
+8335,2022-01-10 11:09:44,SHIBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8335,"chart-only post, no setup text: photo/media with symbol only",
+8345,2022-01-11 10:51:34,DOTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8345,"chart-only post, no setup text: photo/media with symbol only",
+8346,2022-01-11 10:52:00,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8346,"chart-only post, no setup text: photo/media with symbol only",
+8347,2022-01-11 10:52:33,QTUMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8347,"chart-only post, no setup text: photo/media with symbol only",
+8348,2022-01-11 10:53:00,XLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8348,"chart-only post, no setup text: photo/media with symbol only",
+8349,2022-01-11 10:53:27,XTZUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8349,"chart-only post, no setup text: photo/media with symbol only",
+8359,2022-01-12 08:28:27,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8359,"chart-only post, no setup text: photo/media with symbol only",
+8360,2022-01-12 08:28:33,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8360,"chart-only post, no setup text: photo/media with symbol only",
+8361,2022-01-12 08:28:38,IOSTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8361,"chart-only post, no setup text: photo/media with symbol only",
+8362,2022-01-12 08:28:44,EOSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8362,"chart-only post, no setup text: photo/media with symbol only",
+8363,2022-01-12 08:28:52,ZILUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8363,"chart-only post, no setup text: photo/media with symbol only",
+8374,2022-01-12 16:32:07,VIPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8374,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+8388,2022-01-13 11:27:18,AVAXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8388,"chart-only post, no setup text: photo/media with symbol only",
+8389,2022-01-13 11:27:33,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8389,"chart-only post, no setup text: photo/media with symbol only",
+8390,2022-01-13 11:27:50,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8390,"chart-only post, no setup text: photo/media with symbol only",
+8391,2022-01-13 11:28:10,UNIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8391,"chart-only post, no setup text: photo/media with symbol only",
+8392,2022-01-13 11:28:34,XLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8392,"chart-only post, no setup text: photo/media with symbol only",
+8400,2022-01-14 11:19:14,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8400,"chart-only post, no setup text: photo/media with symbol only",
+8401,2022-01-14 11:19:19,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8401,"chart-only post, no setup text: photo/media with symbol only",
+8402,2022-01-14 11:19:23,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8402,"chart-only post, no setup text: photo/media with symbol only",
+8403,2022-01-14 11:19:30,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8403,"chart-only post, no setup text: photo/media with symbol only",
+8404,2022-01-14 11:19:34,BAKEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8404,"chart-only post, no setup text: photo/media with symbol only",
+8408,2022-01-15 08:25:40,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8408,"chart-only post, no setup text: photo/media with symbol only",
+8409,2022-01-15 08:25:47,TLMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8409,"chart-only post, no setup text: photo/media with symbol only",
+8411,2022-01-15 08:25:58,KAVAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8411,"chart-only post, no setup text: photo/media with symbol only",
+8412,2022-01-15 08:26:04,UNFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8412,"chart-only post, no setup text: photo/media with symbol only",
+8424,2022-01-16 10:10:23,RUNEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8424,"chart-only post, no setup text: photo/media with symbol only",
+8425,2022-01-16 10:10:43,AKROUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8425,"chart-only post, no setup text: photo/media with symbol only",
+8426,2022-01-16 10:10:51,ZECUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8426,"chart-only post, no setup text: photo/media with symbol only",
+8427,2022-01-16 10:11:19,EOSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8427,"chart-only post, no setup text: photo/media with symbol only",
+8428,2022-01-16 10:11:32,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8428,"chart-only post, no setup text: photo/media with symbol only",
+8434,2022-01-17 09:33:08,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8434,"chart-only post, no setup text: photo/media with symbol only",
+8435,2022-01-17 09:33:14,ENJUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8435,"chart-only post, no setup text: photo/media with symbol only",
+8436,2022-01-17 09:33:20,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8436,"chart-only post, no setup text: photo/media with symbol only",
+8437,2022-01-17 09:33:25,EGLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8437,"chart-only post, no setup text: photo/media with symbol only",
+8438,2022-01-17 09:33:31,CRVUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8438,"chart-only post, no setup text: photo/media with symbol only",
+8449,2022-01-18 10:06:12,UNFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8449,"chart-only post, no setup text: photo/media with symbol only",
+8450,2022-01-18 10:06:19,VETUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8450,"chart-only post, no setup text: photo/media with symbol only",
+8451,2022-01-18 10:06:26,SXPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8451,"chart-only post, no setup text: photo/media with symbol only",
+8452,2022-01-18 10:06:33,TRXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8452,"chart-only post, no setup text: photo/media with symbol only",
+8453,2022-01-18 10:06:40,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8453,"chart-only post, no setup text: photo/media with symbol only",
+8468,2022-01-20 08:46:03,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8468,"chart-only post, no setup text: photo/media with symbol only",
+8469,2022-01-20 08:46:09,SXPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8469,"chart-only post, no setup text: photo/media with symbol only",
+8470,2022-01-20 08:46:16,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8470,"chart-only post, no setup text: photo/media with symbol only",
+8471,2022-01-20 08:46:21,EGLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8471,"chart-only post, no setup text: photo/media with symbol only",
+8472,2022-01-20 08:46:26,CHRUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8472,"chart-only post, no setup text: photo/media with symbol only",
+8483,2022-01-22 08:35:53,LUNAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8483,"chart-only post, no setup text: photo/media with symbol only",
+8484,2022-01-22 08:35:59,KAVAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8484,"chart-only post, no setup text: photo/media with symbol only",
+8485,2022-01-22 08:36:08,EGLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8485,"chart-only post, no setup text: photo/media with symbol only",
+8486,2022-01-22 08:36:15,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8486,"chart-only post, no setup text: photo/media with symbol only",
+8487,2022-01-22 08:36:21,ALGOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8487,"chart-only post, no setup text: photo/media with symbol only",
 8496,2022-01-22 18:45:03,AVAXUSDT,,short,other,,market,77.13,74.81,,,,high,setup,,,no,,,,,8518,1,0,https://t.me/tradecity_pro/8496,VIP template; SL distance stated 1.04%; trailing/TS 75.56,
 8498,2022-01-22 18:45:03,ETHUSDT,,short,other,,,2808.6,2683,,,,high,setup,,,no,,,,,,0,0,https://t.me/tradecity_pro/8498,VIP template; SL distance stated 1.5%; trailing/TS 2730,
 8529,2022-01-25 08:41:49,UNIUSDT,1w,long,range_breakout_trigger,,stop,,,,,,low,setup,,break,yes,,,,,,1,0,https://t.me/tradecity_pro/8529,box breakout up = risky long; author prefers to find a short later (no level),در کوتاه مدت با شکست باکس از بالا میشه لانگ ریسکی گرفت من خودم ترجیح ام اینکه یه پوزیشن شورت خوب رو یونی پیدا کنم
@@ -131,13 +129,13 @@
 8699,2022-02-08 13:56:01,DYDXUSDT,4h,short,range_breakout_trigger,6.403,stop,,5.526,,,,high,setup,,break,yes,,,,,,1,0,https://t.me/tradecity_pro/8699,,برای پوزیشن شورت میتونین بعد از شکستن حمایت 6.403 میتونین برای شورت اقدام کنین تا محدودهه ی 5.526
 8700,2022-02-08 14:00:53,DOTUSDT,,long,range_breakout_trigger,22.66,stop,,25.8,,,,medium,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8700,"'if resistance 22.66 breaks, after confirmation expect targets e.g. 25.8' (side implied)",
 8700,2022-02-08 14:00:53,DOTUSDT,,short,range_breakout_trigger,21.46,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8700,,خوب ارز DOT بعد از ریجکتی که از 22.66 شد الان در حال استراحت هستش اگر حمایت 21.460 از دست داد بعد از تثبیت میتونین برای پوزیشن شورت اقدام کنین
-8701,2022-02-08 14:57:00,SCAMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8701,chart/image-only post: no setup text,
+8701,2022-02-08 14:57:00,SCAMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8701,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
 8706,2022-02-09 11:40:42,SHIBUSDT,,long,pattern,,stop,,,,candle close beyond level,,low,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8706,level not stated in text (chart only),خوب ارز SHIB در یک روند صعودی قرار داره که الان در یک مثلث قرار داره از هر طرفی بشکنه سود خوبی میتونین بکنین فقط مواظب باشین و حتما با مدیریت سرمایه وارد پوزیشن بشین بعد از مقاومت مشخص شده میتونین برای لانگ بعد از شکست ترند و تثبیت میتونین برای شورت اقدام کنین پس حواستون بهش باشه
 8706,2022-02-09 11:40:42,SHIBUSDT,,short,pattern,,stop,,,,candle close beyond level,,low,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8706,level not stated in text (chart only),خوب ارز SHIB در یک روند صعودی قرار داره که الان در یک مثلث قرار داره از هر طرفی بشکنه سود خوبی میتونین بکنین فقط مواظب باشین و حتما با مدیریت سرمایه وارد پوزیشن بشین بعد از مقاومت مشخص شده میتونین برای لانگ بعد از شکست ترند و تثبیت میتونین برای شورت اقدام کنین پس حواستون بهش باشه
 8707,2022-02-09 11:43:28,FTMUSDT,15m,long,pattern,2.2216,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,0,0,https://t.me/tradecity_pro/8707,,ارز FTM در حال تلاش برای شکوندن مقاومت2.2216 هستش اگر شکوند و تثبیت داد میتونین برای لانگ اقدام کنین ولی اگر اون ترند خیلی ضعیف صعودی از دست داد تا حمایت 2.16 احتمال ریزش دارد زیر نظر داشته باشین
 8708,2022-02-09 11:50:43,SANDUSDT,,long,pattern,4.82,stop,,,,multiple touches,,high,setup,,break,yes,,,,,,1,0,https://t.me/tradecity_pro/8708,'after break of 4.82 it will grow well' (side implied),کلا حواستون به متاورس ها باشه دوباره ترند شدن دیشبم که خیلی خوب رشد کردن در حال حاضر ارز SAND بین مقاومت 4.8223 و حمایت 4.55 هستش اگر تو واچ لیست گداشتینش بعد از شکست 4.82 رشد خوبی خواهد کرد و بعد از شکست 4.55 میتونین ریسکی شورت بگیرین اما به شخصه من خودم رو متاورس ها فعلا شورت نمگیرم
 8708,2022-02-09 11:50:43,SANDUSDT,,short,pattern,4.55,stop,,,,multiple touches,,high,setup,,break,yes,,,,,,1,0,https://t.me/tradecity_pro/8708,,کلا حواستون به متاورس ها باشه دوباره ترند شدن دیشبم که خیلی خوب رشد کردن در حال حاضر ارز SAND بین مقاومت 4.8223 و حمایت 4.55 هستش اگر تو واچ لیست گداشتینش بعد از شکست 4.82 رشد خوبی خواهد کرد و بعد از شکست 4.55 میتونین ریسکی شورت بگیرین اما به شخصه من خودم رو متاورس ها فعلا شورت نمگیرم
-8726,2022-02-12 16:07:55,JANGUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8726,chart/image-only post: no setup text,
+8726,2022-02-12 16:07:55,JANGUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8726,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
 8729,2022-02-12 16:47:01,SHIBUSDT,,long,range_breakout_trigger,30,stop,,,,,,high,setup,,break,yes,,,,,,1,0,https://t.me/tradecity_pro/8729,,اما الان SHIB حمایت 28 را به خوبی حفظ کرده و در حال صعود هستش برای لانگ کوتاه مدت میتونین بعد از شکست مقاومت 30 اقدام کنین
 8729,2022-02-12 16:47:01,SHIBUSDT,,short,range_breakout_trigger,28,stop,,,,,,high,setup,,,yes,,,,,,1,0,https://t.me/tradecity_pro/8729,,اما من منتظرم 28 بشکونه برای شورت اقدام کنم پس حواستون بهش باشه
 8730,2022-02-12 16:52:12,SOLUSDT,,long,range_breakout_trigger,107,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8730,,ولی برای لانگ منتظر تثبیت بالای 107 باشین یعد از اون برای لانگ اقدام کنین
@@ -249,7 +247,7 @@
 8962,2022-03-16 12:55:42,IOSTUSDT,15m,short,range_breakout_trigger,0.02174,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,8968,1,0,https://t.me/tradecity_pro/8962,,برای شورت هم میتونین بعد از شکست حمایت 0.02174 بعد از تثبیت اقدام کنین
 8963,2022-03-16 13:03:27,CELERUSDT,1d,long,pattern,0.03736,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8963,,ارز CELER در تایم فریم روزانه زیر یک ترند نزولی هستش و در تایم فریم 4 ساعته حمایت 0.03327 به خوبی حفظ کرده برای پوزیشن لانگ بعد از تثبیت بالای مقاومت 0.03736 میتونین اقدام کنین
 8963,2022-03-16 13:03:27,CELERUSDT,1d,short,range_breakout_trigger,0.03327,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8963,,برای شورت هم بعد از شکست حمایت 0.03327 بعد از تثبیت وارد میشیم
-8979,2022-03-17 09:32:58,VIPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8979,chart/image-only post: no setup text,
+8979,2022-03-17 09:32:58,VIPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/8979,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
 8985,2022-03-17 16:58:35,KSMUSDT,1h,long,pattern,135.8,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8985,,ارزKSM در تایم فریم 1 ساعته بالای حمایت 128.5 هست و خودشو بالای ترند صعودی ضعیفی نگه داشته اگر موفق به شکست مقاومت 135.8 بشود و تثبیت بالای این مقاومت بده میتونین برای لانگ اقدام کنین
 8985,2022-03-17 16:58:35,KSMUSDT,1h,short,range_breakout_trigger,128.5,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8985,,برای شورت هم بعد از شکستن حمایت 128.5 میتونین بعد از تثبیت اقدام کنین
 8986,2022-03-17 17:05:47,ENJUSDT,1h,long,range_breakout_trigger,1.433,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/8986,,ارز ENJ درگیر مقاومت 1.433 اگر موفق به شکست این مقاومت بشه بعد از تثبیت در تایم فریم یک ساعته میتونین برای لانگ اقدام کنین برای پوزیشن شورت هم بعد از شکست حمایت 1.372  میتونین بعد از تثبیت ورود کنین
@@ -405,358 +403,220 @@
 9370,2022-06-15 15:59:05,ADAUSDT,,long,range_breakout_trigger,0.5175,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,0,https://t.me/tradecity_pro/9370,,برای لانگ هم بعد شکست و تثبیت بالای مقاومت 0.5175 میتونین اقدام کنین
 9370,2022-06-15 15:59:05,ADAUSDT,,short,range_breakout_trigger,0.4385,stop,,,,,,high,setup,,break,yes,,,,,,1,0,https://t.me/tradecity_pro/9370,,ارز ADA بین محدوده 0.5175 و حمایت 0.4385 در حال رنج هست بعد از شکست حمایت میتونین برای شورت اقدام کنین
 9378,2022-06-18 08:49:39,BNBUSDT,,short,range_breakout_trigger,199,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/9378,,zire 199$ mishe short krd
-9513,2022-07-18 06:51:34,TOTAL2,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9513,chart/image-only post: no setup text,
-9514,2022-07-18 06:52:15,USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9514,chart/image-only post: no setup text,
-9520,2022-07-19 21:12:19,TIP_2USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9520,chart/image-only post: no setup text,
-9523,2022-07-20 16:04:48,TIP_3USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9523,chart/image-only post: no setup text,
-9529,2022-07-21 14:57:36,TIP_4USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9529,chart/image-only post: no setup text,
-9543,2022-07-25 12:08:42,TIP_5USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9543,chart/image-only post: no setup text,
-9575,2022-08-01 11:00:22,TIP_6USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9575,chart/image-only post: no setup text,
-9695,2022-08-28 09:20:32,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9695,chart/image-only post: no setup text,
-9698,2022-08-29 09:44:41,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9698,chart/image-only post: no setup text,
-9709,2022-09-01 06:55:22,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9709,chart/image-only post: no setup text,
-9712,2022-09-02 07:03:39,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9712,chart/image-only post: no setup text,
-9717,2022-09-03 06:57:42,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9717,chart/image-only post: no setup text,
-9771,2022-09-21 15:44:04,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9771,chart/image-only post: no setup text,
-9978,2022-11-05 06:22:13,BINANCEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9978,chart/image-only post: no setup text,
-10006,2022-11-06 10:30:19,MOHMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10006,chart/image-only post: no setup text,
-10074,2022-11-20 08:24:24,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10074,chart/image-only post: no setup text,
-10174,2022-12-07 09:20:12,APEUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10174,chart/image-only post: no setup text,
-10212,2022-12-17 08:42:39,FUN_YA_AFSOSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10212,chart/image-only post: no setup text,
-10256,2022-12-25 06:46:15,YOUTUBEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/10256,chart/image-only post: no setup text,
-10257,2022-12-25 06:56:51,YOUTUBEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10257,chart/image-only post: no setup text,
-10409,2023-01-28 09:11:49,WHITE_PAPERUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10409,chart/image-only post: no setup text,
-10410,2023-01-28 09:14:46,DISCORDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10410,chart/image-only post: no setup text,
-10411,2023-01-28 09:18:14,DISCORDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10411,chart/image-only post: no setup text,
-10420,2023-01-30 13:34:46,DISCORDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10420,chart/image-only post: no setup text,
-10529,2023-02-06 07:17:06,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10529,chart/image-only post: no setup text,
-10530,2023-02-06 07:18:10,KSMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10530,chart/image-only post: no setup text,
-10531,2023-02-06 07:21:06,ARUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10531,chart/image-only post: no setup text,
-10575,2023-02-08 21:18:58,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10575,chart/image-only post: no setup text,
+9513,2022-07-18 06:51:34,TOTAL2,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9513,"chart-only post, no setup text: photo/media with symbol only",
+9514,2022-07-18 06:52:15,USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9514,"chart-only post, no setup text: photo/media with symbol only",
+9520,2022-07-19 21:12:19,TIP_2USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9520,"chart-only post, no setup text: photo/media with symbol only",
+9523,2022-07-20 16:04:48,TIP_3USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9523,"chart-only post, no setup text: photo/media with symbol only",
+9529,2022-07-21 14:57:36,TIP_4USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9529,"chart-only post, no setup text: photo/media with symbol only",
+9543,2022-07-25 12:08:42,TIP_5USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9543,"chart-only post, no setup text: photo/media with symbol only",
+9575,2022-08-01 11:00:22,TIP_6USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/9575,"chart-only post, no setup text: photo/media with symbol only",
+9978,2022-11-05 06:22:13,BINANCEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/9978,"chart-only post, no setup text: photo/media with symbol only",
+10006,2022-11-06 10:30:19,MOHMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10006,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+10074,2022-11-20 08:24:24,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10074,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+10174,2022-12-07 09:20:12,APEUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10174,"chart-only post, no setup text: TradingView chart snapshot link",
+10212,2022-12-17 08:42:39,FUN_YA_AFSOSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10212,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+10256,2022-12-25 06:46:15,YOUTUBEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/10256,"chart-only post, no setup text: video link (YouTube)",
+10257,2022-12-25 06:56:51,YOUTUBEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10257,"chart-only post, no setup text: video link (YouTube)",
+10409,2023-01-28 09:11:49,WHITE_PAPERUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10409,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+10410,2023-01-28 09:14:46,DISCORDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10410,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+10411,2023-01-28 09:18:14,DISCORDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10411,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+10420,2023-01-30 13:34:46,DISCORDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10420,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+10529,2023-02-06 07:17:06,COMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10529,"chart-only post, no setup text: TradingView chart snapshot link",
+10530,2023-02-06 07:18:10,KSMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10530,"chart-only post, no setup text: TradingView chart snapshot link",
+10531,2023-02-06 07:21:06,ARUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/10531,"chart-only post, no setup text: TradingView chart snapshot link",
 10587,2023-02-09 12:54:23,BTCUSDT,,short,range_breakout_trigger,22500,stop,,,,BTC context,,low,setup,,,yes,,,,,,0,0,https://t.me/tradecity_pro/10587,BTC: shorts meaningless unless 22500 is lost; panic-sell risk below it,در مورد مارکت هم حمایت 22500 بیت کوین خیلی مهمه تا از دست نره تقریبا پوزیشن شورت بی معنیه ولی در صورت از دست رفتنش احتمال به وجود اومدن پنیک سل در بازار وجود داره
-11359,2023-03-27 07:10:20,ONEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/11359,chart/image-only post: no setup text,
-11772,2023-04-26 05:00:13,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/11772,chart/image-only post: no setup text,
-12221,2023-05-27 06:58:27,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12221,chart/image-only post: no setup text,
-12264,2023-05-29 13:17:38,FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/12264,chart/image-only post: no setup text,
-12642,2023-06-30 14:54:23,JUST_FOR_FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12642,chart/image-only post: no setup text,
-12644,2023-06-30 14:59:10,JUST_FOR_FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12644,chart/image-only post: no setup text,
-12646,2023-06-30 15:02:48,NEW_MEMBERSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12646,chart/image-only post: no setup text,
-12666,2023-07-02 06:59:54,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12666,chart/image-only post: no setup text,
-12671,2023-07-02 16:05:39,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12671,chart/image-only post: no setup text,
+11359,2023-03-27 07:10:20,ONEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/11359,"chart-only post, no setup text: TradingView chart snapshot link",
+12264,2023-05-29 13:17:38,FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/12264,"chart-only post, no setup text: photo/media with symbol only",
+12642,2023-06-30 14:54:23,JUST_FOR_FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12642,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+12644,2023-06-30 14:59:10,JUST_FOR_FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12644,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+12646,2023-06-30 15:02:48,NEW_MEMBERSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12646,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+12666,2023-07-02 06:59:54,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12666,"chart-only post, no setup text: photo/media with symbol only",
+12671,2023-07-02 16:05:39,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/12671,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
 12917,2023-07-20 16:35:37,EURGBP,1h,short,pattern,,,,,,,,low,setup,,,yes,,,,,12918,1,1,https://t.me/tradecity_pro/12917,forex position card; strategy=الگوی نموداری سقف دوقلو; levels only on image,
 12988,2023-07-24 10:52:04,USDCHF,4h,short,pattern,,,,,,,,low,setup,,,yes,,,,,,1,1,https://t.me/tradecity_pro/12988,forex position card; strategy=الگوی نموداری سقف دوقلو; levels only on image,
 13120,2023-08-02 11:44:18,NZDCHF,4h,short,range_breakout_trigger,,,,,,,,low,setup,,,yes,,,,,,1,1,https://t.me/tradecity_pro/13120,forex position card; strategy=شکست; levels only on image,
-13164,2023-08-04 10:54:27,PUMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/13164,chart/image-only post: no setup text,
 13229,2023-08-07 19:08:17,FTMUSDT,1d,long,pattern,0.32,stop,,,,candle close beyond level; multiple touches,,medium,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/13229,,همچنین در صورت شکست الگو وج از بالا و تثبیت روزانه بالای 0.32 میتوان برای ورود دوباره به این ارز اقدام کرد
 13229,2023-08-07 19:08:17,FTMUSDT,1d,short,range_breakout_trigger,0.2313,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/13229,,در حال حاضر روی حمایت مهم 0.2313 قرار دارد و در صورت شکست آن در این تایم فریم میتوان در تایم فریم پایین تر  دنبال تریگر برای معاملات فروش گشت
-13967,2023-10-07 05:40:14,MOHEMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/13967,chart/image-only post: no setup text,
-13994,2023-10-08 18:44:06,FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/13994,chart/image-only post: no setup text,
-14045,2023-10-12 13:18:13,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14045,chart/image-only post: no setup text,
-14550,2023-11-27 09:20:31,SNXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14550,chart/image-only post: no setup text,
-14556,2023-11-27 20:26:13,GALAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14556,chart/image-only post: no setup text,
-14569,2023-11-28 19:51:55,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14569,chart/image-only post: no setup text,
-14572,2023-11-29 07:52:08,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14572,chart/image-only post: no setup text,
-14595,2023-12-01 14:29:26,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14595,chart/image-only post: no setup text,
-14616,2023-12-03 08:53:27,RVNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14616,chart/image-only post: no setup text,
-14623,2023-12-03 16:38:35,CRVUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14623,chart/image-only post: no setup text,
-14637,2023-12-04 17:57:57,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14637,chart/image-only post: no setup text,
-14671,2023-12-06 19:15:39,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14671,chart/image-only post: no setup text,
-14680,2023-12-07 12:12:27,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14680,chart/image-only post: no setup text,
-14711,2023-12-10 17:10:36,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14711,chart/image-only post: no setup text,
-14722,2023-12-11 08:56:58,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14722,chart/image-only post: no setup text,
-14731,2023-12-12 09:07:13,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14731,chart/image-only post: no setup text,
-14744,2023-12-13 08:54:28,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14744,chart/image-only post: no setup text,
-14814,2023-12-18 13:13:38,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14814,chart/image-only post: no setup text,
-14815,2023-12-18 13:16:32,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14815,chart/image-only post: no setup text,
-14832,2023-12-20 08:14:22,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14832,chart/image-only post: no setup text,
-14899,2023-12-26 11:17:34,ADMINUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14899,chart/image-only post: no setup text,
-15046,2024-01-11 10:40:33,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15046,chart/image-only post: no setup text,
-15054,2024-01-12 10:36:04,PUBLISHEDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15054,chart/image-only post: no setup text,
-15060,2024-01-13 07:50:03,GAMMAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15060,chart/image-only post: no setup text,
-15173,2024-01-28 21:54:27,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/15173,chart/image-only post: no setup text,
-15227,2024-02-04 14:22:57,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15227,chart/image-only post: no setup text,
-15233,2024-02-04 18:25:26,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15233,chart/image-only post: no setup text,
-15246,2024-02-05 18:09:45,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15246,chart/image-only post: no setup text,
-15372,2024-02-19 09:15:23,SUSHIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15372,chart/image-only post: no setup text,
-15489,2024-03-01 07:00:18,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15489,chart/image-only post: no setup text,
-15712,2024-03-29 06:50:02,MOHMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15712,chart/image-only post: no setup text,
-15717,2024-03-29 20:23:01,DOPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15717,chart/image-only post: no setup text,
-15735,2024-04-01 07:05:52,DOPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15735,chart/image-only post: no setup text,
-15865,2024-04-18 13:16:14,BINGXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/15865,chart/image-only post: no setup text,
-15866,2024-04-18 13:21:28,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15866,chart/image-only post: no setup text,
-15938,2024-04-30 16:10:07,MANAM_MANAMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15938,chart/image-only post: no setup text,
-15939,2024-04-30 16:20:01,ETERAZUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15939,chart/image-only post: no setup text,
-16068,2024-05-13 10:39:19,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16068,chart/image-only post: no setup text,
-16085,2024-05-15 11:03:39,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16085,chart/image-only post: no setup text,
-16097,2024-05-16 08:21:08,MOHMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16097,chart/image-only post: no setup text,
-16133,2024-05-19 12:06:23,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16133,chart/image-only post: no setup text,
-16533,2024-06-11 17:35:39,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16533,chart/image-only post: no setup text,
-16682,2024-06-19 16:16:11,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16682,chart/image-only post: no setup text,
-16776,2024-06-23 17:05:04,LOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16776,chart/image-only post: no setup text,
-16814,2024-06-29 06:45:45,BINGXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16814,chart/image-only post: no setup text,
-16916,2024-07-04 06:17:38,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16916,chart/image-only post: no setup text,
-17007,2024-07-08 08:59:30,HACKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17007,chart/image-only post: no setup text,
-17414,2024-08-04 12:07:15,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17414,chart/image-only post: no setup text,
-17491,2024-08-07 10:36:29,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17491,chart/image-only post: no setup text,
-17526,2024-08-09 22:04:14,SOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17526,chart/image-only post: no setup text,
-17656,2024-08-18 14:31:50,TAHLILUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17656,chart/image-only post: no setup text,
-17669,2024-08-19 10:42:06,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17669,chart/image-only post: no setup text,
+13967,2023-10-07 05:40:14,MOHEMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/13967,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+13994,2023-10-08 18:44:06,FUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/13994,"chart-only post, no setup text: photo/media with symbol only",
+14550,2023-11-27 09:20:31,SNXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14550,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14556,2023-11-27 20:26:13,GALAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14556,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14569,2023-11-28 19:51:55,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14569,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14572,2023-11-29 07:52:08,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14572,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14616,2023-12-03 08:53:27,RVNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14616,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14623,2023-12-03 16:38:35,CRVUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14623,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14637,2023-12-04 17:57:57,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14637,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14671,2023-12-06 19:15:39,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14671,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14680,2023-12-07 12:12:27,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14680,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14711,2023-12-10 17:10:36,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14711,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14722,2023-12-11 08:56:58,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14722,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14731,2023-12-12 09:07:13,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14731,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14744,2023-12-13 08:54:28,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14744,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14814,2023-12-18 13:13:38,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14814,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14815,2023-12-18 13:16:32,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14815,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14832,2023-12-20 08:14:22,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14832,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+14899,2023-12-26 11:17:34,ADMINUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/14899,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+15046,2024-01-11 10:40:33,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15046,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+15054,2024-01-12 10:36:04,PUBLISHEDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15054,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+15227,2024-02-04 14:22:57,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15227,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+15233,2024-02-04 18:25:26,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15233,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+15246,2024-02-05 18:09:45,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15246,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+15372,2024-02-19 09:15:23,SUSHIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15372,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+15712,2024-03-29 06:50:02,MOHMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15712,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+15717,2024-03-29 20:23:01,DOPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15717,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+15735,2024-04-01 07:05:52,DOPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15735,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+15865,2024-04-18 13:16:14,BINGXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/15865,"chart-only post, no setup text: photo/media with symbol only",
+15938,2024-04-30 16:10:07,MANAM_MANAMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15938,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+15939,2024-04-30 16:20:01,ETERAZUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/15939,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+16068,2024-05-13 10:39:19,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16068,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+16085,2024-05-15 11:03:39,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16085,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+16133,2024-05-19 12:06:23,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16133,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+16533,2024-06-11 17:35:39,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16533,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+16814,2024-06-29 06:45:45,BINGXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16814,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+16916,2024-07-04 06:17:38,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/16916,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17007,2024-07-08 08:59:30,HACKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17007,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17414,2024-08-04 12:07:15,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17414,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+17669,2024-08-19 10:42:06,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17669,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
 17827,2024-08-27 19:07:17,ETHUSDT,,short,range_breakout_trigger,2675.9,stop,,,5,,triggered; RR~5 reported in same post (17827),high,setup,,break,yes,,,,18047,,0,1,https://t.me/tradecity_pro/17827,"live report: short opened on break of 2675.90, RR ~5 reached at time of post",با شکست حمایت 2675.90 پوزیشن شورت باز شد ریسک به ریوارد نزدیک 5
-17828,2024-08-27 19:12:46,ETHUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17828,chart/image-only post: no setup text,
-17829,2024-08-27 19:15:56,ETHUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17829,chart/image-only post: no setup text,
-17830,2024-08-27 19:20:49,ETHUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17830,chart/image-only post: no setup text,
-17838,2024-08-28 04:53:14,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17838,chart/image-only post: no setup text,
-17841,2024-08-28 06:09:38,LDOUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17841,chart/image-only post: no setup text,
-17842,2024-08-28 06:09:58,LDOUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17842,chart/image-only post: no setup text,
-17843,2024-08-28 06:14:57,EGLDUSDT,1w,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17843,chart/image-only post: no setup text,
-17846,2024-08-28 07:09:08,ROSEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17846,chart/image-only post: no setup text,
-17847,2024-08-28 07:14:41,ROSEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17847,chart/image-only post: no setup text,
-17848,2024-08-28 07:15:57,GEMSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17848,chart/image-only post: no setup text,
-17849,2024-08-28 07:30:58,ROSEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17849,chart/image-only post: no setup text,
-17850,2024-08-28 08:46:17,AAVEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17850,chart/image-only post: no setup text,
-17861,2024-08-28 15:49:49,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17861,chart/image-only post: no setup text,
-17868,2024-08-28 19:15:35,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17868,chart/image-only post: no setup text,
+17828,2024-08-27 19:12:46,ETHUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17828,"chart-only post, no setup text: photo/media with symbol only",
+17829,2024-08-27 19:15:56,ETHUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17829,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17830,2024-08-27 19:20:49,ETHUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17830,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17841,2024-08-28 06:09:38,LDOUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17841,"chart-only post, no setup text: photo/media with symbol only",
+17842,2024-08-28 06:09:58,LDOUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17842,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17843,2024-08-28 06:14:57,EGLDUSDT,1w,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17843,"chart-only post, no setup text: photo/media with symbol only",
+17846,2024-08-28 07:09:08,ROSEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17846,"chart-only post, no setup text: photo/media with symbol only",
+17847,2024-08-28 07:14:41,ROSEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17847,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17848,2024-08-28 07:15:57,GEMSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17848,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17849,2024-08-28 07:30:58,ROSEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/17849,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+17850,2024-08-28 08:46:17,AAVEUSDT,1d,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17850,"chart-only post, no setup text: photo/media with symbol only",
+17868,2024-08-28 19:15:35,MATICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/17868,"chart-only post, no setup text: photo/media with symbol only",
 17879,2024-08-29 08:10:09,APTUSDT,1d,long,range_breakout_trigger,7.52,stop,,,,candle close beyond level; RSI; volume; confirmation candle,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/17879,,تثبیت بالای  7.52 میتونه تریگر خوبی برای لانگ باشه  یا  خرید
-18040,2024-09-03 09:55:51,DOGSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18040,chart/image-only post: no setup text,
-18041,2024-09-03 09:56:15,DOGSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18041,chart/image-only post: no setup text,
+18040,2024-09-03 09:55:51,DOGSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18040,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+18041,2024-09-03 09:56:15,DOGSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18041,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
 18047,2024-09-03 17:00:09,ETHUSDT,15m,short,fakeout,,market,,,,setup candle,save_profit (18047 same post),low,setup,,break,yes,,,,,,1,0,https://t.me/tradecity_pro/18047,trend weakness + fake top; setup candle gave small stop; author took profit (save-profit),
-18070,2024-09-04 09:55:28,LOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/18070,chart/image-only post: no setup text,
-18072,2024-09-04 14:23:32,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18072,chart/image-only post: no setup text,
-18073,2024-09-04 14:24:14,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18073,chart/image-only post: no setup text,
-18165,2024-09-09 05:18:27,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18165,chart/image-only post: no setup text,
-18174,2024-09-09 14:23:44,BNBUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/18174,chart/image-only post: no setup text,
-18175,2024-09-09 14:24:20,BNBUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18175,chart/image-only post: no setup text,
-18176,2024-09-09 14:32:13,BNBUSDT,15m,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/18176,chart/image-only post: no setup text,
-18188,2024-09-10 06:44:04,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18188,chart/image-only post: no setup text,
-18286,2024-09-16 09:59:41,FTMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18286,chart/image-only post: no setup text,
-18318,2024-09-17 17:03:40,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18318,chart/image-only post: no setup text,
-18355,2024-09-19 07:35:30,FTMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18355,chart/image-only post: no setup text,
-18374,2024-09-20 14:22:00,FTMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18374,chart/image-only post: no setup text,
-18384,2024-09-20 18:03:06,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18384,chart/image-only post: no setup text,
-18389,2024-09-21 07:06:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18389,chart/image-only post: no setup text,
-18481,2024-09-27 06:12:37,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18481,chart/image-only post: no setup text,
-18498,2024-09-27 14:53:46,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18498,chart/image-only post: no setup text,
-18504,2024-09-28 07:03:24,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,18505;18512;18519;18520;18521,0,0,https://t.me/tradecity_pro/18504,chart/image-only post: no setup text,
-18709,2024-10-11 06:32:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18709,chart/image-only post: no setup text,
-18714,2024-10-11 09:41:39,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18714,chart/image-only post: no setup text,
-18807,2024-10-21 14:57:59,LOMBARDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18807,chart/image-only post: no setup text,
-18978,2024-11-11 18:51:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18978,chart/image-only post: no setup text,
-18979,2024-11-11 18:52:40,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18979,chart/image-only post: no setup text,
-18991,2024-11-12 08:44:24,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18991,chart/image-only post: no setup text,
+18174,2024-09-09 14:23:44,BNBUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/18174,"chart-only post, no setup text: photo/media with symbol only",
+18175,2024-09-09 14:24:20,BNBUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18175,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+18176,2024-09-09 14:32:13,BNBUSDT,15m,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/18176,"chart-only post, no setup text: photo/media with symbol only",
+18286,2024-09-16 09:59:41,FTMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18286,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+18481,2024-09-27 06:12:37,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18481,"chart-only post, no setup text: video link (YouTube)",
+18498,2024-09-27 14:53:46,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18498,"chart-only post, no setup text: video link (YouTube)",
+18504,2024-09-28 07:03:24,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,18505;18512;18519;18520;18521,0,0,https://t.me/tradecity_pro/18504,"chart-only post, no setup text: video link (YouTube)",
+18709,2024-10-11 06:32:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18709,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+18807,2024-10-21 14:57:59,LOMBARDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18807,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+18991,2024-11-12 08:44:24,DOGEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/18991,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
 19070,2024-11-16 10:04:25,BLURUSDT,1d,long,range_breakout_trigger,2758,stop,1800,,,,,high,setup,,break,yes,,,,,19071;19309;19310,1,0,https://t.me/tradecity_pro/19070,,خودم از الان بعد از 2758 استاپ بای میزارم
-19197,2024-11-24 10:15:40,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19197,chart/image-only post: no setup text,
-19198,2024-11-24 10:16:06,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19198,chart/image-only post: no setup text,
-19210,2024-11-25 14:35:56,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19210,chart/image-only post: no setup text,
-19211,2024-11-25 14:36:19,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19211,chart/image-only post: no setup text,
-19239,2024-11-27 15:59:49,RENDERUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19239,chart/image-only post: no setup text,
-19273,2024-12-01 11:39:36,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19273,chart/image-only post: no setup text,
-19282,2024-12-01 19:18:01,USDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19282,chart/image-only post: no setup text,
-19283,2024-12-01 19:18:01,USDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19283,chart/image-only post: no setup text,
-19287,2024-12-02 18:44:06,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19287,chart/image-only post: no setup text,
-19334,2024-12-04 16:32:39,CHARTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19334,chart/image-only post: no setup text,
-19335,2024-12-04 16:33:10,CHARTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19335,chart/image-only post: no setup text,
-19346,2024-12-05 07:55:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19346,chart/image-only post: no setup text,
-19417,2024-12-08 19:33:46,RUNEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19417,chart/image-only post: no setup text,
-19455,2024-12-10 17:20:45,CFXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19455,chart/image-only post: no setup text,
-19490,2024-12-11 18:33:23,ONDOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19490,chart/image-only post: no setup text,
-19504,2024-12-12 13:58:11,PUBLISHEDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19504,chart/image-only post: no setup text,
-19505,2024-12-12 13:58:37,PUBLISHEDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19505,chart/image-only post: no setup text,
-19571,2024-12-15 13:16:54,WLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19571,chart/image-only post: no setup text,
-19582,2024-12-16 10:32:57,DEFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19582,chart/image-only post: no setup text,
-19587,2024-12-16 12:14:59,HNTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19587,chart/image-only post: no setup text,
-19588,2024-12-16 12:15:34,HNTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19588,chart/image-only post: no setup text,
-19602,2024-12-17 18:54:45,BTCUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19602,chart/image-only post: no setup text,
-19616,2024-12-18 10:11:36,LOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/19616,chart/image-only post: no setup text,
-19617,2024-12-18 10:12:08,LOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19617,chart/image-only post: no setup text,
-19618,2024-12-18 10:13:32,LOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19618,chart/image-only post: no setup text,
-19678,2024-12-20 03:12:22,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19678,chart/image-only post: no setup text,
-19695,2024-12-20 12:08:15,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19695,chart/image-only post: no setup text,
-19750,2024-12-22 11:17:12,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19750,chart/image-only post: no setup text,
-19752,2024-12-22 11:55:23,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19752,chart/image-only post: no setup text,
-19793,2024-12-25 09:22:23,SOALUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19793,chart/image-only post: no setup text,
-19798,2024-12-25 10:40:14,SONICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19798,chart/image-only post: no setup text,
-19826,2024-12-26 10:38:39,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19826,chart/image-only post: no setup text,
-19882,2024-12-31 07:55:03,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19882,chart/image-only post: no setup text,
-19883,2024-12-31 07:57:53,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19883,chart/image-only post: no setup text,
-19900,2025-01-01 11:35:47,FTMUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19900,chart/image-only post: no setup text,
-19901,2025-01-01 11:35:47,FTMUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19901,chart/image-only post: no setup text,
-19902,2025-01-01 11:35:52,FTMUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19902,chart/image-only post: no setup text,
-19938,2025-01-04 15:45:23,SAMANUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19938,chart/image-only post: no setup text,
-19973,2025-01-07 10:55:51,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19973,chart/image-only post: no setup text,
-19974,2025-01-07 10:57:47,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19974,chart/image-only post: no setup text,
-20060,2025-01-12 11:23:04,MOHEMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20060,chart/image-only post: no setup text,
-20076,2025-01-13 08:14:59,DEFAIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20076,chart/image-only post: no setup text,
-20095,2025-01-13 14:39:17,SHABUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20095,chart/image-only post: no setup text,
-20108,2025-01-14 12:12:16,SONYUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20108,chart/image-only post: no setup text,
-20115,2025-01-14 18:08:21,SONYUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20115,chart/image-only post: no setup text,
-20137,2025-01-16 08:50:40,XVSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20137,chart/image-only post: no setup text,
-20138,2025-01-16 08:51:08,XVSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20138,chart/image-only post: no setup text,
-20149,2025-01-16 16:41:13,SONYUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20149,chart/image-only post: no setup text,
-20159,2025-01-17 09:49:55,DEFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20159,chart/image-only post: no setup text,
-20163,2025-01-17 10:47:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20163,chart/image-only post: no setup text,
-20200,2025-01-20 18:06:49,CHARTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20200,chart/image-only post: no setup text,
-20313,2025-01-28 20:42:49,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20313,chart/image-only post: no setup text,
-20356,2025-02-01 07:40:01,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20356,chart/image-only post: no setup text,
-20378,2025-02-02 08:20:20,DEFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20378,chart/image-only post: no setup text,
-20413,2025-02-03 10:40:28,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20413,chart/image-only post: no setup text,
-20419,2025-02-03 13:51:33,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20419,chart/image-only post: no setup text,
-20453,2025-02-05 06:06:26,SPOTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20453,chart/image-only post: no setup text,
-20506,2025-02-07 05:36:49,TRADEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20506,chart/image-only post: no setup text,
-20572,2025-02-10 06:00:10,BULLRUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20572,chart/image-only post: no setup text,
-20642,2025-02-12 10:30:59,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20642,chart/image-only post: no setup text,
-20686,2025-02-14 18:48:54,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20686,chart/image-only post: no setup text,
-20705,2025-02-15 12:27:05,BULLRUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20705,chart/image-only post: no setup text,
-20771,2025-02-19 10:28:59,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/20771,chart/image-only post: no setup text,
-20772,2025-02-19 10:28:59,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20772,chart/image-only post: no setup text,
-20780,2025-02-19 19:10:06,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20780,chart/image-only post: no setup text,
-20790,2025-02-20 05:12:57,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20790,chart/image-only post: no setup text,
-20805,2025-02-21 06:20:00,VATANUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20805,chart/image-only post: no setup text,
-20806,2025-02-21 06:21:04,SCAMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20806,chart/image-only post: no setup text,
-20812,2025-02-22 07:52:39,BYBITUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/20812,chart/image-only post: no setup text,
-20813,2025-02-22 07:52:39,BYBITUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20813,chart/image-only post: no setup text,
-20855,2025-02-24 13:00:09,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20855,chart/image-only post: no setup text,
-20856,2025-02-24 13:02:23,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20856,chart/image-only post: no setup text,
-20888,2025-02-27 13:46:16,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20888,chart/image-only post: no setup text,
-20923,2025-03-02 15:02:41,SOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20923,chart/image-only post: no setup text,
-20932,2025-03-03 04:58:15,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20932,chart/image-only post: no setup text,
-20951,2025-03-04 05:15:44,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20951,chart/image-only post: no setup text,
-20979,2025-03-05 20:25:26,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20979,chart/image-only post: no setup text,
-21004,2025-03-07 06:01:17,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21004,chart/image-only post: no setup text,
-21087,2025-03-10 18:50:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21087,chart/image-only post: no setup text,
-21107,2025-03-10 20:57:09,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21107,chart/image-only post: no setup text,
-21159,2025-03-13 09:57:27,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21159,chart/image-only post: no setup text,
-21172,2025-03-13 15:44:05,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21172,chart/image-only post: no setup text,
-21200,2025-03-16 20:08:59,UNIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21200,chart/image-only post: no setup text,
-21242,2025-03-21 11:55:19,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21242,chart/image-only post: no setup text,
-21265,2025-03-23 11:58:13,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21265,chart/image-only post: no setup text,
-21270,2025-03-24 11:14:39,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21270,chart/image-only post: no setup text,
-21271,2025-03-25 10:50:50,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21271,chart/image-only post: no setup text,
-21273,2025-03-26 11:46:13,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21273,chart/image-only post: no setup text,
-21279,2025-03-28 11:16:29,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21279,chart/image-only post: no setup text,
-21284,2025-03-28 14:05:57,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21284,chart/image-only post: no setup text,
-21287,2025-03-29 13:17:44,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21287,chart/image-only post: no setup text,
-21291,2025-03-29 13:21:49,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21291,chart/image-only post: no setup text,
-21292,2025-03-29 13:21:50,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21292,chart/image-only post: no setup text,
-21296,2025-03-30 10:26:26,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21296,chart/image-only post: no setup text,
-21297,2025-03-30 10:39:48,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21297,chart/image-only post: no setup text,
-21304,2025-03-30 17:20:27,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21304,chart/image-only post: no setup text,
-21305,2025-03-30 17:20:46,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21305,chart/image-only post: no setup text,
-21316,2025-03-31 10:05:14,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21316,chart/image-only post: no setup text,
-21325,2025-04-01 09:32:25,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21325,chart/image-only post: no setup text,
-21337,2025-04-03 08:55:46,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21337,chart/image-only post: no setup text,
-21395,2025-04-05 14:12:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21395,chart/image-only post: no setup text,
-21403,2025-04-06 08:27:24,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21403,chart/image-only post: no setup text,
-21417,2025-04-06 14:08:29,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21417,chart/image-only post: no setup text,
-21425,2025-04-06 18:52:23,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21425,chart/image-only post: no setup text,
-21426,2025-04-06 18:52:38,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21426,chart/image-only post: no setup text,
-21438,2025-04-06 20:47:55,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21438,chart/image-only post: no setup text,
-21444,2025-04-07 08:42:48,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21444,chart/image-only post: no setup text,
-21507,2025-04-09 16:09:36,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21507,chart/image-only post: no setup text,
-21552,2025-04-11 07:47:45,MANAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21552,chart/image-only post: no setup text,
-21557,2025-04-11 10:36:19,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21557,chart/image-only post: no setup text,
-21609,2025-04-13 18:50:31,OMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21609,chart/image-only post: no setup text,
-21633,2025-04-15 06:30:08,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21633,chart/image-only post: no setup text,
-21665,2025-04-17 05:39:39,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21665,chart/image-only post: no setup text,
-21682,2025-04-18 05:50:58,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21682,chart/image-only post: no setup text,
-21749,2025-04-22 03:55:22,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21749,chart/image-only post: no setup text,
-21773,2025-04-23 04:20:01,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21773,chart/image-only post: no setup text,
-21798,2025-04-24 04:34:51,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21798,chart/image-only post: no setup text,
-21820,2025-04-25 05:03:20,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21820,chart/image-only post: no setup text,
-21821,2025-04-25 06:14:10,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21821,chart/image-only post: no setup text,
-21823,2025-04-25 06:56:56,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21823,chart/image-only post: no setup text,
-21845,2025-04-26 07:44:01,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21845,chart/image-only post: no setup text,
-21846,2025-04-26 13:10:37,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21846,chart/image-only post: no setup text,
-21902,2025-04-29 08:31:20,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/21902,chart/image-only post: no setup text,
-21907,2025-04-29 08:54:28,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21907,chart/image-only post: no setup text,
-21909,2025-04-29 10:06:35,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21909,chart/image-only post: no setup text,
-22066,2025-05-08 03:32:09,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/22066,chart/image-only post: no setup text,
-22073,2025-05-08 16:55:26,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22073,chart/image-only post: no setup text,
-22078,2025-05-09 04:42:12,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/22078,chart/image-only post: no setup text,
-22132,2025-05-11 18:11:28,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22132,chart/image-only post: no setup text,
-22167,2025-05-14 03:29:43,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/22167,chart/image-only post: no setup text,
-22198,2025-05-17 03:11:57,MOHEMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22198,chart/image-only post: no setup text,
-22226,2025-05-18 14:55:43,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22226,chart/image-only post: no setup text,
-22227,2025-05-18 14:57:02,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22227,chart/image-only post: no setup text,
-22313,2025-05-24 19:31:18,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22313,chart/image-only post: no setup text,
-22314,2025-05-24 19:31:56,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22314,chart/image-only post: no setup text,
-22532,2025-06-07 03:41:58,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/22532,chart/image-only post: no setup text,
-22533,2025-06-07 07:19:28,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22533,chart/image-only post: no setup text,
+19197,2024-11-24 10:15:40,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19197,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19198,2024-11-24 10:16:06,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19198,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19210,2024-11-25 14:35:56,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19210,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19211,2024-11-25 14:36:19,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19211,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19239,2024-11-27 15:59:49,RENDERUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19239,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19273,2024-12-01 11:39:36,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19273,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19282,2024-12-01 19:18:01,USDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19282,"chart-only post, no setup text: TradingView chart snapshot link",
+19283,2024-12-01 19:18:01,USDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19283,"chart-only post, no setup text: TradingView chart snapshot link",
+19287,2024-12-02 18:44:06,BNBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19287,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19334,2024-12-04 16:32:39,FETUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19334,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19335,2024-12-04 16:33:10,FETUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19335,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19417,2024-12-08 19:33:46,RUNEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19417,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19455,2024-12-10 17:20:45,CFXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19455,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19490,2024-12-11 18:33:23,ONDOUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19490,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19504,2024-12-12 13:58:11,PUBLISHEDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19504,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+19505,2024-12-12 13:58:37,PUBLISHEDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19505,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+19571,2024-12-15 13:16:54,WLDUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19571,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19582,2024-12-16 10:32:57,DEFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19582,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+19587,2024-12-16 12:14:59,HNTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19587,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19588,2024-12-16 12:15:34,HNTUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19588,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19602,2024-12-17 18:54:45,BTCUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19602,"chart-only post, no setup text: TradingView chart snapshot link",
+19750,2024-12-22 11:17:12,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19750,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19752,2024-12-22 11:55:23,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19752,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19798,2024-12-25 10:40:14,SONICUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19798,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+19826,2024-12-26 10:38:39,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19826,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+19882,2024-12-31 07:55:03,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19882,"chart-only post, no setup text: TradingView chart snapshot link",
+19883,2024-12-31 07:57:53,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19883,"chart-only post, no setup text: TradingView chart snapshot link",
+19900,2025-01-01 11:35:47,FTMUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19900,"chart-only post, no setup text: TradingView chart snapshot link",
+19901,2025-01-01 11:35:47,FTMUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19901,"chart-only post, no setup text: TradingView chart snapshot link",
+19902,2025-01-01 11:35:52,FTMUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19902,"chart-only post, no setup text: TradingView chart snapshot link",
+19938,2025-01-04 15:45:23,SAMANUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19938,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+19973,2025-01-07 10:55:51,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19973,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+19974,2025-01-07 10:57:47,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/19974,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20076,2025-01-13 08:14:59,DEFAIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20076,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20108,2025-01-14 12:12:16,SONYUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20108,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20115,2025-01-14 18:08:21,SONYUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20115,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20137,2025-01-16 08:50:40,XVSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20137,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20138,2025-01-16 08:51:08,XVSUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20138,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20149,2025-01-16 16:41:13,SONYUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20149,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20200,2025-01-20 18:06:49,TRUMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20200,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20313,2025-01-28 20:42:49,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20313,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20356,2025-02-01 07:40:01,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20356,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20378,2025-02-02 08:20:20,DEFIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20378,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20413,2025-02-03 10:40:28,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20413,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20419,2025-02-03 13:51:33,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20419,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20572,2025-02-10 06:00:10,BULLRUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20572,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20642,2025-02-12 10:30:59,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20642,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20686,2025-02-14 18:48:54,XRPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20686,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20705,2025-02-15 12:27:05,BULLRUNUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20705,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20771,2025-02-19 10:28:59,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/20771,"chart-only post, no setup text: photo/media with symbol only",
+20772,2025-02-19 10:28:59,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20772,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20780,2025-02-19 19:10:06,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20780,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20790,2025-02-20 05:12:57,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20790,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20812,2025-02-22 07:52:39,BYBITUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/20812,"chart-only post, no setup text: photo/media with symbol only",
+20813,2025-02-22 07:52:39,BYBITUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20813,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20855,2025-02-24 13:00:09,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20855,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20856,2025-02-24 13:02:23,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20856,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20888,2025-02-27 13:46:16,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20888,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20923,2025-03-02 15:02:41,SOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20923,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+20932,2025-03-03 04:58:15,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20932,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+20979,2025-03-05 20:25:26,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/20979,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21087,2025-03-10 18:50:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21087,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+21159,2025-03-13 09:57:27,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21159,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21172,2025-03-13 15:44:05,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21172,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21200,2025-03-16 20:08:59,UNIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21200,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21291,2025-03-29 13:21:49,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21291,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21292,2025-03-29 13:21:50,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21292,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21304,2025-03-30 17:20:27,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21304,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21305,2025-03-30 17:20:46,TONUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21305,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21395,2025-04-05 14:12:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21395,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+21846,2025-04-26 13:10:37,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/21846,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+22226,2025-05-18 14:55:43,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22226,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+22227,2025-05-18 14:57:02,ATOMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22227,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+22313,2025-05-24 19:31:18,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22313,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+22314,2025-05-24 19:31:56,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22314,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
 22732,2025-06-26 13:26:44,BTCUSDT,1d,long,range_breakout_trigger,110280,stop,,,,BTC dominance,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/22732,spot-buy trigger above 110280; futures trigger taken earlier (not stated),تریگر خرید اسپات همچنان بالای 110280 هست اما برای فیوچرز زودتر تریگر میگیرم چون احتمال شکست این ناحیه به صورت نهنگی بالا خواهد بود !
 22748,2025-06-28 10:16:17,BTCUSDT,4h,long,indecision_trigger,107950,stop,,,,setup candle; volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/22748,,برای پوزیشن لانگ من خودم با شکست 107950 پوزیشن باز میکنم ! حالا این اتفاق میتونه شکست در تایم فریم یک ساعته باشه یا کندل ستاپی که اتفاق میوفته و تریگر اصلی هم 110263 هست که احتمال از دست رفتن شارپ اون رو خواهید داشت
 22748,2025-06-28 10:16:17,BTCUSDT,4h,long,indecision_trigger,110263,stop,,,,setup candle; volume,,high,setup,main,break,yes,,,22732,,,0,1,https://t.me/tradecity_pro/22748,,برای پوزیشن لانگ من خودم با شکست 107950 پوزیشن باز میکنم ! حالا این اتفاق میتونه شکست در تایم فریم یک ساعته باشه یا کندل ستاپی که اتفاق میوفته و تریگر اصلی هم 110263 هست که احتمال از دست رفتن شارپ اون رو خواهید داشت
 22748,2025-06-28 10:16:17,BTCUSDT,4h,short,range_breakout_trigger,103850,stop,,,,HH/HL or LH/LL structure; volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/22748,,برای پوزیشن شورت هم در صورتی که مقاومت 107950 فیک بریک اتفاق بیوفته یا با شکست تریگر 106680 میتونیم پوزیشن شورت باز کنیم در صورتی هم که این تریگر هارو از دست دادید در صورت واکنش به محدوده 103850 و سقف پایین تر با شکست همین تریگر میتونید پوزیشن خودتون رو باز کنید
 22748,2025-06-28 10:16:17,BTCUSDT,4h,short,range_breakout_trigger,106680,stop,,,,HH/HL or LH/LL structure; volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/22748,,برای پوزیشن شورت هم در صورتی که مقاومت 107950 فیک بریک اتفاق بیوفته یا با شکست تریگر 106680 میتونیم پوزیشن شورت باز کنیم در صورتی هم که این تریگر هارو از دست دادید در صورت واکنش به محدوده 103850 و سقف پایین تر با شکست همین تریگر میتونید پوزیشن خودتون رو باز کنید
 22748,2025-06-28 10:16:17,BTCUSDT,4h,short,range_breakout_trigger,107950,stop,,,,HH/HL or LH/LL structure; volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/22748,,برای پوزیشن شورت هم در صورتی که مقاومت 107950 فیک بریک اتفاق بیوفته یا با شکست تریگر 106680 میتونیم پوزیشن شورت باز کنیم در صورتی هم که این تریگر هارو از دست دادید در صورت واکنش به محدوده 103850 و سقف پایین تر با شکست همین تریگر میتونید پوزیشن خودتون رو باز کنید
-22763,2025-07-01 08:19:57,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22763,chart/image-only post: no setup text,
-22787,2025-07-04 14:22:32,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/22787,chart/image-only post: no setup text,
-22860,2025-07-10 11:59:17,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22860,chart/image-only post: no setup text,
-22861,2025-07-10 11:59:46,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22861,chart/image-only post: no setup text,
-22942,2025-07-15 17:05:09,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22942,chart/image-only post: no setup text,
+22860,2025-07-10 11:59:17,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22860,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+22861,2025-07-10 11:59:46,ADAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/22861,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
 22992,2025-07-21 15:59:12,SOLUSDT,1d,long,range_breakout_trigger,165.49,stop,104,,,volume,,high,setup,,break,yes,,,,,22993,0,1,https://t.me/tradecity_pro/22992,,برای خرید اسپات تریگر اصلی ما شکست 179.71 و خروج از باکس هست و با استاپ باس سیف 104 دلار و ریسکی 143 دلار میتونید خرید اسپات داشته باشید همچنین من با شکست 165.49 به پوزیشن دیروز خودم حجم اضافه میکنم و با سودی که از این پوزیشن کردم با شکست 179.71 سولانا خریداری میکنم
 22992,2025-07-21 15:59:12,SOLUSDT,1d,long,range_breakout_trigger,179.71,stop,104,,,volume,,high,setup,main,break,yes,,,,,22993,0,1,https://t.me/tradecity_pro/22992,,برای خرید اسپات تریگر اصلی ما شکست 179.71 و خروج از باکس هست و با استاپ باس سیف 104 دلار و ریسکی 143 دلار میتونید خرید اسپات داشته باشید همچنین من با شکست 165.49 به پوزیشن دیروز خودم حجم اضافه میکنم و با سودی که از این پوزیشن کردم با شکست 179.71 سولانا خریداری میکنم
 23059,2025-07-26 13:41:37,UNIUSDT,1h,long,range_breakout_trigger,10.556,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/23059,Long/Short Trigger template,
 23059,2025-07-26 13:41:37,UNIUSDT,1h,short,range_breakout_trigger,9.82,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/23059,Long/Short Trigger template,
-23181,2025-08-05 16:33:22,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23181,chart/image-only post: no setup text,
-23182,2025-08-05 16:33:47,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23182,chart/image-only post: no setup text,
-23261,2025-08-12 17:43:07,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23261,chart/image-only post: no setup text,
-23263,2025-08-12 18:08:13,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23263,chart/image-only post: no setup text,
+23181,2025-08-05 16:33:22,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23181,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+23182,2025-08-05 16:33:47,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23182,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
 23278,2025-08-13 16:14:39,RENDERUSDT,1w,long,range_breakout_trigger,4.463,stop,2.756,,,RSI,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/23278,,من ( MRA ) به شخصه منتظر شکست 4.463 برای خرید اسپات خواهم بود و استاپ لاس منطقی میشه فضای 2.756 و استاپ لاس مطمعن تر میشه محدوده 1.887 همچنین شکست 49.93 RSI میتونه تاییده ای برای این خرید ما باشه !
 23278,2025-08-13 16:14:39,RENDERUSDT,1w,short,range_breakout_trigger,2.756,stop,,,,candle close beyond level; multiple touches,,medium,setup,,close,yes,,,,,,0,1,https://t.me/tradecity_pro/23278,,همچنین در صورتی که از گذشته خرید داشتید میتونید در صورت شکست 2.756 و بسته شدن کندل هفتگی زیر این حمایت خروج بزنید و در صورت بازگشت دوباره به بالای این لول خرید خودتون رو همراه تریگر انجام بدید در این صورت میتونید از ریزش شارپ در امان باشید و صرفا تعداد کوین کمتری رو مجدد خریداری کنید !
 23290,2025-08-14 11:16:07,NEARUSDT,1d,long,range_breakout_trigger,3.076,stop,,,,confirmation candle,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/23290,spot entry trigger / author longs futures here,برای تریگر ورود اسپات میتونید شکست 3.076 رو همراه باشید و همینطور تریگر اصلی ما 3.584 خواهد بود من به شخصه قراره با شکست 3.076 پوزیشن لانگ فیوچرز باز کنم و با سود اون 3.584 خرید خودم رو انجام میدم
 23290,2025-08-14 11:16:07,NEARUSDT,1d,long,range_breakout_trigger,3.584,stop,,,,confirmation candle,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/23290,,برای تریگر ورود اسپات میتونید شکست 3.076 رو همراه باشید و همینطور تریگر اصلی ما 3.584 خواهد بود من به شخصه قراره با شکست 3.076 پوزیشن لانگ فیوچرز باز کنم و با سود اون 3.584 خرید خودم رو انجام میدم
-23540,2025-09-04 07:11:57,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23540,chart/image-only post: no setup text,
-23577,2025-09-06 15:18:40,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23577,chart/image-only post: no setup text,
-23588,2025-09-07 10:56:25,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23588,chart/image-only post: no setup text,
-23595,2025-09-08 09:12:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23595,chart/image-only post: no setup text,
-23608,2025-09-09 13:06:28,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23608,chart/image-only post: no setup text,
-23609,2025-09-09 13:07:03,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23609,chart/image-only post: no setup text,
-23642,2025-09-12 04:17:54,SOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23642,chart/image-only post: no setup text,
-23688,2025-09-15 11:38:41,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23688,chart/image-only post: no setup text,
-23689,2025-09-15 11:39:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23689,chart/image-only post: no setup text,
-23899,2025-09-29 04:15:25,USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23899,chart/image-only post: no setup text,
-24018,2025-10-06 07:06:32,BNBCHAINUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24018,chart/image-only post: no setup text,
-24097,2025-10-10 05:20:28,PFFFUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24097,chart/image-only post: no setup text,
-24157,2025-10-12 05:10:39,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24157,chart/image-only post: no setup text,
-24166,2025-10-12 20:23:54,SUIUSDT,1w,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24166,chart/image-only post: no setup text,
-24167,2025-10-12 20:27:52,SOLUSDT,1w,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24167,chart/image-only post: no setup text,
-24365,2025-10-28 07:25:18,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24365,chart/image-only post: no setup text,
-24491,2025-11-07 08:14:39,ARUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,1,1,https://t.me/tradecity_pro/24491,chart/image-only post: no setup text,
-24521,2025-11-09 11:04:23,PUMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24521,chart/image-only post: no setup text,
-24569,2025-11-11 10:10:35,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24569,chart/image-only post: no setup text,
-24670,2025-11-16 08:35:11,UNIUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24670,chart/image-only post: no setup text,
-24731,2025-11-19 06:48:18,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24731,chart/image-only post: no setup text,
-24932,2025-12-03 07:55:07,AAVEUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24932,chart/image-only post: no setup text,
-24935,2025-12-03 08:02:33,KASUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24935,chart/image-only post: no setup text,
-24945,2025-12-04 08:00:41,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24945,chart/image-only post: no setup text,
-24946,2025-12-04 08:01:07,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24946,chart/image-only post: no setup text,
-24947,2025-12-04 08:01:45,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24947,chart/image-only post: no setup text,
-24948,2025-12-04 08:02:14,SOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24948,chart/image-only post: no setup text,
-24949,2025-12-04 08:02:48,NEARUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24949,chart/image-only post: no setup text,
-24950,2025-12-04 08:03:22,ENAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24950,chart/image-only post: no setup text,
-24953,2025-12-04 08:10:45,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24953,chart/image-only post: no setup text,
-25090,2025-12-09 18:53:51,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25090,chart/image-only post: no setup text,
-25202,2025-12-19 07:51:21,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25202,chart/image-only post: no setup text,
-25208,2025-12-20 08:13:06,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25208,chart/image-only post: no setup text,
-25223,2025-12-22 13:40:02,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25223,chart/image-only post: no setup text,
-25237,2025-12-25 12:48:05,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25237,chart/image-only post: no setup text,
-25269,2025-12-29 18:25:48,SUIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25269,chart/image-only post: no setup text,
-25307,2026-01-01 07:55:43,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25307,chart/image-only post: no setup text,
-25336,2026-01-03 10:40:22,MYXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25336,chart/image-only post: no setup text,
-25337,2026-01-03 12:05:35,MYXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25337,chart/image-only post: no setup text,
-25338,2026-01-03 12:05:37,MYXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25338,chart/image-only post: no setup text,
-25348,2026-01-03 12:05:37,MYXUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25348,chart/image-only post: no setup text,
-25357,2026-01-04 09:03:36,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,25358,0,1,https://t.me/tradecity_pro/25357,chart/image-only post: no setup text,
-25374,2026-01-05 19:52:50,UNIUSDT,,,,,,,,,,,low,chart_only,,,,,,,,25378,0,0,https://t.me/tradecity_pro/25374,chart/image-only post: no setup text,
-25425,2026-01-25 17:57:50,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25425,chart/image-only post: no setup text,
-25435,2026-01-26 18:42:58,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25435,chart/image-only post: no setup text,
+23357,2025-08-20 10:05:58,,,short,other,10000,,,,,,,low,setup,,,yes,,,,,,1,0,https://t.me/tradecity_pro/23357,,"هر 8 ساعت 0.01% = Funding Rate | پوزیشن لانگ 10,000 دلاری → پرداخت 1 دلار به پوزیشن های شورت"
+23577,2025-09-06 15:18:40,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23577,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+23608,2025-09-09 13:06:28,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23608,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+23609,2025-09-09 13:07:03,ARBUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23609,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+23688,2025-09-15 11:38:41,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23688,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+23689,2025-09-15 11:39:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23689,"chart-only post, no setup text: TradingView published idea link (analysis off-channel)",
+23899,2025-09-29 04:15:25,USDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/23899,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+24018,2025-10-06 07:06:32,BNBCHAINUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24018,"chart-only post, no setup text: photo/media with symbol only",
+24166,2025-10-12 20:23:54,SUIUSDT,1w,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24166,"chart-only post, no setup text: photo/media with symbol only",
+24167,2025-10-12 20:27:52,SOLUSDT,1w,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24167,"chart-only post, no setup text: photo/media with symbol only",
+24491,2025-11-07 08:14:39,ARUSDT,,,range_breakout_trigger,,,,,3,,,low,setup,,,yes,,,,,,1,1,https://t.me/tradecity_pro/24491,image card 'تریگر ورود ARUSDT | ریسک به ریوارد 3'; side/levels only on the image,
+24670,2025-11-16 08:35:11,UNIUSDT,4h,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/24670,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
+24945,2025-12-04 08:00:41,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24945,"chart-only post, no setup text: photo/media with symbol only",
+24946,2025-12-04 08:01:07,ETHUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24946,"chart-only post, no setup text: photo/media with symbol only",
+24947,2025-12-04 08:01:45,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24947,"chart-only post, no setup text: photo/media with symbol only",
+24948,2025-12-04 08:02:14,SOLUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24948,"chart-only post, no setup text: photo/media with symbol only",
+24949,2025-12-04 08:02:48,NEARUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24949,"chart-only post, no setup text: photo/media with symbol only",
+24950,2025-12-04 08:03:22,ENAUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/24950,"chart-only post, no setup text: photo/media with symbol only",
 25438,2026-01-26 21:57:38,XAUUSD,4h,long,range_breakout_trigger,5100,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25438,,در صورتی که قیمت ناحیه مقاومتی رو در قیمت 5100 دلار در هر انس بشکنه میتونید به صورت شکست وارد معاملات لانگ خودتون بشید  به دلیل تک برخورد بودن ناحیه ریسک کم وارد معامله کنید
-25451,2026-01-28 11:42:21,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25451,chart/image-only post: no setup text,
-25547,2026-02-12 05:57:28,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25547,chart/image-only post: no setup text,
-25549,2026-02-12 11:37:21,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25549,chart/image-only post: no setup text,
-25550,2026-02-13 06:43:10,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/25550,chart/image-only post: no setup text,
-25551,2026-02-13 06:43:26,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25551,chart/image-only post: no setup text,
-25589,2026-02-22 17:35:40,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25589,chart/image-only post: no setup text,
-25652,2026-03-02 07:51:01,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,25653,0,1,https://t.me/tradecity_pro/25652,chart/image-only post: no setup text,
 25657,2026-03-02 08:22:50,BTCUSDT,4h,short,range_breakout_trigger,63124,stop,,,,BTC dominance,,low,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25657,BTC 4h range 63-69: no action inside; loss of 63124 = alt-coin dump risk,"💻 نقطه ورود هارو روی چارت براتون مشخص کردم و من به شخصه ( MRA ) تا زمانی که داخل محدوده رنج 63 تا 69 حضور داریم احتمالا کاری انجام ندم و همزمان با چارت بیت کوین دامیننس اون هم شرایط یکسانی رو داره و فقط لحظه شکست تریگر ها نیازه چارت اون رو بررسی کنید که ببینید همزمانی دارن یا خیر , برای مثال در صورت"
 25683,2026-03-17 15:25:08,BTCUSDT,4h,long,range_breakout_trigger,74910,stop,,,,BTC dominance,rejected (25690); rejected (25691),high,setup,main,break,yes,,,,25690;25691,,1,1,https://t.me/tradecity_pro/25683,,بریک اوت 74910 میتونه نقطه ورود جالبی برای پوزیشن لانگ باشه و اگه دامیننس بیت کوین همراهیمون کنه و کندل های سبز بزنه میتونیم تمرکز اصلی خودمون رو بزاریم روی بیت کوین ولی در غیر این صورت و ریزش دامیننس ترجیح من به شخصه ( MRA ) میره روی آلت کوین هایی که به Pair بیت کوین صعودی باشه
 25690,2026-03-21 10:54:33,BTCUSDT,4h,long,range_breakout_trigger,70934,stop,,,,,,high,setup,risky/early,break,yes,,,,,25691,1,1,https://t.me/tradecity_pro/25690,,نقطه ورود اصلی پوزیشن لانگمون شکست 74910 هست اما توی تایم فریم هایی پایین تر روی مقاومت 70934 میتونیم نقطه ورود ریسکی داشته باشیم
@@ -769,7 +629,7 @@
 25703,2026-03-28 20:03:44,BTCUSDT,4h,short,range_breakout_trigger,65845,stop,,,,BTC context; BTC dominance,,high,setup,risky/early,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25703,,من فعلا برای پوزیشن لانگ روی بیت کوین برنامه ای ندارم و اگه مارکت هم صعودی باشه آلت کوین هایی مثل HYPE رو جدا کردم تا روی اون پوزیشن باز کنم و روی خود بیت ترجیحم این هست که با شکست 65845 پوزیشن شورت ریسکی باز کنم و بهتره بگم در صورت شکست این لول عملا حمایت اصلی باکس رو از دست دادیم و احتمال اینکه بر
 25705,2026-03-29 09:46:33,BTCUSDT,4h,short,range_breakout_trigger,63879,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25705,,پس شکست 63879 تریگر بعدی برای شورت خواهد بود
 25705,2026-03-29 09:46:33,BTCUSDT,4h,short,range_breakout_trigger,65973,stop,,63879,,BTC context,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25705,,توی تحلیل قبلی تریگر شورت 67688 که داشتیم فعال شد و الان قیمت به 65973 رسیده.در صورت شکست 65973 بیت کوین میتونه یه حرکتی به سمت 63879 داشته باشه
-25712,2026-03-30 09:08:47,BTCUSDT,4h,long,range_breakout_trigger,67873,stop,,,,HH/HL or LH/LL structure; BTC context,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25712,,در صورت شکست 67873،اولین تاییدیه برای صعودی شدن بیت کوین رو میگیریم.در این صورت من خودم صبر میکنم تا با زدن کف و سقف بالاتر از این ناحیه،پوزیشن لانگ باز میکنم
+25712,2026-03-30 09:08:47,BTCUSDT,4h,long,range_breakout_trigger,67873,stop,,,,HH/HL or LH/LL structure; BTC context,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25712,,در صورت شکست 67873،اولین تاییدیه برای صعودی شدن بیت کوین رو میگیریم.در این صورت من خودم صبر میکنم تا با زدن کف و سقف بالاتر از این ناحیه،پوزیشن لانگ باز میکنم
 25712,2026-03-30 09:08:47,BTCUSDT,4h,long,range_breakout_trigger,71350,stop,,,,,,high,setup,,break,yes,,,25701,,,1,1,https://t.me/tradecity_pro/25712,,اما اگر حرکت شارپ باشه،تریگر لانگ 71350 خواهد بود
 25712,2026-03-30 09:08:47,BTCUSDT,4h,short,range_breakout_trigger,65973,stop,,,,BTC context,,high,setup,,break,yes,,,25705,,,1,1,https://t.me/tradecity_pro/25712,,دیروز بیت کوین درگیر ناحیه 65973 بود و از شکست این ناحیه بعنوان تریگر شورت میتونستیم استفاده کنیم
 25713,2026-03-31 17:59:37,BTCUSDT,4h,long,range_breakout_trigger,67827,stop,,,,,rejected (25738),high,setup,,break,yes,,,25712,25738,,1,1,https://t.me/tradecity_pro/25713,,شکست 67827 توی تایم فریم های پایینتر تریگر خوبی برای لانگ خواهد بود و باعث میشه یه حرکت رو به بالایی آغاز بشه
@@ -814,7 +674,7 @@
 25786,2026-04-08 09:32:52,BTCUSDT,4h,long,range_breakout_trigger,74967,stop,,,,volume,faked (25869),high,setup,main,break,yes,,,25702,25869,,1,1,https://t.me/tradecity_pro/25786,,در این صورت قیمت هم میتونه به سمت 74967 حرکت کنه.تریگر اصلی لانگ و صعودی شدن مارکت هم بعد از شکست 74967 خواهد بود
 25791,2026-04-08 10:45:58,FETUSDT,4h,long,range_breakout_trigger,0.2621,stop,,,,,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25791,level taken from preceding sentence (anaphora: 'break of this level'),کوین FET نزدیک ناحیه 0.2621 هستش || شکست این ناحیه تریگر خوبی برای لانگه
 25792,2026-04-09 10:35:51,BTCUSDT,4h,short,range_breakout_trigger,68088,stop,,,,,,medium,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25792,momentum is bullish so no logical short now; if a sharp drop: first short trigger 68088,
-25795,2026-04-09 11:43:58,XRPUSDT,1d,long,ma_pullback,1.5451,stop,,,,SMA99,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25795,,برای لانگ هم شکست 1.5451 تریگر خوبه اما بهتره که SMA بالاسر قیمت نباشه چون در ادامه میتونه مانع حرکت قیمت باشه
+25795,2026-04-09 11:43:58,XRPUSDT,1d,long,range_breakout_trigger,1.5451,stop,,,,SMA99,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25795,break of 1.5451 range top; SMA99 (falling) approaching price is the obstacle,برای لانگ هم شکست 1.5451 تریگر خوبه اما بهتره که SMA بالاسر قیمت نباشه چون در ادامه میتونه مانع حرکت قیمت باشه
 25796,2026-04-09 12:53:15,BNBUSDT,1d,long,range_breakout_trigger,679.45,stop,,,,,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25796,level taken from preceding sentence (anaphora: 'break of this level'),در صورت شکست 679.45، یه اصلاح عمیق تر به سمت نواحی بالاتر فیبوناچی میتونه انجام بشه || شکست این ناحیه بهمون پوزیشن لانگ ریسکی هم میده
 25796,2026-04-09 12:53:15,BNBUSDT,1d,short,range_breakout_trigger,582.66,stop,,,,,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25796,,شکست 582.66 تریگر خیلی خوبیه و پیشنهاد میکنم شکستش رو از دست ندید
 25797,2026-04-09 13:30:25,SOLUSDT,1d,short,range_breakout_trigger,77.9,stop,,64.92,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25797,,در صورت شکست 77.90، پوزیشن شورت منطقی خواهد بود
@@ -826,14 +686,16 @@
 25801,2026-04-09 15:53:11,HYPEUSDT,1d,short,range_breakout_trigger,35.119,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25801,,با فعال شدن تریگر 35.119 میتونیم پوزیشن شورت باز کنیم
 25802,2026-04-09 16:24:28,ADAUSDT,1d,long,range_breakout_trigger,0.2972,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25802,,برای لانگ هم اولین تریگری که روی ADA داریم 0.2972 هستش اما من ترجیح میدم روی کوین هایی مثل HYPE لانگ باز بکنم
 25802,2026-04-09 16:24:28,ADAUSDT,1d,short,range_breakout_trigger,0.2391,stop,,0.173,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25802,,در صورتی که قیمت نتونه به 0.2972 برسه، شکست 0.2391 پوزیشن شورت بهمون میده و قیمت یه حرکتی رو میتونه به سمت 0.1730 آغاز کنه
-25807,2026-04-09 17:19:56,BCHUSDT,1d,long,range_breakout_trigger,480.3,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25807,,اگر قیمت از 429.5 حمایت بشه، اولین ناحیه مقاومتی 480.3 هستش و شکست این ناحیه پوزیشن لانگ میده بهمون
+25807,2026-04-09 17:19:56,BCHUSDT,1d,long,range_breakout_trigger,480.3,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25807,,اگر قیمت از 429.5 حمایت بشه، اولین ناحیه مقاومتی 480.3 هستش و شکست این ناحیه پوزیشن لانگ میده بهمون
 25807,2026-04-09 17:19:56,BCHUSDT,1d,short,range_breakout_trigger,429.5,stop,,382.6,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25807,,در صورت شکست 429.5 میتونیم پوزیشن شورت باز کنیم و قیمت میتونه به سمت 382.6 حرکت کنه
 25808,2026-04-09 17:30:20,LINKUSDT,1d,long,range_breakout_trigger,9.95,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25808,,برای لانگ هم شکست 9.95 اولین تریگرمون خواهد بود
 25808,2026-04-09 17:30:20,LINKUSDT,1d,short,range_breakout_trigger,8.38,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25808,,با شکست این ناحیه و تریگر 8.38 میتونیم پوزیشن شورت باز کنیم
+25809,2026-04-09 18:02:01,XMRUSDT,1d,long,range_breakout_trigger,361.2,stop,,,,,,medium,setup,,break,yes,,315.19-361.2,,,,0,1,https://t.me/tradecity_pro/25809,"header says XRPUSDT, text is XMR; no trade inside the daily range, breakout either side",
+25809,2026-04-09 18:02:01,XMRUSDT,1d,short,range_breakout_trigger,315.19,stop,,,,,,medium,setup,,break,yes,,315.19-361.2,,,,0,1,https://t.me/tradecity_pro/25809,"header says XRPUSDT, text is XMR; breakout either side",
 25811,2026-04-09 18:43:04,RENDERUSDT,4h,long,range_breakout_trigger,2.088,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25811,,"برای پوزیشن لانگ تا زمانی که بالای curve هستیم میتونیم روی نقطه ورود 2.088 تمرکز داشته باشیم و با شکست اون پوزیشن لانگ باز کنیم به راحتی , تاییده حجم هم خیلی مهمه توی بریک اوت این چارت"
 25813,2026-04-10 12:25:01,BTCUSDT,1h,long,range_breakout_trigger,72390,stop,,,,volume,triggered (25834),high,setup,,break,yes,,,,25834,,0,1,https://t.me/tradecity_pro/25813,,این نشون دهنده مومنتوم صعودی و قدرت خریدارهاست و تاییدیه خوبی برای باز کردن پوزیشن لانگ بعد از شکست 72390 هستش
 25815,2026-04-10 14:12:32,ARBUSDT,1h,long,range_breakout_trigger,0.1119,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25815,,مومنتوم خیلی خوبی داره و شکست 0.1119 بهمون پوزیشن لانگ میده
-25818,2026-04-10 14:41:58,ENAUSDT,1h,long,range_breakout_trigger,0.0982,stop,,,,candle close beyond level,,high,setup,main,close,yes,,,,,,0,1,https://t.me/tradecity_pro/25818,,با شکست 0.0982 میتونیم پوزیشن لانگ باز کنیم و تاییدیه تثبیت بالای 0.0936 رو بگیریم
+25818,2026-04-10 14:41:58,ENAUSDT,1h,long,range_breakout_trigger,0.0982,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,0,1,https://t.me/tradecity_pro/25818,,با شکست 0.0982 میتونیم پوزیشن لانگ باز کنیم و تاییدیه تثبیت بالای 0.0936 رو بگیریم
 25825,2026-04-10 18:07:42,CAKEUSDT,4h,long,range_breakout_trigger,,stop,,,,,,low,setup,,break,yes,,,,,25876,1,1,https://t.me/tradecity_pro/25825,level not stated in text (chart only),کوین CAKE داره تلاش میکنه سقف باکس روزانه خودش رو در تایم فریم 4 ساعته بریک اوت بده و ما میتونیم همراه این اتفاق پوزیشن لانگ باز کنیم !
 25827,2026-04-10 18:45:31,SUIUSDT,4h,long,range_breakout_trigger,0.9607,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25827,,به تازگی تونسته از باکس 0.8501 تا 0.9050 خروج کنه و همین هم میتونه نقطه ورود خوبی برای ما باشه و بریک اوت 0.9607 پوزیشن لانگ خوبی توی استراتژی ما خواهد بود
 25827,2026-04-10 18:45:31,SUIUSDT,4h,short,range_breakout_trigger,0.8501,stop,,,,,,medium,setup,main,break,yes,,0.8501-0.9050,,,,1,1,https://t.me/tradecity_pro/25827,"main short entry = breakout of 0.8501 (not 0.9050, inside the range)",
@@ -871,22 +733,22 @@
 25907,2026-04-18 14:39:57,ADAUSDT,1d,long,range_breakout_trigger,0.2972,stop,,,,,,high,setup,main,break,yes,,,25802,,26159,1,1,https://t.me/tradecity_pro/25907,,تریگر لانگ اصلی شکست 0.2972 خواهد بود
 25907,2026-04-18 14:39:57,ADAUSDT,1d,short,pattern,,stop,,,,,,low,setup,,break,yes,,,,,26159,1,1,https://t.me/tradecity_pro/25907,level not stated in text (chart only),روی حمایت مهمی هم قرار داره و شکست این ناحیه و شکست وج از پایین بهمون پوزیشن شورت میده
 25908,2026-04-18 15:11:57,ONDOUSDT,1d,long,range_breakout_trigger,0.2732,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25908,,برای لانگ هم شکست 0.2732 و 0.2953 به ترتیب تریگرهای ریسکی و اصلی هستن
-25908,2026-04-18 15:11:57,ONDOUSDT,1d,short,range_breakout_trigger,0.2418,stop,,,,multiple touches,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25908,,شکست کف 0.2418 تریگر شورت خیلی مهمیه و تاییدیه شروع دوباره روند نزولی خواهد بود
+25908,2026-04-18 15:11:57,ONDOUSDT,1d,short,range_breakout_trigger,0.2418,stop,,,,multiple touches,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25908,,شکست کف 0.2418 تریگر شورت خیلی مهمیه و تاییدیه شروع دوباره روند نزولی خواهد بود
 25912,2026-04-19 08:01:57,ETHUSDT,4h,long,momentum_trigger_rsi,2441,stop,,,,candle close beyond level; BTC dominance; RSI level 45; RSI,,high,setup,,close,yes,,,,,,0,1,https://t.me/tradecity_pro/25912,,اما در صورتی که قیمت از 2313 حمایت بشه و زیر این ناحیه تثبیت نده، حرکت صعودی میتونه ادامه پیدا بکنه و در این صورت میتونیم با شکست 2441 پوزیشن لانگ باز کنیم
 25912,2026-04-19 08:01:57,ETHUSDT,4h,short,momentum_trigger_rsi,2313,stop,,,,BTC dominance; RSI level 45; RSI,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25912,,پس با شکست 2313 میتونیم پوزیشن شورت باز کنیم
 25920,2026-04-20 08:58:57,BTCUSDT,4h,long,momentum_trigger_rsi,77777,stop,,,,RSI level 72.73; volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25920,,برای پوزیشن لانگ شکست 77777 تریگرمون هستش
 25920,2026-04-20 08:58:57,BTCUSDT,4h,short,pattern,73667,stop,,,,RSI level 72.73; volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25920,,تریگر شکست این خط روند 73667 هستش و با شکست این ناحیه میتونیم پوزیشن شورت باز کنیم
 25925,2026-04-20 10:26:58,TAOUSDT,4h,long,range_breakout_trigger,261.5,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25925,,در صورت حمایت شدن از 238.6، تریگری که برای لانگ داریم شکست 261.5 خواهد بود
 25926,2026-04-20 10:41:02,AAVEUSDT,4h,short,range_breakout_trigger,89.33,stop,,,,volume; RSI overbought(>70) level 30,,high,setup,,break,yes,,,25843,,25927,1,1,https://t.me/tradecity_pro/25926,,ما هم با شکست 89.33 میتونیم پوزیشن شورت باز کنیم
-25928,2026-04-20 11:17:02,WLFIUSDT,4h,short,range_breakout_trigger,0.0771,stop,,,,volume,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25928,,برای پوزیشن شورت در جهت روند آخرین و مهم ترین حمایتی که داریم برای شکست لول 0.0771 خواهد بود و با تاییدیه افزایش حجم پوزیشن شورت باز میکنیم
-25931,2026-04-20 14:28:09,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/25931,chart/image-only post: no setup text,
+25928,2026-04-20 11:17:02,WLFIUSDT,4h,short,range_breakout_trigger,0.0771,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25928,,برای پوزیشن شورت در جهت روند آخرین و مهم ترین حمایتی که داریم برای شکست لول 0.0771 خواهد بود و با تاییدیه افزایش حجم پوزیشن شورت باز میکنیم
 25938,2026-04-21 08:15:57,BTCUSDT,4h,long,momentum_trigger_rsi,77777,stop,,,,volume; RSI level 72.73,,high,setup,,break,yes,,,25920,,,1,1,https://t.me/tradecity_pro/25938,,در این صورت اگر تاییدیه حجم رو داشته باشیم، شکست 77777 تریگر خوبی برای لانگ خواهد بود
 25938,2026-04-21 08:15:57,BTCUSDT,4h,short,pattern,73667,stop,,,,HH/HL or LH/LL structure; volume; RSI level 72.73,,high,setup,,break,yes,,,25920,,,1,1,https://t.me/tradecity_pro/25938,,در صورتی که قیمت به 77777 نرسه و سقف پایینتر بزنه، شکست خط روند و فعال شدن تریگر 73667 بهمون پوزیشن شورت خواهد داد
-25947,2026-04-21 13:28:21,ALGOUSDT,4h,long,other,0.1158,,,,,volume,,high,setup,risky/early,,yes,,,,,,1,1,https://t.me/tradecity_pro/25947,,در صورت حمایت شدن قیمت از این ناحیه، برای پوزیشن لانگ اولین ناحیه ای که داریم 0.1158 خواهد بود
+25947,2026-04-21 13:28:21,ALGOUSDT,4h,long,other,0.1158,,,,,volume,,high,setup,,,yes,,,,,,1,1,https://t.me/tradecity_pro/25947,,در صورت حمایت شدن قیمت از این ناحیه، برای پوزیشن لانگ اولین ناحیه ای که داریم 0.1158 خواهد بود
 25947,2026-04-21 13:28:21,ALGOUSDT,4h,short,range_breakout_trigger,0.101,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25947,,پس با شکست 0.1010 میتونیم پوزیشن شورت باز کنیم
+25948,2026-04-21 14:11:52,XMRUSDT,4h,long,range_breakout_trigger,354.77,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25948,,نقطه ورود جدید ما برای پوزیشن لانگ 354.77 خواهد بود و بهتره برای این شرایط کم کم استاپ بای ست کنیم چون احتمال حرکت نهنگی کم نیست
 25954,2026-04-22 11:33:08,BTCUSDT,4h,long,range_breakout_trigger,78858,stop,,,,volume,,medium,setup,,break,yes,,77777-78858,,,,0,1,https://t.me/tradecity_pro/25954,level taken from preceding sentence (anaphora: 'break of this level'),این محدوده بین 77777 و 78858 قرار داره و شکست این محدوده، تایید ادامه حرکت صعودی روی بیت کوین رو بهمون میده || با شکست این محدوده میتونیم پوزیشن لانگ باز کنیم
 25954,2026-04-22 11:33:08,BTCUSDT,4h,short,pattern,73667,stop,,,,volume,,high,setup,,break,yes,,77777-78858,25920,,,0,1,https://t.me/tradecity_pro/25954,,در صورت ریجکت شدن قیمت از محدوده میتونیم منتظر شکست کانال و فعال شدن تریگر 73667 بمونیم و با شکست این تریگر پوزیشن شورت باز کنیم
-25955,2026-04-22 12:18:33,TRXUSDT,4h,long,momentum_trigger_rsi,0.3342,stop,,,,RSI; RSI level 50; volume,rejected (25970),high,setup,main,break,yes,,,,25970,,0,1,https://t.me/tradecity_pro/25955,,توی این موج صعودی هربار RSI به این ناحیه رسیده حمایت شده و همین موضوع باعث شده مومنتوم روند خیلی خوب باشه و شکست 0.3342 بهمون پوزیشن لانگ و تایید ادامه روند میده
+25955,2026-04-22 12:18:33,TRXUSDT,4h,long,momentum_trigger_rsi,0.3342,stop,,,,RSI; RSI level 50; volume,rejected (25970),high,setup,,break,yes,,,,25970,,0,1,https://t.me/tradecity_pro/25955,,توی این موج صعودی هربار RSI به این ناحیه رسیده حمایت شده و همین موضوع باعث شده مومنتوم روند خیلی خوب باشه و شکست 0.3342 بهمون پوزیشن لانگ و تایید ادامه روند میده
 25958,2026-04-23 07:55:48,BTCUSDT,4h,long,range_breakout_trigger,78858,market,,,,,,medium,setup,,break,yes,,,25954,,,0,1,https://t.me/tradecity_pro/25958,wait for another reaction to the top to get exact resistance (~78858),الان برای پوزیشن لانگ من صبر میکنم تا قیمت یکبار دیگه به سقفی که ایجاد کرده واکنش نشون بده تا جای اصلی مقاومت 78858 در بیاد و بعدش در صورت شکست این ناحیه میتونیم پوزیشن باز کنیم
 25958,2026-04-23 07:55:48,BTCUSDT,4h,short,pattern,73667,stop,,,,,,high,setup,,break,yes,,,25920,,,0,1,https://t.me/tradecity_pro/25958,,در صورت ریجک شدن از محدوده مقاومتی و شکست خط وسط کانال، یه اصلاح عمیقی میتونه صورت بگیره و در این صورت شکست کف کانال و تریگر 73667 تریگر شورت خواهند بود
 25959,2026-04-23 08:50:38,ETHUSDT,4h,long,range_breakout_trigger,2440,stop,,,,volume,,high,setup,,break,yes,,,25912,,,1,1,https://t.me/tradecity_pro/25959,,برای پوزیشن لانگ روی اتریوم شکست 2440 بهمون پوزیشن میده
@@ -898,7 +760,7 @@
 25970,2026-04-24 10:13:58,TRXUSDT,4h,long,range_breakout_trigger,0.3277,stop,,,,multiple touches; RSI level 50,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25970,,در صورت حمایت شدن قیمت از 0.3277، مومنتوم صعودی دوباره میتونه وارد مارکت بشه و در این صورت میتونیم با شکست 0.3342 پوزیشن لانگ باز کنیم
 25970,2026-04-24 10:13:58,TRXUSDT,4h,long,range_breakout_trigger,0.3342,stop,,,,multiple touches; RSI level 50,,high,setup,,break,yes,,,25955,,,0,1,https://t.me/tradecity_pro/25970,,در صورت حمایت شدن قیمت از 0.3277، مومنتوم صعودی دوباره میتونه وارد مارکت بشه و در این صورت میتونیم با شکست 0.3342 پوزیشن لانگ باز کنیم
 25970,2026-04-24 10:13:58,TRXUSDT,4h,short,range_breakout_trigger,0.3241,stop,,,,RSI level 50,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/25970,,در این صورت میتونیم با شکست 0.3241 پوزیشن شورت باز کنیم
-25981,2026-04-25 09:41:09,BTCUSDT,4h,long,range_breakout_trigger,79285,stop,,,,volume; weekend caution,rejected (26019); faked (26117),high,setup,main,break,yes,,,25969,26019;26117,,0,1,https://t.me/tradecity_pro/25981,,اما برای لانگ شکست 79285 تریگر خیلی خوبیه و صرفا تاییدیه مومنتوم خرید رو میخوام که با افزایش حجم و بزرگ شدن سایز کندل ها میتونیم تاییدیه بگیریم و با شکست 79285 لانگ باز کنیم
+25981,2026-04-25 09:41:09,BTCUSDT,4h,long,range_breakout_trigger,79285,stop,,,,volume; weekend caution,rejected (26019); faked (26117),high,setup,,break,yes,,,25969,26019;26117,,0,1,https://t.me/tradecity_pro/25981,,اما برای لانگ شکست 79285 تریگر خیلی خوبیه و صرفا تاییدیه مومنتوم خرید رو میخوام که با افزایش حجم و بزرگ شدن سایز کندل ها میتونیم تاییدیه بگیریم و با شکست 79285 لانگ باز کنیم
 25981,2026-04-25 09:41:09,BTCUSDT,4h,short,range_breakout_trigger,77369,stop,,,,volume; weekend caution,faked (25999); rejected (26019); rejected+faked (26093),high,setup,risky/early,break,yes,,,25969,25999;26019;26093,,0,1,https://t.me/tradecity_pro/25981,,شکست 77369 جزو تریگرهای خیلی ریسکی شورت حساب میشه و با شکست این ناحیه ما صرفا تایید ریجکت شدن از محدوده مقاومتی رو میگیریم
 25982,2026-04-25 10:31:00,ARBUSDT,4h,long,fakeout,0.1339,stop,,,,volume,triggered [symbol-level] (25988),high,setup,,break,yes,,,25962,25988,,1,1,https://t.me/tradecity_pro/25982,,در این صورت شکست 0.1339 تریگر خوبی برای لانگ خواهد بود اما اگر حجم زیاد نشه احتمال فیک شدن 0.1339 افزایش پیدا میکنه
 25983,2026-04-25 10:48:22,NEARUSDT,4h,long,range_breakout_trigger,1.433,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/25983,,الان قیمت درگیر سقف 1.433 هستش و شکست این ناحیه بهمون پوزیشن لانگ میده
@@ -916,7 +778,7 @@
 26002,2026-04-26 11:19:37,DASHUSDT,4h,long,other,37.35,,,,,,,high,setup,,,yes,,,,,26041,1,1,https://t.me/tradecity_pro/26002,,برای پوزیشن لانگ ناحیه ای که داریم 37.35 هستش
 26002,2026-04-26 11:19:37,DASHUSDT,4h,short,range_breakout_trigger,33.6,stop,,,,,,high,setup,main,break,yes,,,,,26041,1,1,https://t.me/tradecity_pro/26002,,تریگر شورت اصلی هم شکست خودِ 33.60 خواهد بود که ناحیه حمایتی خیلی مهمیه و با شکستش موج نزولی بعدی میتونه آغاز بشه
 26002,2026-04-26 11:19:37,DASHUSDT,4h,short,pattern,35.82,stop,,33.6,,,,high,setup,risky/early,break,yes,,,,,26041,1,1,https://t.me/tradecity_pro/26002,,شکست خط روند و تریگر 35.82 تریگر شورت اوله که تریگر ریسکی ایه و با فعال شدنش قیمت میتونه به سمت 33.60 حرکت کنه
-26003,2026-04-26 11:43:57,ARBUSDT,4h,long,range_breakout_trigger,0.1332,stop,,,,volume,not_triggered [symbol-level] (26043),high,setup,main,break,yes,,,,26043,,0,1,https://t.me/tradecity_pro/26003,,شکست ناحیه 0.1332 در صورتی که تاییدیه حجم داشته باشیم بهمون پوزیشن لانگ میده
+26003,2026-04-26 11:43:57,ARBUSDT,4h,long,range_breakout_trigger,0.1332,stop,,,,volume,not_triggered [symbol-level] (26043),high,setup,,break,yes,,,,26043,,0,1,https://t.me/tradecity_pro/26003,,شکست ناحیه 0.1332 در صورتی که تاییدیه حجم داشته باشیم بهمون پوزیشن لانگ میده
 26005,2026-04-26 12:10:57,NEARUSDT,4h,long,range_breakout_trigger,1.433,stop,,,,,,high,setup,,break,yes,,,25983,,,1,1,https://t.me/tradecity_pro/26005,,در این صورت شکست 1.433 بهمون پوزیشن لانگ و شکست 1.329 بهمون پوزیشن شورت میده
 26005,2026-04-26 12:10:57,NEARUSDT,4h,short,range_breakout_trigger,1.329,stop,,,,,,high,setup,,break,yes,,,25983,,,1,1,https://t.me/tradecity_pro/26005,,در این صورت شکست 1.433 بهمون پوزیشن لانگ و شکست 1.329 بهمون پوزیشن شورت میده
 26006,2026-04-26 14:16:58,FETUSDT,4h,long,fakeout,0.2052,stop,,,,,,high,setup,,break,yes,,,,,26044,1,1,https://t.me/tradecity_pro/26006,,و برای پوزیشن لانگ دقیقا اولین تریگر ما فیک بریک اوت حمایت 0.2052 هست
@@ -926,15 +788,15 @@
 26020,2026-04-27 11:39:47,JSTUSDT,4h,long,range_breakout_trigger,0.0841,stop,,,,volume; RSI level 50,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26020,level taken from preceding sentence (anaphora: 'break of this level'),الان قیمت از این ناحیه ریجکت شده و از کف 0.07769 بلند شده || در صورتی که با حرکت قیمت به سمت 0.08410، حجم خرید افزایش پیدا کنه میتونیم با شکست این ناحیه پوزیشن لانگ باز کنیم
 26021,2026-04-27 12:09:30,ICPUSDT,4h,short,range_breakout_trigger,2.411,stop,,,,BTC context,,high,setup,,break,yes,,,,,26024,1,1,https://t.me/tradecity_pro/26021,,در صورت شکست 2.411 و فعال شدن تریگر شورت بیت کوین، ICP میتونه یه ریزشی رو آغاز بکنه
 26025,2026-04-27 15:53:18,COMPUSDT,4h,short,range_breakout_trigger,21.75,stop,,,,HH/HL or LH/LL structure,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26025,,از طرفی برای پوزیشن شورت در صورتی که این بار هم سقف پایین تری داشته باشیم و 21.75 رو شکست بدیم میتونیم پوزیشن شورت خوبی رو باز کنیم و باید سیو سود زودهنگام رو رعایت کنیم چون روند اصلی هنوز نزولی نشده
-26038,2026-04-28 10:39:13,BTCUSDT,4h,long,fakeout,77369,stop,,,,candle close beyond level; BTC context; volume; setup candle,rejected+faked (26093),high,setup,risky/early,close,yes,,,,26093,,0,1,https://t.me/tradecity_pro/26038,,در صورت فیک شدن این حرکت نزولی و تثبیت قیمت بالا 77369، میتونیم اولین تاییدیه صعودی شدن بیت کوین رو بگیریم و بعدش با مومنتوم صعودی پوزیشن لانگ باز کنیم
+26038,2026-04-28 10:39:13,BTCUSDT,4h,long,fakeout,77369,stop,,,,candle close beyond level; BTC context; volume; setup candle,rejected+faked (26093),high,setup,,close,yes,,,,26093,,0,1,https://t.me/tradecity_pro/26038,,در صورت فیک شدن این حرکت نزولی و تثبیت قیمت بالا 77369، میتونیم اولین تاییدیه صعودی شدن بیت کوین رو بگیریم و بعدش با مومنتوم صعودی پوزیشن لانگ باز کنیم
 26040,2026-04-28 11:16:44,XRPUSDT,1h,short,momentum_trigger_rsi,1.3872,stop,,,,SMA7/25; setup candle; RSI oversold(<30),,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26040,level taken from preceding sentence (anaphora: 'break of this level'),کوین XRP مومنتوم نزولی بهتری نسبت به بیت کوین داره و الان درگیر ناحیه 1.3872 هستش || شکست این ناحیه تریگر خوبی برای شورته
 26051,2026-04-29 10:24:57,HUSDT,1h,long,range_breakout_trigger,0.1834,stop,,,,,,medium,setup,,break,yes,,,,,26104,1,1,https://t.me/tradecity_pro/26051,level taken from preceding sentence (anaphora: 'break of this level'),کوین H یه روند صعودی ای توی تایم فریم های بالاتر داره و الان به مقاومت 0.1834 رسیده و درگیر این ناحیه ست || شکست این ناحیه بهمون پوزیشن لانگ میده
 26052,2026-04-29 10:46:57,APTUSDT,4h,long,pullback,,stop,,,,volume,,low,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26052,level not stated in text (chart only),اگه مقاومت شکسته شد میتونیم توی پولبک یا موج بعدی پوزیشن لانگ باز کنیم
 26054,2026-04-29 11:56:25,SUSDT,4h,long,range_breakout_trigger,0.04754,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26054,,برای پوزیشن لانگ تریگر راحت و نزدیکی داریم و بعد از شکست 0.04754 میتونیم پوزیشن لانگ باز کنیم و نقطه ورود خوبی داشته باشیم
 26055,2026-04-29 12:38:39,ENAUSDT,4h,long,fakeout,0.1109,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26055,,"برای پوزیشن لانگ در صورت فیک بریک اوت همین لول حمایتی نقطه ورود جدیدیه , به خاطر صعودی بودن چارت شکست 0.1109 میتونیم پوزیشن لانگمون رو باز کنیم"
 26055,2026-04-29 12:38:39,ENAUSDT,4h,short,range_breakout_trigger,0.1047,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26055,,برای پوزیشن شورت به صورت ریسکی با بریک اوت 0.1047 میتونیم پوزیشن شورت باز کنیم و نیازه که استاپ لاس کوچیکی برای اون قرار بدیم و روی ریسک به ریوارد ها سیو کنیم
-26070,2026-04-30 19:38:11,COMPUSDT,4h,long,range_breakout_trigger,56.83,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26070,,برای پوزیشن لانگ مقاومت مهم روزانه ما یعنی 56.83 جزو لول های مهم هست و شکست اون میتونه حرکت شارپ و جدیدی رو برای این آلت کوین داشته باشه
-26070,2026-04-30 19:38:11,COMPUSDT,4h,short,range_breakout_trigger,54.73,stop,,,,HH/HL or LH/LL structure,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26070,,برای پوزیشن شورت هم در صورتی که سقف پایین تری داشته باشیم و به حرکت ادامه بدیم به خاطر اینکه از سقف باکس ریجکت خوردیم میتونیم به سمت کف باکس حرکت کنیم و با شکست 54.73 پوزیشن باز کنیم
+26070,2026-04-30 19:38:11,LTCUSDT,4h,long,range_breakout_trigger,56.83,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26070,"header says COMPUSDT, text is Litecoin (لایت کوین)",برای پوزیشن لانگ مقاومت مهم روزانه ما یعنی 56.83 جزو لول های مهم هست و شکست اون میتونه حرکت شارپ و جدیدی رو برای این آلت کوین داشته باشه
+26070,2026-04-30 19:38:11,LTCUSDT,4h,short,range_breakout_trigger,54.73,stop,,,,HH/HL or LH/LL structure,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26070,"header says COMPUSDT, text is Litecoin (لایت کوین)",برای پوزیشن شورت هم در صورتی که سقف پایین تری داشته باشیم و به حرکت ادامه بدیم به خاطر اینکه از سقف باکس ریجکت خوردیم میتونیم به سمت کف باکس حرکت کنیم و با شکست 54.73 پوزیشن باز کنیم
 26088,2026-05-02 15:05:53,BTCUSDT,4h,long,range_breakout_trigger,79148,stop,,,,BTC dominance,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26088,level not stated in text (chart only); level filled in manual review from the same post,"برای پوزیشن لانگ در صورتی که در هفته پیش رو این تریگر فعال شود , و از طرفی دامیننس بیت کوین هم مارو همراهی کنه میتونیم پوزیشن لانگ خوبی رو باز کنیم و همراه اون باشیم"
 26090,2026-05-02 15:44:13,DASHUSDT,4h,long,momentum_trigger_rsi,34.06,stop,,,,volume; RSI overbought(>70),,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26090,,در صورتی که توی همین شرایط و در هر فضایی کفی بالاتر از 34.06 تشکیل بده با شکست 37.70 پوزیشن لانگ باز خواهیم کرد
 26090,2026-05-02 15:44:13,DASHUSDT,4h,long,momentum_trigger_rsi,37.7,stop,,,,volume; RSI overbought(>70),,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26090,,در صورتی که توی همین شرایط و در هر فضایی کفی بالاتر از 34.06 تشکیل بده با شکست 37.70 پوزیشن لانگ باز خواهیم کرد
@@ -943,8 +805,9 @@
 26124,2026-05-04 20:26:28,POLUSDT,1h,long,range_breakout_trigger,0.09763,stop,,,,candle close beyond level; BTC context,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26124,,در این صورت شکست این ناحیه اگر بیت کوین هم بالای مقاومتش تثبیت بده، یه موج صعودی ای میتونه آغاز بشه و میتونیم با شکست 0.09763 پوزیشن لانگ باز کنیم
 26125,2026-05-05 08:21:45,BTCUSDT,1h,short,fakeout,78781,stop,,,,RSI overbought(>70),,high,setup,risky/early,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26125,,در این صورت اولین تریگر شورتی که داریم 78781 هستش که خیلی تریگر ریسکی ایه و اگر میخواید با فیک بریک اوت پوزیشن باز کنید، میتونید از این تریگر استفاده کنید
 26126,2026-05-05 09:50:35,TAOUSDT,1h,long,momentum_trigger_rsi,293.3,stop,,,,multiple touches; RSI overbought(>70); volume,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26126,level not stated in text (chart only); level filled in manual review from the same post,در صورت شکست این ناحیه توی برخوردهای بعدی میتوینم پوزیشن لانگ باز کنیم
+26132,2026-05-05 15:11:29,VIRTUALUSDT,4h,long,range_breakout_trigger,0.7749,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26132,,در صورت شکست 0.7749 به خاطر افزایش حجمی که داشتیم میتونیم پوزیشن لانگ رو باز کنیم و همراهمون باشیم
 26136,2026-05-05 15:55:01,ALGOUSDT,4h,long,range_breakout_trigger,0.1251,stop,,,,,,medium,setup,,break,yes,0.1113,0.1213-0.1251,,,26158,1,1,https://t.me/tradecity_pro/26136,level not stated in text (chart only); level filled in manual review from the same post,در صورت ریجکت شدن از محدوده، تا وقتی قیمت بالای 0.1113 هستش، مومنتوم خرید داخل مارکت پابرجاست و شکست محدوده، تریگر لانگ خواهد بود
-26136,2026-05-05 15:55:01,ALGOUSDT,4h,short,range_breakout_trigger,0.1113,stop,,,,candle close beyond level,,high,setup,risky/early,close,yes,,0.1213-0.1251,,,26158,1,1,https://t.me/tradecity_pro/26136,,اما تثبیت قیمت زیر 0.1113 اولین نشونه مومنتوم نزولی میتونه باشه و بعد از تثبیت زیر این ناحیه، میتونیم دنبال تریگر شورت بگردیم
+26136,2026-05-05 15:55:01,ALGOUSDT,4h,short,range_breakout_trigger,0.1113,stop,,,,candle close beyond level,,high,setup,,close,yes,,0.1213-0.1251,,,26158,1,1,https://t.me/tradecity_pro/26136,,اما تثبیت قیمت زیر 0.1113 اولین نشونه مومنتوم نزولی میتونه باشه و بعد از تثبیت زیر این ناحیه، میتونیم دنبال تریگر شورت بگردیم
 26139,2026-05-06 07:16:59,ETHUSDT,1h,long,momentum_trigger_rsi,2390,stop,,,,volume; RSI; RSI level 45.44,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26139,,برای پوزیشن لانگ هم در صورت ورود حجم خرید به مارکت میتونیم با شکست 2390 پوزیشن لانگ باز کنیم
 26139,2026-05-06 07:16:59,ETHUSDT,1h,short,momentum_trigger_rsi,2272,stop,,,,HH/HL or LH/LL structure; multiple touches; RSI; RSI level 45.44,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26139,,در صورتی با شکست 2272 پوزیشن شورت باز میکنیم، که قیمت چندبار به این ناحیه برخورد کنه و بهش واکنش نشون بده و سقف پایینتر بزنه تا از قدرت فروشنده ها مطمئن بشیم
 26140,2026-05-06 08:00:33,JUPUSDT,4h,long,momentum_trigger_rsi,0.1954,stop,,,,multiple touches; volume; RSI overbought(>70),,medium,setup,,break,yes,,,,,26157,1,1,https://t.me/tradecity_pro/26140,level taken from preceding sentence (anaphora: 'break of this level'),کوین JUP  یه خط روند صعودی بلند مدتی داره که الان بعد از حمایت شدن ازش، یه حرکت صعودی ای رو به همراه افزایش حجم انجام داده و به ناحیه 0.1954 رسیده || در صورتی که قیمت یه واکنشی به این ناحیه نشون بده، توی برخوردهای بعدی در صورت شکستش میتونیم پوزیشن لانگ باز کنیم
@@ -983,13 +846,12 @@
 26234,2026-05-14 10:28:39,ENAUSDT,1h,long,fakeout,0.1182,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26234,,صورت فیک شدن این ناحیه یا ادامه دار بودن حرکت رنج، شکست 0.1182 اولین تریگر لانگ برای ادامه روند تایم فریم های بالاتر خواهد بود
 26234,2026-05-14 10:28:39,ENAUSDT,1h,short,range_breakout_trigger,0.1148,stop,,0.1073,,,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26234,level taken from preceding sentence (anaphora: 'break of this level'),کوین ENA توی تایم فریم 1ساعته بعد از شکست 0.1252 یه موج نزولی ای رو آغاز کرده و الان درگیر ناحیه 0.1148 هستش || شکست این ناحیه بهمون پوزیشن شورت میده و قیمت میتونه به سمت 0.1073 حرکتش رو آغاز کنه
 26242,2026-05-15 09:50:58,BTCUSDT,1h,long,range_breakout_trigger,81957,stop,,,,,rejected (26252),medium,setup,,break,yes,,,,26252,,0,1,https://t.me/tradecity_pro/26242,level not stated in text (chart only); level filled in manual review from the same post,اگر در موج بعدی بازهم با مومنتوم و شارپ به سمت 81957 حرکت کرد، میتونیم با شکست این ناحیه پوزیشن لانگ باز کنیم
-26243,2026-05-15 09:51:15,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26243,chart/image-only post: no setup text,
 26246,2026-05-15 10:56:47,DOGEUSDT,4h,long,range_breakout_trigger,0.11652,stop,,,,candle close beyond level; volume,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26246,,شکست 0.11652 تریگر خیلی خوبی برای پوزیشن لانگه و در صورت تثبیت بالای این ناحیه میتونیم پوزیشن باز بکنیم
 26252,2026-05-16 08:11:29,BTCUSDT,4h,short,pullback,78760,stop,,,,setup candle,,medium,setup,,,yes,,,26125,,,0,1,https://t.me/tradecity_pro/26252,if missed the break of 78760: short on pullback or setup candle; LH/LL below 75557 = trend confirmation,در صورت زدن یه سقف و کف پایینتر از 75557 تایید نزولی شدن رو میگیریم و میتونیم با ریسک بیشتری پوزیشن شورت باز کنیم
 26254,2026-05-16 08:26:58,ETHUSDT,4h,short,range_breakout_trigger,2178,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26254,,در این صورت میتونیم با شکست 2178 پوزیشن شورت باز کنیم
-26257,2026-05-16 10:11:54,FETUSDT,1d,long,range_breakout_trigger,0.2585,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26257,,در این صورت با شکست 0.2585 میتونیم اولین تایید صعودی شدن FET رو بگیریم و پوزیشن لانگ باز کنیم
+26257,2026-05-16 10:11:54,FETUSDT,1d,long,range_breakout_trigger,0.2585,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26257,,در این صورت با شکست 0.2585 میتونیم اولین تایید صعودی شدن FET رو بگیریم و پوزیشن لانگ باز کنیم
 26257,2026-05-16 10:11:54,FETUSDT,1d,short,range_breakout_trigger,0.195,stop,,0.1412,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26257,,در صورت شکست 0.1950 میتونیم پوزیشن شورت باز کنیم
-26258,2026-05-16 11:12:47,CYSUSDT,1d,long,range_breakout_trigger,0.54984,stop,,0.6775,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26258,,برای پوزیشن لانگ و حتی خرید اسپات این کوین رو داخل واچلیست خودتون قرار بدید چون در صورت برگشت مارکت جزو کوین های خوب برای پوزیشن لانگ خواهد بود و نقطه ورود اصلی ما شکست 0.54984 هست و با استفاده از فیبو اولین تارگت ما حرکت به سمت 0.6775 خواهد بود
+26258,2026-05-16 11:12:47,CYSUSDT,1d,long,range_breakout_trigger,0.54984,stop,,0.6775,,,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26258,,برای پوزیشن لانگ و حتی خرید اسپات این کوین رو داخل واچلیست خودتون قرار بدید چون در صورت برگشت مارکت جزو کوین های خوب برای پوزیشن لانگ خواهد بود و نقطه ورود اصلی ما شکست 0.54984 هست و با استفاده از فیبو اولین تارگت ما حرکت به سمت 0.6775 خواهد بود
 26259,2026-05-16 11:48:51,TRXUSDT,4h,long,range_breakout_trigger,0.3548,stop,,,,,not_triggered [symbol-level] (26302),high,setup,,break,yes,,,,26302,,1,1,https://t.me/tradecity_pro/26259,,نقطه ورود ما برای پوزیشن لانگ شکست سقف 0.3548 خواهد بود
 26264,2026-05-16 23:25:21,ETHUSDT,1h,short,range_breakout_trigger,2173,market,,,,volume; weekend caution; RSI oversold(<30),,high,setup,,break,yes,,,,,26266,0,1,https://t.me/tradecity_pro/26264,,الان ناحیه 2173 تریگر شورته و بعد از اینکه قیمت به این ناحیه رسیده حجم خیلی خیلی کم شده
 26267,2026-05-17 09:40:56,AAVEUSDT,4h,short,range_breakout_trigger,89.04,stop,,,,,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26267,level taken from preceding sentence (anaphora: 'break of this level'),در صورت شکست 89.04، یه حرکت نزولی ای میتونه آغاز بشه || پس با شکست این ناحیه میتونیم پوزیشن شورت باز کنیم
@@ -1002,28 +864,25 @@
 26291,2026-05-19 09:10:29,WLFIUSDT,1h,short,range_breakout_trigger,0.0597,stop,,,,volume; RSI oversold(<30),,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26291,,با شکست 0.0597 میتونیم پوزیشن شورت باز کنیم
 26293,2026-05-19 09:29:56,XTZUSDT,4h,short,range_breakout_trigger,0.3381,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26293,,اما به هرحال در صورت شکست 0.3381 میتونیم پوزیشن شورت باز کنیم
 26302,2026-05-20 07:50:51,TRXUSDT,4h,long,range_breakout_trigger,0.3575,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26302,,برای پوزیشن لانگ هم بهترین نقطه ورود مارکت رو میتونه داشته باشه و بعد از شکست 0.3575 میتونید پوزیشن لانگ خودتون رو باز کنید
-26303,2026-05-20 08:22:18,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26303,chart/image-only post: no setup text,
 26304,2026-05-20 08:57:19,WLDUSDT,4h,short,pattern,0.2327,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26304,,برای پوزیشن شورت در صورتی که از خط روندی که داریم ریجکت شیم و زمانی که به سمت پایین حرکت میکنیم حجم در حال افزایش باشه شکست 0.2327 جزو نقطه ورود های خوب خواهد بود !
 26305,2026-05-20 09:19:32,BTCUSDT,4h,long,range_breakout_trigger,81957,stop,,,,volume; RSI level 30; RSI,,high,setup,main,break,yes,,,26242,,,0,1,https://t.me/tradecity_pro/26305,,تریگر اصلی لانگ هم 81957 خواهد بود
 26305,2026-05-20 09:19:32,BTCUSDT,4h,short,range_breakout_trigger,75488,stop,,,,volume; RSI level 30; RSI,faked (26339),high,setup,,break,yes,,,26290,26339,,0,1,https://t.me/tradecity_pro/26305,,برای شورت و در صورت ادامه ریزش، شکست 75488 بهمون تریگر میده
 26310,2026-05-21 08:53:57,BTCUSDT,1h,short,range_breakout_trigger,76243,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26310,,در صورت ریجکت شدن از سقف 78472 و شروع موج نزولی هم میتونیم با شکست 76243 و 75488 پوزیشن شورت باز کنیم
 26325,2026-05-23 17:55:22,XTZUSDT,4h,long,range_breakout_trigger,0.3523,stop,,,,HH/HL or LH/LL structure; multiple touches,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26325,long needs retest/reject of 0.3523 and a higher low first,ولی برای تریگر لانگ نیاز به برخورد مجدد به 0.3523 و ریجکت از این فضا و تشکیل کف بالاتر به خاطر سایز استاپ لاس مناسب تر داریم
-26325,2026-05-23 17:55:22,XTZUSDT,4h,short,range_breakout_trigger,0.3325,stop,,,,,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26325,,برای پوزیشن شورت در صورت شکست 0.3325 خیلی راحت میتونیم با تاییده های کمتر حتی پوزیشن خودمون رو باز کنیم
+26325,2026-05-23 17:55:22,XTZUSDT,4h,short,range_breakout_trigger,0.3325,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26325,,برای پوزیشن شورت در صورت شکست 0.3325 خیلی راحت میتونیم با تاییده های کمتر حتی پوزیشن خودمون رو باز کنیم
 26326,2026-05-23 18:23:32,ATOMUSDT,4h,long,range_breakout_trigger,2.149,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26326,,برای پوزیشن شورت شکست 1.998 نقطه ورود ریسکی و شکست 1.864 نقطه ورود مطمعنی تری برای پوزیشن شورت هست و دلیل اون هم حجم زیاد داخل باکس بین 1.864 تا 1.998 و برای پوزیشن لانگ نقطه ورود خوب ما شکست 2.149 همراه افزایش حجم خواهد بود
 26326,2026-05-23 18:23:32,ATOMUSDT,4h,short,range_breakout_trigger,1.864,stop,,,,volume,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26326,,برای پوزیشن شورت شکست 1.998 نقطه ورود ریسکی و شکست 1.864 نقطه ورود مطمعنی تری برای پوزیشن شورت هست و دلیل اون هم حجم زیاد داخل باکس بین 1.864 تا 1.998 و برای پوزیشن لانگ نقطه ورود خوب ما شکست 2.149 همراه افزایش حجم خواهد بود
 26326,2026-05-23 18:23:32,ATOMUSDT,4h,short,range_breakout_trigger,1.998,stop,,,,volume,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26326,,برای پوزیشن شورت شکست 1.998 نقطه ورود ریسکی و شکست 1.864 نقطه ورود مطمعنی تری برای پوزیشن شورت هست و دلیل اون هم حجم زیاد داخل باکس بین 1.864 تا 1.998 و برای پوزیشن لانگ نقطه ورود خوب ما شکست 2.149 همراه افزایش حجم خواهد بود
 26329,2026-05-24 07:00:48,HYPEUSDT,1h,long,indecision_trigger,,stop,,,,setup candle; candle close beyond level,,low,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26329,level not stated in text (chart only),بسته شدن این کندل میتونه برای ما کندل ستاپ به همراه ورود به اوربای باشه میتونیم یه پوزیشن لانگ ریسکی ای داشته باشیم
-26330,2026-05-24 07:07:09,PUMPUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/26330,chart/image-only post: no setup text,
 26334,2026-05-24 12:16:47,BNBUSDT,1h,long,range_breakout_trigger,661.63,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26334,,برای پوزیشن لانگ شکست 661.63 میتونیم ورود داشته باشیم و برای پوزیشن شورت در صورتی که این مقاومت فیک بریک اوت بشه میتونیم نقطه ورود ریسکی شورت 655.02 رو داشته باشیم
 26334,2026-05-24 12:16:47,BNBUSDT,1h,short,fakeout,655.02,stop,,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26334,,برای پوزیشن لانگ شکست 661.63 میتونیم ورود داشته باشیم و برای پوزیشن شورت در صورتی که این مقاومت فیک بریک اوت بشه میتونیم نقطه ورود ریسکی شورت 655.02 رو داشته باشیم
 26335,2026-05-24 13:02:33,ARKMUSDT,1d,long,range_breakout_trigger,0.1459,stop,0.1162,,,,,high,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26335,,برای خرید اسپات شکست 0.1459 با استاپ 0.1162 به صورت ریسکی و استاپ لاس مطعمن 0.0936 میتونیم خرید اسپات خودمون رو انجام بدیم و حتی در تایم فریم های پایین تر با ورود مومنتوم میتونیم پوزیشن لانگ باز کنیم
-26336,2026-05-24 13:39:22,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26336,chart/image-only post: no setup text,
 26339,2026-05-25 08:24:36,BTCUSDT,4h,long,range_breakout_trigger,78056,stop,,81957,,volume,rejected (26354),high,setup,,break,yes,,,,26354,,1,1,https://t.me/tradecity_pro/26339,,اما در صورتی که با شکست 78056 حجم هم افزایش پیدا بکنه یه موج صعودی به سمت 81957 میتونه آغاز بشه و در این صورت با شکست 78056 میتونیم پوزیشن لانگ باز کنیم
 26339,2026-05-25 08:24:36,BTCUSDT,4h,short,range_breakout_trigger,76334,stop,,,,volume,,high,setup,,break,yes,,,26310,,,1,1,https://t.me/tradecity_pro/26339,,برای شورت در صورت شکست همین 76334، مجددا میتونیم ازش به عنوان تریگر شورت استفاده کنیم
 26342,2026-05-25 10:56:54,ZECUSDT,4h,long,range_breakout_trigger,679.24,stop,,,,,,medium,setup,risky/early,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26342,added in manual review,
 26342,2026-05-25 10:56:54,ZECUSDT,4h,long,range_breakout_trigger,724.94,stop,,,,,,medium,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26342,ATH,
 26347,2026-05-25 19:03:15,ONDOUSDT,4h,long,range_breakout_trigger,0.4446,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26347,,برای پوزیشن لانگ شکست 0.4446 به همراه افزایش حجم و ورود مومنتوم جزو نقطه ورود های خوب این هفته خواهد بود
-26348,2026-05-25 19:25:53,XTZUSDT,4h,long,pattern,0.3525,stop,,,,,,high,setup,risky/early,break,yes,,,26325,,,1,1,https://t.me/tradecity_pro/26348,,برای پوزیشن لانگ هم با اینکه کوین های بهتری مثل ONDO داریم ولی شکست خط روند بازگشتی ما و فعال شدن تریگر 0.3525 میتونه جزو اولین نقاط ورودی ما باشه
+26348,2026-05-25 19:25:53,XTZUSDT,4h,long,pattern,0.3525,stop,,,,,,high,setup,,break,yes,,,26325,,,1,1,https://t.me/tradecity_pro/26348,,برای پوزیشن لانگ هم با اینکه کوین های بهتری مثل ONDO داریم ولی شکست خط روند بازگشتی ما و فعال شدن تریگر 0.3525 میتونه جزو اولین نقاط ورودی ما باشه
 26354,2026-05-26 07:59:38,BTCUSDT,4h,long,range_breakout_trigger,78056,stop,,,,,,high,setup,,break,yes,,,26339,,,1,1,https://t.me/tradecity_pro/26354,,برای لانگ یکم مومنتوم صعودی کمه اما اگر قیمت از 76334 حمایت بشه، میتونیم با شکست سقف 78056 پوزیشن لانگ باز کنیم
 26354,2026-05-26 07:59:38,BTCUSDT,4h,short,range_breakout_trigger,76334,stop,,,,,save_profit [symbol-level] (26382),high,setup,,break,yes,,,26310,26382,,1,1,https://t.me/tradecity_pro/26354,,با شکست 76334، موج ریزشی بعدی میتونه آغاز بشه و میتونیم پوزیشن شورت باز بکنیم
 26362,2026-05-26 16:18:21,POLUSDT,4h,long,range_breakout_trigger,0.09356,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26362,,برای پوزیشن لانگ با شکست 0.09356 میتونیم نقطه ورود داشته باشیم و با افزایش حجم همراه این پوزیشن باشیم
@@ -1034,7 +893,7 @@
 26402,2026-05-29 10:43:58,PUMPUSDT,4h,short,range_breakout_trigger,0.001638,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26402,,در این صورت با شکست 0.001638 میتونیم پوزیشن شورت باز کنیم
 26403,2026-05-29 11:16:58,FETUSDT,1d,long,range_breakout_trigger,0.2504,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26403,,با تثبیت قیمت بالای 0.2504 پوزیشن لانگ هم میتونیم باز کنیم
 26403,2026-05-29 11:16:58,FETUSDT,1d,short,range_breakout_trigger,0.195,stop,,,,,,high,setup,main,break,yes,,,26257,,,1,1,https://t.me/tradecity_pro/26403,,در صورت ریجکت شدن قیمت از 0.2504، با شکست ناحیه 0.1950 میتونیم پوزیشن شورت باز کنیم چون همچنان روند اصلی مارکت نزولیه
-26434,2026-06-01 06:34:06,HUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,26435;26437,0,1,https://t.me/tradecity_pro/26434,chart/image-only post: no setup text,
+26434,2026-06-01 06:34:06,HUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,26435;26437,0,1,https://t.me/tradecity_pro/26434,"chart-only post, no setup text: photo/media with symbol only",
 26461,2026-06-03 11:03:51,PYTHUSDT,4h,long,range_breakout_trigger,0.0425,stop,,,,BTC context,,high,setup,,break,yes,,,,,26474,0,1,https://t.me/tradecity_pro/26461,,در صورتی که این کوین به پیر بیت کوین صعودی بشه شکست 0.0425 هم بهمون پوزیشن لانگ میده
 26489,2026-06-05 13:15:59,ENAUSDT,1h,short,momentum_trigger_rsi,0.0855,stop,,,,volume; RSI oversold(<30) level 30,,high,setup,main,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26489,,با توجه به مومنتوم نزولی ای که درحال حاضر داخل این کوین داریم، شکست 0.0855 تریگر خیلی خوبی برای پوزیشن شورته و با شکست این ناحیه موج اصلی حرکت این کوین میتونه آغاز بشه
 26504,2026-06-06 18:00:17,SOLUSDT,15m,short,momentum_trigger_rsi,61.56,stop,,,,volume; RSI level 36.89,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26504,,شکست ناحیه 61.56 بهمون پوزیشن شورت میده
@@ -1044,7 +903,7 @@
 26561,2026-06-12 10:14:23,ICPUSDT,1h,short,range_breakout_trigger,2.229,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26561,,پس شکست 2.229 تریگ شورت خیلی خوبیه
 26575,2026-06-13 11:17:10,LINKUSDT,1h,long,range_breakout_trigger,7.997,stop,,,,volume; weekend caution,,high,setup,risky/early,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26575,,پس شکست 7.997 تریگر ریسکی و زودهنگامی برای پوزیشن لانگ خواهد بود
 26575,2026-06-13 11:17:10,LINKUSDT,1h,short,fakeout,7.777,stop,,7.512,,volume; weekend caution,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26575,,از طرفی در صورت ریجکت شدن یا فیک کردن 7.997، مومنتوم نزولی میتونه وارد مارکت بشه و در این صورت با شکست خط روند و فعال شدن تریگر 7.777، یه لگ نزولی به سمت 7.512 و 7.251 شروع میشه و ما هم میتونیم از 7.777 بعنوان تریگر شورت استفاده کنیم
-26582,2026-06-14 09:11:48,GYMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/26582,chart/image-only post: no setup text,
+26582,2026-06-14 09:11:48,GYMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/26582,"chart-only post, no setup text: photo/media with symbol only",
 26583,2026-06-14 10:45:26,BCHUSDT,1h,short,range_breakout_trigger,192.1,stop,,,,,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26583,,اما این پوزیشن، خیلی پوزیشن بلند مدتی نخواهد بود و پوزیشن شورت اصلی و بلند مدت رو بعد از شکست 192.1 باز میکنیم
 26583,2026-06-14 10:45:26,BCHUSDT,1h,short,range_breakout_trigger,202,stop,,,,,faked (26597),high,setup,,break,yes,,,,26597,,1,1,https://t.me/tradecity_pro/26583,,در صورت شکست 202 میتونیم پوزیشن شورت باز کنیم
 26593,2026-06-15 16:58:05,COMPUSDT,4h,short,range_breakout_trigger,17.25,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26593,,روند این کوین از قبل نزولی بوده و در صورت شکست 17.25، این روند نزولی میتونه ادامه پیدا بکنه پس شکست 17.25 تریگر خوبی برای پوزیشن شورت خواهد بود
@@ -1057,15 +916,12 @@
 26627,2026-06-19 11:45:08,DOGEUSDT,15m,long,range_breakout_trigger,0.08275,stop,,,,candle close beyond level,,high,setup,first sign,close,yes,,,,,,0,1,https://t.me/tradecity_pro/26627,,در صورتی که قیمت از این ناحیه حمایت شه یا فیکش کنه، با تثبیت قیمت بالای 0.08275 اولین نشونه صعودی شدن رو میگیریم و تریگر ریسکیمون برای پوزیشن لانگ شکست 0.08385 خواهد بود
 26627,2026-06-19 11:45:08,DOGEUSDT,15m,long,range_breakout_trigger,0.08385,stop,,,,candle close beyond level,,high,setup,risky/early,close,yes,,,,,,0,1,https://t.me/tradecity_pro/26627,,در صورتی که قیمت از این ناحیه حمایت شه یا فیکش کنه، با تثبیت قیمت بالای 0.08275 اولین نشونه صعودی شدن رو میگیریم و تریگر ریسکیمون برای پوزیشن لانگ شکست 0.08385 خواهد بود
 26627,2026-06-19 11:45:08,DOGEUSDT,15m,short,range_breakout_trigger,0.081218,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26627,,شکست 0.081218 توی این تایم فریم بهمون پوزیشن شورت میده
-26631,2026-06-20 06:23:12,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26631,chart/image-only post: no setup text,
 26642,2026-06-21 09:00:49,BCHUSDT,1h,long,range_breakout_trigger,200.2,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26642,,پس شکست 200.2 تریگر خوبی برای پوزیشن لانگ خواهد بود
 26642,2026-06-21 09:00:49,BCHUSDT,1h,short,range_breakout_trigger,193.6,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26642,,از طرفی چون روند این کوین در سایکل ها و تایم فریم های بالاتر نزولیه، شکست کف 193.6 بهمون پوزیشن شورت میده و میتونه شروع کننده موج نزولی بعدی باشه
 26642,2026-06-21 09:00:49,BCHUSDT,1h,short,range_breakout_trigger,197.1,stop,,,,,,high,setup,risky/early,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26642,,شکست 197.1 هم تریگر شورت زودهنگام خواهد بود
-26643,2026-06-21 16:09:04,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26643,chart/image-only post: no setup text,
 26650,2026-06-22 09:38:39,SEIUSDT,1h,long,range_breakout_trigger,0.05615,stop,,,,volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26650,,شکست سقف 0.05615 همچنان تریگر خوبی برای پوزیشن لانگه
 26650,2026-06-22 09:38:39,SEIUSDT,1h,short,range_breakout_trigger,0.05274,stop,,,,volume,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26650,,اما همونطور که گفتم چون باکس خیلی طولانیه، شکست کف 0.05274 هم میتونه بهمون پوزیشن بده
-26652,2026-06-22 16:02:02,GYMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26652,chart/image-only post: no setup text,
-26661,2026-06-24 08:09:01,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,26675,0,1,https://t.me/tradecity_pro/26661,chart/image-only post: no setup text,
+26652,2026-06-22 16:02:02,GYMUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26652,"chart-only post, no setup text: symbol hashtag only (chart image not captured)",
 26662,2026-06-24 09:02:16,BNBUSDT,4h,short,range_breakout_trigger,572,stop,,529,,volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26662,,در صورت شکست حمایت 572 میتونیم پوزیشن شورت باز کنیم
 26677,2026-06-25 09:31:22,ENAUSDT,1h,long,range_breakout_trigger,0.0868,stop,,0.0984,,candle close beyond level; volume,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26677,,پس در صورت تثبیت قیمت بالای 0.0868 میتونیم پوزیشن لانگ باز کنیم
 26677,2026-06-25 09:31:22,ENAUSDT,1h,short,range_breakout_trigger,0.0796,stop,,0.0708,,candle close beyond level; volume,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26677,,اما از طرفی اگر قیمت نتونه بالای 0.0868 تثبیت بده، شکست لول 0.0796 تریگر خیلی خوبی برای پوزیشن شورت خواهد بود و حرکت نزولی ای که قیمت شروع کرده میتونه تا 0.0708 ادامه دار باشه
@@ -1073,8 +929,7 @@
 26685,2026-06-26 09:42:51,FILUSDT,4h,short,range_breakout_trigger,0.719,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26685,,در صورت تثبیت قیمت زیر این لول، موج نزولی بعدی این کوین میتونه آغاز بشه و با شکست 0.719 میتونیم پوزیشن شورت باز کنیم
 26705,2026-06-27 10:21:21,POLUSDT,1h,long,range_breakout_trigger,0.07447,stop,,,,weekend caution,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26705,,از طرفی اگر قیمت از این لول حمایت بشه، شکست 0.07447 تریگر لانگ ریسک خوبی خواهد بود
 26705,2026-06-27 10:21:21,POLUSDT,1h,short,range_breakout_trigger,0.07105,stop,,,,weekend caution,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26705,,پس با شکست 0.07105 میتونیم یه پوزیشن شورت باز کنیم
-26706,2026-06-27 16:48:21,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26706,chart/image-only post: no setup text,
-26736,2026-07-01 15:36:04,BTCUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/26736,chart/image-only post: no setup text,
+26736,2026-07-01 15:36:04,BTCUSDT,1h,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/26736,"chart-only post, no setup text: photo/media with symbol only",
 26770,2026-07-05 13:31:41,PIUSDT,4h,short,range_breakout_trigger,0.1127,stop,0.1184,,,,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26770,level taken from preceding sentence (anaphora: 'break of this level'),الان قیمت به حمایت 0.1127 رسیده و شکست این لول میتونه شروع کننده موج نزولی بعدی باشه || در صورت شکست این ناحیه میتونیم پوزیشن شورت باز بکنیم
 26778,2026-07-06 15:19:32,JUPUSDT,4h,long,range_breakout_trigger,0.2461,stop,,,,RSI overbought(>70),,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26778,,پس با شکست 0.2461 میتونیم پوزیشن لانگ باز کنیم
 26778,2026-07-06 15:19:32,JUPUSDT,4h,short,range_breakout_trigger,0.23,stop,,,,candle close beyond level; RSI overbought(>70),,high,setup,risky/early,close,yes,,,,,,0,1,https://t.me/tradecity_pro/26778,,در این صورت اگر قیمت زیر 0.23 تثبیت بده میتونیم پوزیشن شورت ریسکی باز کنیم
@@ -1084,10 +939,9 @@
 26873,2026-07-18 15:20:55,GRTUSDT,1h,short,range_breakout_trigger,0.01701,stop,,,,volume; RSI level 30,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26873,,در این صورت اگر شکست 0.01701 رو از دست دادید میتونید با شکست 0.01684 پوزیشن شورت باز کنید
 26876,2026-07-19 13:30:40,QNTUSDT,4h,long,range_breakout_trigger,68.92,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/26876,,اما در صورتی که قیمت بالای 68.92 تثبیت بشه مومنتوم صعودی وارد مارکت میشه و میتونیم از شکست 68.92 و 72.52 بعنوان تریگر لانگ استفاده کنیم
 26876,2026-07-19 13:30:40,QNTUSDT,4h,short,range_breakout_trigger,63.66,stop,,,,,,high,setup,,break,yes,68.92,,,,,1,1,https://t.me/tradecity_pro/26876,,پس با شکست 63.66 میتونیم پوزیشن شورت باز کنیم تا درصورت انجام این حرکت نزولی، همراه این کوین باشیم
-26883,2026-07-20 15:27:42,PENGUSDT,4h,long,range_breakout_trigger,0.006315,stop,,,,setup candle,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26883,,"برای پوزیشن لانگ هم دقیقا درگیر تریگر ورود هستیم و شکست 0.006315 میتونه جزو نقطه ورود های اصلی ما برای پوزیشن لانگ باشه , مخصوصا اگه در 30 دقیقه آینده کندل به شکل کندل ستاپ باشه"
-26883,2026-07-20 15:27:42,PENGUSDT,4h,short,fakeout,,stop,,,,,,low,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26883,level not stated in text (chart only),تنها سناریو نزولی میتونه فیک بریک اوت شدن این فضا باشه که همراه با استراژی فیک بریک اوت میتونیم پوزیشن شورت داشته باشیم
+26883,2026-07-20 15:27:42,PENGUUSDT,4h,long,range_breakout_trigger,0.006315,stop,,,,setup candle,,high,setup,main,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26883,,"برای پوزیشن لانگ هم دقیقا درگیر تریگر ورود هستیم و شکست 0.006315 میتونه جزو نقطه ورود های اصلی ما برای پوزیشن لانگ باشه , مخصوصا اگه در 30 دقیقه آینده کندل به شکل کندل ستاپ باشه"
+26883,2026-07-20 15:27:42,PENGUUSDT,4h,short,fakeout,,stop,,,,,,low,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26883,level not stated in text (chart only),تنها سناریو نزولی میتونه فیک بریک اوت شدن این فضا باشه که همراه با استراژی فیک بریک اوت میتونیم پوزیشن شورت داشته باشیم
 26896,2026-07-21 15:47:51,LINKUSDT,1h,long,momentum_trigger_rsi,8.745,stop,,,,volume; RSI overbought(>70); SMA25,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/26896,,در این صورت میتونیم با شکست 8.745 پوزیشن لانگ باز کنیم
-26902,2026-07-22 06:44:36,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/26902,chart/image-only post: no setup text,
 26928,2026-07-23 13:29:01,DOGEUSDT,4h,long,fakeout,0.07158,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26928,,در صورت فیک شدن حمایت 0.07158 و شکست خط روند، مومنتوم صعودی وارد مارکت میشه و در این صورت شکست 0.07360 تریگر خیلی خوبی برای لانگ خواهد بود
 26928,2026-07-23 13:29:01,DOGEUSDT,4h,long,fakeout,0.0736,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26928,,در صورت فیک شدن حمایت 0.07158 و شکست خط روند، مومنتوم صعودی وارد مارکت میشه و در این صورت شکست 0.07360 تریگر خیلی خوبی برای لانگ خواهد بود
 26928,2026-07-23 13:29:01,DOGEUSDT,4h,short,range_breakout_trigger,0.07158,stop,,0.06598,,,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/26928,level taken from preceding sentence (anaphora: 'break of this level'),اما در صورت تثبیت قیمت زیر 0.07158، با توجه به خط روند نزولی ای که داخل این باکس رنج ایجاد شده، حرکت نزولی میتونه آغاز بشه و قیمت میتونه موج نزولی بعدیش رو آغاز بکنه || ماهم میتونیم با شکست این ناحیه پوزیش شورت باز کنیم
@@ -1106,12 +960,11 @@
 27029,2026-08-03 13:29:57,TRXUSDT,1d,short,range_breakout_trigger,0.315,stop,,,,volume,,high,setup,main,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27029,,تریگر اصلی شورت بعد از شکست 0.3150 خواهد بود
 27029,2026-08-03 13:29:57,TRXUSDT,1d,short,range_breakout_trigger,0.3224,stop,,,,volume,,high,setup,risky/early,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27029,,اما از شکست 0.3224 میتونیم بعنوان تریگر ریسکی شورت برای پوزیشن کوتاه مدت استفاده کنیم
 27041,2026-08-04 14:14:41,ONDOUSDT,1h,short,momentum_trigger_rsi,0.3671,stop,,0.3538,,volume; RSI level 30; RSI oversold(<30),,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27041,,حجم فروش هم در دو کندل قبلی افزایش پیدا کرده و اگر این افزایش حجم ادامه دار باشه، شکست 0.3671 تریگر خوبی برای شورت خواهد بود چون مومنتوم این کوین فعلا نزولیه و میتونه در جهت مومنتومش حرکت داشته باشه
-27046,2026-08-05 06:51:37,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/27046,chart/image-only post: no setup text,
 27050,2026-08-05 13:56:26,ETHUSDT,4h,long,range_breakout_trigger,1886,stop,,1926,,candle close beyond level; volume,,high,setup,,close,yes,,,,,,0,1,https://t.me/tradecity_pro/27050,,برای پوزیشن لانگ در صورتی که قیمت بالای 1886 تثبیت بده حرکت صعودی به سمت 1926 و 1968 میتونه انجام بشه
 27076,2026-08-07 13:49:27,WLDUSDT,4h,short,range_breakout_trigger,0.297,stop,,,,volume,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27076,level taken from preceding sentence (anaphora: 'break of this level'),حجم فروش درحال افزایشه و این احتمال شکست ناحیه 0.2970 رو افزایش میده || در صورت شکست این ناحیه میتونیم پوزیشن شورت باز کنیم
 27087,2026-08-08 14:14:17,NEARUSDT,4h,short,range_breakout_trigger,1.579,stop,,1.448,,volume; RSI oversold(<30) level 30,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27087,,در صورت شکست 1.579 میتونیم پوزیشن شورت باز کنیم
 27100,2026-08-09 13:55:04,SUIUSDT,4h,long,momentum_trigger_rsi,0.7005,stop,,,,RSI overbought(>70),,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27100,,شکست 0.7005 تریگر خوبی برای لانگه و از طرفی ورود RSI به اوربای هم تریگر مومنتومی خوبی برای تایید این پوزیشنه
-27108,2026-08-10 14:01:48,PENGUSDT,4h,long,range_breakout_trigger,0.006787,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27108,,برای پوزیشن لانگ شکست 0.006787 جزو نقطه ورود های خوب لانگ خواهد بود
+27108,2026-08-10 14:01:48,PENGUUSDT,4h,long,range_breakout_trigger,0.006787,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27108,,برای پوزیشن لانگ شکست 0.006787 جزو نقطه ورود های خوب لانگ خواهد بود
 27120,2026-08-11 14:37:02,GALAUSDT,4h,short,range_breakout_trigger,0.001753,stop,,,,candle close beyond level; RSI oversold(<30),,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/27120,,برای پوزیشن شورت ناحیه 0.001753 تریگر خوبیه و در صورت تثبیت قیمت زیر این لول قیمت میتونه به سمت کف های تاریخی جدید حرکت کنه
 27134,2026-08-12 14:00:57,DYDXUSDT,4h,short,range_breakout_trigger,0.10691,stop,,,,candle close beyond level,,medium,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/27134,,حمایت اصلی و تاییدیه اصلی برای ادامه دار بودن روند رو بعد از تثبیت قیمت زیر 0.10691 میگیریم و درواقعا ناحیه 0.1102 تریگر زودهنگام حساب میشه
 27134,2026-08-12 14:00:57,DYDXUSDT,4h,short,range_breakout_trigger,0.1102,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27134,,با توجه به ساختار و روند نزولی، با شکست این حمایت قیمت میتونه به حرکتش ادامه بده و هم میتونیم با شکست 0.1102 پوزیشن شورت باز کنیم
@@ -1119,7 +972,6 @@
 27150,2026-08-14 15:00:51,LINKUSDT,1h,long,range_breakout_trigger,8.886,stop,,,,,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27150,,ناحیه 8.886 تریگر مقاومتیه که در تایم فریم های بالاتر قابل مشاهده ست و درحال حاضر هم قیمت بعد از رسیدن به این ناحیه مومنتومش خیلی کم شده و این نشون دهنده قدرت بالای این ناحیه ست
 27150,2026-08-14 15:00:51,LINKUSDT,1h,short,range_breakout_trigger,8.631,stop,,,,,,high,setup,main,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27150,,لول حمایتی بعدی 8.631 خواهد بود که این تریگر، تایید اصلی تغییر روند رو بهمون میده و با شکست این ناحیه ست که میتونیم پوزیشن شورت اصلی رو باز کنیم
 27150,2026-08-14 15:00:51,LINKUSDT,1h,short,range_breakout_trigger,8.762,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27150,,در این صورت میتونیم با شکست 8.762 پوزیشن شورت باز کنیم
-27154,2026-08-15 06:57:45,LINKUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/27154,chart/image-only post: no setup text,
 27159,2026-08-15 14:04:00,SUIUSDT,4h,short,range_breakout_trigger,0.6743,stop,,,,candle close beyond level; order book; volume; weekend caution,,medium,setup,,close,yes,,0.6743-0.7012,,,,0,1,https://t.me/tradecity_pro/27159,level not stated in text (chart only); level filled in manual review from the same post,در صورت تثبیت قیمت زیر این محدوده میتونیم پوزیشن شورت باز کنیم
 27170,2026-08-16 12:45:10,SEIUSDT,1h,short,range_breakout_trigger,0.03963,stop,,,,,,medium,setup,,break,yes,0.04074,,,,,1,1,https://t.me/tradecity_pro/27170,level taken from preceding sentence (anaphora: 'break of this level'),با توجه به ساختار نزولی، در صورت شکست ناحیه 0.03963 حرکت نزولی میتونه ادامه پیدا کنه و قیمت به سمت لول های پایینتر میتونه حرکت کنه || پس شکست این لول بهمون پوزیشن شورت میده
 27176,2026-08-17 13:57:12,FILUSDT,4h,long,range_breakout_trigger,0.6951,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27176,,برای لانگ اول باید صبر کنیم خط رومد شکسته بشه، در این صورت اولین تریگری که میتونیم برای لانگ داشته باشیم 0.6951 خواهد بود
@@ -1129,7 +981,6 @@
 27216,2026-08-20 14:09:59,NEARUSDT,4h,long,momentum_trigger_rsi,1.75,stop,,,,RSI overbought(>70); volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27216,,در صورت شکست 1.75 و ورود RSI به اوربای میتونیم پوزیشن لانگ باز کنیم
 27249,2026-08-22 13:51:28,LINKUSDT,15m,long,range_breakout_trigger,11.888,stop,,,,volume,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27249,,در صورت شکست 11.888 میتونیم پوزیش لانگ باز کنیم
 27261,2026-08-23 13:32:05,XRPUSDT,15m,long,range_breakout_trigger,1.155,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27261,,در این صورت میتونیم با شکست 1.1550 پوزیشن لانگ باز کنیم
-27264,2026-08-23 16:00:02,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,1,https://t.me/tradecity_pro/27264,chart/image-only post: no setup text,
 27268,2026-08-24 13:39:22,DOGEUSDT,1h,long,range_breakout_trigger,0.09416,stop,,,,RSI,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27268,level taken from preceding sentence (anaphora: 'break of this level'),در صورت تثبیت قیمت بالای 0.09416 میتونیم تاییدیه شروع موج صعودی بعدی رو بگیریم || پس شکست این ناحیه بهمون پوزیشن لانگ میده
 27283,2026-08-25 14:06:09,INJUSDT,15m,long,range_breakout_trigger,5.99,stop,,,,,,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27283,,در صورت شکست 5.99 موج صعودی بعدی میتونه آغاز بشه و ماهم با شکست این لول میتونیم پوزیشن لانگ باز کنیم
 27291,2026-08-26 13:05:43,HYPEUSDT,1h,long,range_breakout_trigger,82.463,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27291,,ماهم میتونیم در صورتی که این اتفاق بیوفته با خریدارها همراه بشیم و با شکست 82.463 پوزیشن لانگ باز کنیم
@@ -1154,15 +1005,13 @@
 27589,2026-09-27 12:44:10,PUMPUSDT,1h,long,range_breakout_trigger,0.004583,stop,,,,volume,,medium,setup,,break,yes,0.004337,,,,,0,1,https://t.me/tradecity_pro/27589,level taken from preceding sentence (anaphora: 'break of this level'),در صورت شکست ناحیه 0.004583، موج بعدی صعودی میتونه آغاز بشه و باکسی که قیمت خیلی وقته درگیرش هست هم شکسته میشه و روند اصلی این کوین میتونه شکل بگیره || پس شکست این ناحیه تا زمانی که قیمت بالای 0.004337 هست تریگر خیلی خوبی برای پوزیشن لانگ خواهد بود
 27600,2026-09-28 13:44:43,ADAUSDT,1h,long,range_breakout_trigger,0.2603,stop,,,,volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27600,,در صورت شکست 0.2603 میتونیم یه پوزیشن لانگ باز بکنیم
 27617,2026-09-30 15:52:46,CRVUSDT,1h,long,range_breakout_trigger,0.4086,stop,,0.4509,,,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27617,level taken from preceding sentence (anaphora: 'break of this level'),درحال حاضر ناحیه ای که قیمت درگیرشه 0.4086 هست و در صورت تثبیت قیمت بالای این ناحیه ادامه حرکت صعودی میتونه انجام بشه || با شکست این لول میتونیم پوزیشن لانگ باز کنیم
-27621,2026-10-01 07:42:06,BTCUSDT,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/27621,chart/image-only post: no setup text,
 27628,2026-10-01 13:39:53,NEARUSDT,4h,long,range_breakout_trigger,5.451,stop,,,,multiple touches,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27628,level taken from preceding sentence (anaphora: 'break of this level'),اما فعلا قیمت دوبار به 5.451 برخورد کرده و فعلا با توجه به ضعف روندی که داریم احتمالش کمه که بالای این لول تثبیت بده || ولی اگر مومنتوم خرید و قدرت خریدار دوباره وارد این کوین بشه با شکست این ناحیه میتونیم پوزیشن لانگ باز کنیم
 27628,2026-10-01 13:39:53,NEARUSDT,4h,short,range_breakout_trigger,4.661,stop,,,,candle close beyond level,,high,setup,,close,yes,,,,,,0,1,https://t.me/tradecity_pro/27628,,از طرفی اگر با همین ضعف روندی که الان داریم، قیمت زیر 4.661 تثبیت بده پترن دابل تاپ فعال میشه و میتونیم با شکست این ناحیه دیدگاه شورت داشته باشیم
-27634,2026-10-02 13:28:45,THETAUSDT,4h,long,range_breakout_trigger,0.2385,stop,,,,,,high,setup,main,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27634,,از لول 0.382 فیبوناچی ما روند صعودی خوبی رو استارت زده و حمایت خوبی شده و بهترین حالت در استراتژی ما باز کردن پوزیشن لانگ در صورت فعال شدن تاییده ها همراه با شکست 0.2385 خواهد بود !
+27634,2026-10-02 13:28:45,THETAUSDT,4h,long,range_breakout_trigger,0.2385,stop,,,,,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27634,,از لول 0.382 فیبوناچی ما روند صعودی خوبی رو استارت زده و حمایت خوبی شده و بهترین حالت در استراتژی ما باز کردن پوزیشن لانگ در صورت فعال شدن تاییده ها همراه با شکست 0.2385 خواهد بود !
 27642,2026-10-03 12:28:37,AAVEUSDT,1h,long,momentum_trigger_rsi,185,stop,,,,volume; RSI overbought(>70),,high,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27642,,ما هم میتونیم از شکست 185 بعنوان تریگر لانگ استفاده کنیم و پوزیشن باز کنیم
-27642,2026-10-03 12:28:37,AAVEUSDT,1h,short,momentum_trigger_rsi,174,stop,,,,candle close beyond level; volume; RSI overbought(>70),,high,setup,risky/early,close,yes,,,,,,1,1,https://t.me/tradecity_pro/27642,,در صورت تثبیت قیمت زیر 174دلار اولین تاییدیه تغییر روند رو میگیریم و پیگیر شورت بشیم
+27642,2026-10-03 12:28:37,AAVEUSDT,1h,short,momentum_trigger_rsi,174,stop,,,,candle close beyond level; volume; RSI overbought(>70),,high,setup,,close,yes,,,,,,1,1,https://t.me/tradecity_pro/27642,,در صورت تثبیت قیمت زیر 174دلار اولین تاییدیه تغییر روند رو میگیریم و پیگیر شورت بشیم
 27645,2026-10-04 13:06:01,PENDLEUSDT,4h,long,range_breakout_trigger,2.486,stop,,,,volume,,high,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27645,,در صورتی که حجم شروع به افزایش پیدا کنه، شکست ناحیه 2.486 تریگر خوبی برای پوزیشن لانگ خواهد بود
 27645,2026-10-04 13:06:01,PENDLEUSDT,4h,short,range_breakout_trigger,2.313,stop,,,,volume,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27645,level taken from preceding sentence (anaphora: 'break of this level'),از طرفی اگر قیمت زیر 2.313 تثبیت بده یه اصلاح عمیق تری میتونه شکل بگیره || پس با شکست این ناحیه میتونیم پوزیشن شورت ریسکی باز کنیم
-27651,2026-10-04 18:17:34,XAUUSD,,,,,,,,,,,low,chart_only,,,,,,,,,0,0,https://t.me/tradecity_pro/27651,chart/image-only post: no setup text,
 27698,2026-10-12 13:37:48,UNIUSDT,1h,long,range_breakout_trigger,,stop,,,,,,low,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27698,level not stated in text (chart only),بعد از این اتفاق میتونیم پیگیر پوزیشن لانگ بشیم و دنبال تریگر بگردیم
 27698,2026-10-12 13:37:48,UNIUSDT,1h,short,range_breakout_trigger,7.501,stop,,,,,,medium,setup,,break,yes,,,,,,0,1,https://t.me/tradecity_pro/27698,level taken from preceding sentence (anaphora: 'break of this level'),در صورت شکست 7.501 موج بعدی حرکت نزولی یونی میتونه آغاز بشه || ما هم با شکست این ناحیه میتونیم پوزیشن شورت باز کنیم
 27711,2026-10-13 14:56:38,TIAUSDT,1h,long,range_breakout_trigger,0.62,stop,,,,BTC dominance; volume,,medium,setup,,break,yes,,,,,,1,1,https://t.me/tradecity_pro/27711,level taken from preceding sentence (anaphora: 'break of this level'),در صورت تثبیت قیمت بالای 0.6200 یه حرکت صعودی به سمت 0.7693 میتونه آغاز بشه || اگر دامیننس بیت کوین نزولی بشه شکست این ناحیه تریگر خوبی برای لانگ خواهد بود
