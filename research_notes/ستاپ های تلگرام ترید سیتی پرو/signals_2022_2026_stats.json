@@ -2,235 +2,240 @@
  "universe_posts_2022_2026": 18599,
  "B_file_posts": 597,
  "post_status_counts": {
-  "chart_only": 436,
-  "no_setup": 15531,
+  "chart_only": 448,
+  "no_setup": 15521,
   "repost": 1831,
   "pin_notice": 328,
-  "setup": 473
+  "setup": 460,
+  "result_report": 11
  },
- "setup_posts": 473,
- "setup_posts_not_in_B": 153,
- "setup_rows": 742,
- "setup_rows_with_trigger_price": 647,
- "unique_rows_not_restated": 694,
- "chart_only_posts": 436,
+ "setup_posts": 449,
+ "setup_posts_not_in_B": 110,
+ "setup_rows": 714,
+ "setup_rows_with_trigger_price": 670,
+ "unique_rows_not_restated": 646,
+ "chart_only_posts": 448,
  "chart_only_by_year": {
-  "2022": 120,
+  "2022": 122,
   "2023": 39,
-  "2024": 96,
-  "2025": 134,
-  "2026": 47
+  "2024": 104,
+  "2025": 148,
+  "2026": 35
  },
  "B_posts_with_photo": 292,
  "B_posts_image_only_like": 2,
  "by_setup_type": {
-  "range_breakout_trigger": 526,
-  "pattern": 94,
-  "other": 57,
-  "momentum_trigger_rsi": 35,
-  "fakeout": 17,
+  "range_breakout_trigger": 530,
+  "pattern": 98,
+  "momentum_trigger_rsi": 42,
+  "fakeout": 19,
+  "pullback": 10,
   "indecision_trigger": 10,
-  "pullback": 3
+  "other": 5
  },
  "by_symbol_top30": {
-  "BTCUSDT": 122,
-  "": 42,
-  "ETHUSDT": 38,
-  "MATICUSDT": 28,
-  "AVAXUSDT": 25,
-  "FTMUSDT": 23,
-  "LINKUSDT": 23,
+  "BTCUSDT": 91,
+  "ETHUSDT": 31,
+  "AVAXUSDT": 30,
+  "MATICUSDT": 29,
+  "FTMUSDT": 24,
+  "LUNAUSDT": 24,
   "SOLUSDT": 22,
-  "BNBUSDT": 20,
-  "LUNAUSDT": 20,
-  "UNIUSDT": 16,
+  "BNBUSDT": 21,
+  "LINKUSDT": 18,
+  "MANAUSDT": 17,
+  "ENJUSDT": 17,
+  "AAVEUSDT": 17,
+  "SANDUSDT": 16,
+  "UNIUSDT": 15,
+  "SHIBUSDT": 14,
   "DOGEUSDT": 14,
-  "MANAUSDT": 13,
-  "BCHUSDT": 13,
-  "HYPEUSDT": 13,
-  "ENJUSDT": 12,
-  "SANDUSDT": 12,
-  "ADAUSDT": 12,
+  "ADAUSDT": 13,
   "NEARUSDT": 12,
-  "AAVEUSDT": 10,
-  "TRXUSDT": 10,
-  "SHIBUSDT": 9,
+  "BCHUSDT": 12,
+  "IOSTUSDT": 11,
+  "COMPUSDT": 11,
+  "TRXUSDT": 11,
+  "HYPEUSDT": 11,
   "FILUSDT": 9,
   "FETUSDT": 9,
+  "GALAUSDT": 8,
+  "DYDXUSDT": 8,
+  "ATOMUSDT": 8,
   "ENAUSDT": 8,
-  "GALAUSDT": 7,
-  "COMPUSDT": 7,
-  "IOSTUSDT": 7,
-  "ATOMUSDT": 7,
-  "ALGOUSDT": 7
+  "XLMUSDT": 7
  },
- "n_symbols": 87,
+ "n_symbols": 91,
  "by_timeframe": {
-  "4h": 240,
-  "1h": 195,
-  "(blank)": 156,
-  "15m": 69,
-  "1d": 68,
-  "1w": 9,
-  "1h/4h": 3,
-  "4h/1h": 2
+  "4h": 244,
+  "1h": 211,
+  "(blank)": 109,
+  "15m": 77,
+  "1d": 67,
+  "1w": 3,
+  "4h/1h": 2,
+  "1h/4h": 1
  },
  "by_side": {
-  "short": 327,
-  "long": 415
+  "short": 328,
+  "long": 386
  },
  "by_year_rows": {
-  "2022": 251,
-  "2023": 24,
-  "2024": 15,
-  "2025": 44,
-  "2026": 408
+  "2022": 303,
+  "2023": 6,
+  "2024": 4,
+  "2025": 14,
+  "2026": 387
  },
  "by_year_posts": {
-  "2022": 158,
-  "2023": 18,
-  "2024": 10,
-  "2025": 25,
-  "2026": 262
+  "2022": 160,
+  "2023": 5,
+  "2024": 4,
+  "2025": 6,
+  "2026": 274
  },
  "by_year_setup_type": {
   "2022": {
-   "other": 13,
-   "range_breakout_trigger": 195,
-   "pattern": 41,
-   "fakeout": 1,
-   "pullback": 1
+   "other": 3,
+   "range_breakout_trigger": 212,
+   "pullback": 6,
+   "pattern": 80,
+   "fakeout": 2
   },
   "2023": {
-   "pattern": 4,
-   "other": 12,
-   "range_breakout_trigger": 8
+   "range_breakout_trigger": 3,
+   "pattern": 3
   },
   "2024": {
-   "other": 7,
-   "range_breakout_trigger": 8
+   "range_breakout_trigger": 3,
+   "fakeout": 1
   },
   "2025": {
-   "pattern": 3,
-   "other": 17,
-   "range_breakout_trigger": 22,
+   "range_breakout_trigger": 12,
    "indecision_trigger": 2
   },
   "2026": {
-   "range_breakout_trigger": 293,
+   "range_breakout_trigger": 300,
    "fakeout": 16,
-   "other": 8,
-   "pullback": 2,
-   "pattern": 46,
+   "pullback": 4,
+   "momentum_trigger_rsi": 42,
+   "pattern": 15,
    "indecision_trigger": 8,
-   "momentum_trigger_rsi": 35
+   "other": 2
   }
  },
  "by_entry_type": {
-  "market": 3,
-  "(blank)": 65,
-  "stop": 673,
+  "market": 9,
+  "(blank)": 10,
+  "stop": 694,
   "limit": 1
  },
  "by_break_confirmation": {
-  "(blank)": 102,
-  "break": 502,
-  "close": 138
+  "(blank)": 34,
+  "break": 490,
+  "close": 190
  },
  "by_trigger_role": {
-  "(blank)": 626,
-  "risky/early": 67,
-  "main": 48,
-  "risky": 1
+  "(blank)": 586,
+  "risky/early": 73,
+  "main": 54,
+  "first sign": 1
  },
  "by_confidence": {
-  "high": 570,
-  "low": 138,
-  "medium": 34
+  "high": 590,
+  "low": 43,
+  "medium": 81
  },
  "conditional": {
   "no": 2,
-  "yes": 740
+  "yes": 712
  },
  "rows_with_stop": 8,
- "rows_with_targets": 62,
+ "rows_with_targets": 54,
  "n_targets_dist": {
-  "1": 56,
-  "0": 680,
-  "2": 4,
-  "3": 2
+  "1": 53,
+  "0": 660,
+  "2": 1
  },
  "rows_with_stated_rr": 4,
  "stated_rr_values": {
-  "3": 1,
-  "5": 2,
-  "2": 1
+  "5": 1,
+  "2": 3
  },
- "rows_with_validity_level": 12,
- "rows_with_box": 6,
+ "rows_with_validity_level": 9,
+ "rows_with_box": 21,
  "confirmation_counts": {
-  "volume": 173,
-  "candle close beyond level": 141,
-  "RSI": 113,
-  "BTC context": 40,
-  "multiple touches": 22,
-  "weekend caution": 21,
-  "HH/HL or LH/LL structure": 19,
-  "BTC dominance": 18,
-  "setup candle": 18,
-  "confirmation candle": 14,
-  "order book": 5,
+  "candle close beyond level": 187,
+  "volume": 159,
+  "RSI": 99,
+  "weekend caution": 23,
+  "multiple touches": 19,
+  "BTC context": 18,
+  "setup candle": 15,
+  "HH/HL or LH/LL structure": 15,
+  "BTC dominance": 13,
+  "confirmation candle": 12,
   "New York session": 4,
+  "order book": 4,
+  "SMA7/25": 1,
   "SMA25": 1
  },
- "rows_with_outcome": 53,
+ "rows_with_outcome": 46,
  "rows_with_outcome_by_year": {
-  "2022": 1,
-  "2026": 52
+  "2024": 2,
+  "2026": 44
  },
  "outcome_tags": {
-  "triggered": 36,
-  "save_profit": 4,
-  "faked": 41,
-  "15%": 1
+  "save_profit [symbol-level]": 4,
+  "rejected": 23,
+  "triggered": 10,
+  "faked": 18,
+  "save_profit": 2,
+  "triggered [symbol-level]": 3,
+  "not_triggered [symbol-level]": 2,
+  "15% [symbol-level]": 1
  },
  "first_outcome_tag": {
-  "triggered": 26,
+  "save_profit [symbol-level]": 4,
+  "rejected": 16,
+  "triggered": 9,
+  "faked": 9,
   "save_profit": 2,
-  "faked": 25
+  "triggered [symbol-level]": 3,
+  "not_triggered [symbol-level]": 2
  },
  "stop_dist_pct": {
   "n": 6,
-  "median": 37.702,
-  "p25": 27.273,
-  "p75": 42.129,
-  "min": 20.356,
-  "max": 94.48
+  "median": 35.946,
+  "p25": 20.356,
+  "p75": 38.248,
+  "min": 5.058,
+  "max": 42.129
  },
  "stop_dist_over_box": {},
  "first_target_dist_pct": {
-  "n": 43,
-  "median": 8.788,
-  "p25": 5.524,
-  "p75": 16.667,
-  "min": 2.121,
-  "max": 1300.0
+  "n": 49,
+  "median": 8.242,
+  "p25": 5.069,
+  "p75": 11.592,
+  "min": 1.924,
+  "max": 27.645
  },
  "implied_R_first_target": {},
  "validity_level_dist_pct": {
-  "n": 6,
-  "median": 5.204,
-  "p25": 2.313,
+  "n": 9,
+  "median": 5.368,
+  "p25": 2.801,
   "p75": 7.677,
   "min": 1.386,
-  "max": 8.263
+  "max": 11.031
  },
  "box_width_pct_of_trigger": {
-  "n": 5,
-  "median": 8.542,
-  "p25": 5.715,
-  "p75": 8.826,
-  "min": 0.01,
-  "max": 9.843
+  "n": 21,
+  "median": 3.975,
+  "p25": 3.038,
+  "p75": 7.609,
+  "min": 0.713,
+  "max": 15.036
  }
 }

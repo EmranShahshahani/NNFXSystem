@@ -55,7 +55,7 @@ def norm(t: str) -> str:
     return t
 
 
-NUM_RE = re.compile(r"(?<![\w.])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(\s*هزار)?(?![\d])")
+NUM_RE = re.compile(r"(?<![A-Za-z0-9.])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)(\s*هزار)?(?![\d])")
 
 
 def parse_num(s: str, k: str | None) -> float:
@@ -110,7 +110,11 @@ def find_symbol(t: str) -> str:
         if hu in HASH_STOP or TF_HASH.match(h) or hu in {"DAILY", "WEEKLY", "1D", "4H", "1H"}:
             continue
         return norm_symbol(h)
-    m = re.search(r"#(\S+)", t)
+    lines = [x.strip() for x in t.strip().split("\n") if x.strip() and not x.strip().startswith("http")]
+    first = lines[0] if lines else ""
+    m = re.match(r"^#?([A-Za-z]{2,10})\s*(?:usdt)?\s*(?:\d+\s*(?:m|min|h|d)\b)?\s*$", first, re.I)
+    if m and m.group(1).lower() not in {"entry", "sl", "tp"}:
+        return norm_symbol(m.group(1))
     m = re.search(r"\b([A-Za-z]{2,10})\s?usdt\b", t, re.I)
     if m:
         return norm_symbol(m.group(1))
@@ -161,7 +165,7 @@ def tf_norm(x: str) -> str:
 
 
 # --------------------------------------------------------------------------- vocab
-LONG_RE = r"لانگ|longe?\b|long\b|خرید اسپات|خرید ریسکی|برای خرید|استاپ بای|stop ?buy|موقعیت خرید|معاملات لانگ|خرید"
+LONG_RE = r"لانگ|longe?\b|long\b|خرید اسپات|خرید ریسکی|برای خرید|استاپ بای|stop ?buy|موقعیت خرید|معاملات لانگ|بخرید|kharid"
 SHORT_RE = r"شورت|شروت|short\b|استاپ سل|پوزیشن سل|موقعیت فروش|معاملات فروش|پوزیشن فروش"
 NOT_SIDE = r"حجم خرید|حجم فروش|فشار فروش|فشار خرید|خریدار|فروشنده|اردرهای فروش|اردر های فروش|قدرت خرید|شورت اسکوییز|short squeez|long squeez|شورت ویدیو|شورت ویدئو|youtube\.com/shorts|مومنتوم خرید"
 NEG_RE = (r"(?:تریگر|پوزیشن|شورت|لانگ|نقطه ورود)[^/]{0,30}?(?:نیست|نمیده|نمیدن|نمی ?دهد|نمی ?دهند)"
@@ -191,39 +195,47 @@ def split_clauses(t: str):
     for p in parts:
         if not p or not p.strip():
             continue
-        # split before a new side phrase "برای (پوزیشن) لانگ/شورت" / "واسه شورت"
-        sub = re.split(r"(?=(?:\s(?:ولی|اما|و))?\s(?:برای|واسه|وسه)\s(?:پوزیشن\s|پوزیش\s)?(?:لانگ|شورت|long|short)(?!\s*(?:باز|ریسکی\s+باز)))", p)
+        sub = [p]
         for s in sub:
             s = s.strip()
             if s:
                 # still both sides? split at ' اما '/' ولی ' between them
                 hs = side_hits(s)
                 if {h[1] for h in hs} == {"long", "short"}:
-                    pieces = re.split(r"\s(?=(?:اما|ولی|و اگر|همچنین)\s)", s)
+                    pieces = re.split(r"\s(?=(?:اما|ولی|و اگر|همچنین|طولی|واسه شورت|واسه لانگ|برای شورت هم|برای لانگ هم)\s)|،", s)
                     out.extend(x.strip() for x in pieces if x.strip())
                 else:
                     out.append(s)
     return out
 
 
+TRIG_PRE = (r"(?:شکست|شکستن|شکوندن|بشکنه|بریک ?اوت|break|بالای|بالا ی|زیر|زیره|پایین|تثبیت|بعد از|بعداز|بعد|after|under|above|zire"
+            r"|تریگر|تريگر|trigger|نقطه ورود|ورود|منتظر|از دست رفتن|استاپ بای|استاپ سل|اوردر استاپ|حمایت|مقاومت|سقف|کف|ناحیه|لول|محدوده|ضلع)")
+TRIG_POST = r"^\s*(?:\$|دلار)?\s*(?:را|رو|رو هم)?\s*(?:بشکن|بشکون|بشکنه|از دست|شکسته|تثبیت|بریک|break|استاپ بای|استاپ سل|شکست)"
+INFO_PRE = r"(?:حواستون|حواسمون|نیم نگاهی|نگاهی|(?<!بعد )(?<!بعد)از مقاومت|(?<!بعد )(?<!بعد)از حمایت|(?<!بعد )(?<!بعد)از سقف|(?<!بعد )(?<!بعد)از کف|(?<!بعد )(?<!بعد)از ناحیه|رسیدن به|رسید به|برخورد با|حمایت شدن از|ریجکت شدن از|مقاومت اول|حمایت اول|قیمت حدود|حوالی|با قیمت|نزدیک)\s*(?:به)?\s*(?:حمایت|مقاومت|ناحیه|لول)?\s*$"
+INFO_POST = r"^\s*(?:\$|دلار)?\s*(?:را|رو)?\s*(?:به خوبی |خوب |خیلی خوب )?(?:حفظ|نگه|ریجکت|حمایت شد|واکنش|خریدوفروش|رسیده|رسید\b|برخورد|باشه\b|باشد\b|باشید)"
+SHORT_CUE = r"(?:زیر|زیره|پایین|از دست|حمایت|کف|under|zire|ضلع پایین)[^/\d]{0,14}$"
+LONG_CUE = r"(?:بالای|بالا ی|بالا|مقاومت|مقاوت|سقف|above|ضلع بالا)[^/\d]{0,14}$"
+
+
 def classify_numbers(seg: str, side_ctx: str | None):
-    """Return list of dicts {v, raw, pos, role, tag} for price-like numbers in seg."""
+    """Return list of dicts {v, raw, pos, end, role, cue, dir} for price-like numbers in seg.
+    role: level (a break/trigger level), info (descriptive level), target, stop, valid, box_lo/box_hi, rsi."""
     res = []
     has_rsi = re.search(r"rsi|آر ?اس ?آی", seg, re.I) is not None
+    prev_end = 0
     for m in NUM_RE.finditer(seg):
         raw, k = m.group(1), m.group(2)
         a, b = m.start(), m.end()
-        pre = seg[max(0, a - 28):a]
-        post = seg[b:b + 18]
+        pre = seg[max(prev_end, a - 30):a]
+        prev_end = b
+        post = seg[b:b + 25]
         pre_l = pre.lower()
-        # junk numbers
-        if re.match(r"\s*(?:ساعت|دقیقه|روز|ماه|هفته|سال|درصد|%|٪|بار|تا (?:ارز|کوین|تحلیل|سیگنال|ترید|پوزیشن|تارگت)|برابر|x\b|کالری|گرم|کیلو|نفر|میلیون|میلیارد|تایی|تاش|th|st|nd|rd|ام\b|امین|m\b|min|h\b|d\b|w\b|H\b|D\b|W\b|ثانیه)", post):
+        if re.match(r"\s*(?:ساعت|دقیقه|روز|ماه|هفته|سال|درصد|%|٪|بار|تا (?:ارز|کوین|تحلیل|سیگنال|ترید|پوزیشن|تارگت|حد)|برابر|x\b|کالری|گرم|کیلو|نفر|میلیون|میلیارد|تایی|تاش|th|st|nd|rd|ام\b|امین|m\b|min|h\b|d\b|w\b|H\b|D\b|W\b|ثانیه|اکتبر|آبان|تا پیتزا)", post):
             continue
-        if re.search(r"(?:تایم فریم|تایم|time ?frame|ریسک به ریوارد|ریسک ریوارد|\brr|لوریج|لورج|ساعت|sma|ema|ma|فیبو|fib|قسمت|پارت|روز|#|قانون|شماره|lev(?:erage)?)\s*[:\-]?\s*$", pre_l):
+        if re.search(r"(?:تایم فریم|تایم|time ?frame|ریسک به ریوارد|ریسک ریوارد|\brr|لوریج|لورج|ساعت|sma|ema|\bma|فیبو|fib|قسمت|پارت|روز|#|قانون|شماره|lev(?:erage)?|tp\d|ts)\s*[:\-]?\s*$", pre_l):
             continue
-        if re.search(r"(?:sma|ema)\s*\d*\s*(?:و|,)\s*$", pre_l):
-            continue
-        if re.match(r"\s*(?:فیبو|fib)", post):
+        if re.search(r"(?:sma|ema)\s*\d*\s*(?:و|,)\s*$", pre_l) or re.match(r"\s*(?:فیبو|fib)", post):
             continue
         try:
             v = parse_num(raw, k)
@@ -231,23 +243,35 @@ def classify_numbers(seg: str, side_ctx: str | None):
             continue
         if v == 0 or (1900 <= v <= 2035 and "." not in raw and re.search(r"سال|20\d\d\s*$|میلادی", pre + post)):
             continue
-        role = None
+        cue = re.search(TRIG_PRE + r"[^/\d]{0,20}$", pre, re.I) is not None or re.match(TRIG_POST, post, re.I) is not None
+        dr = "short" if re.search(SHORT_CUE, pre, re.I) else ("long" if re.search(LONG_CUE, pre, re.I) else "")
         if has_rsi and (re.search(r"rsi[^0-9]{0,22}$", pre_l) or re.match(r"\s*(?:در|تو|روی)\s*rsi", post, re.I)
                         or (v in (30, 50, 70) and re.search(r"rsi", seg[max(0, a - 60):b + 40], re.I))):
             role = "rsi"
-        elif re.search(r"(?:بین|محدوده|باکس|رنج)[^/\d]{0,25}$", pre) and re.match(r"\s*(?:و|تا|الی|الا|-)\s*\d", post):
+        elif re.search(r"(?:بین|محدوده|باکس|رنج)(?:\s+(?:حمایت|مقاومت|ناحیه|محدوده|ناحیه))?[^/\d]{0,8}$", pre) and re.match(r"\s*(?:\$|دلار)?\s*(?:و|تا|الی|الا|-)\s*(?:حمایت|مقاومت|ناحیه)?\s*\d", post):
             role = "box_lo"
-        elif re.search(r"(?:بین|باکس|رنج|محدوده)[^/]{0,40}\d[\d.,]*\s*(?:و|تا|الی|الا|-)\s*$", pre):
+        elif re.search(r"(?:بین|باکس|رنج|محدوده)[^/]{0,40}\d[\d.,]*\s*(?:\$|دلار)?\s*(?:و|تا|الی|الا|-)\s*(?:حمایت|مقاومت|ناحیه)?\s*$", pre):
             role = "box_hi"
         elif re.search(VALID_PRE + r"[^/\d]{0,30}$", pre):
             role = "valid"
         elif re.search(STOP_PRE + r"[^/\d]{0,22}$", pre_l):
             role = "stop"
-        elif re.search(TARGET_PRE + r"[^/\d]{0,18}$", pre_l):
+        elif re.search(TARGET_PRE + r"[^/\d]{0,18}$", pre_l) and not re.search(r"(?:شکست|بالای|زیر)[^/\d]{0,6}$", pre):
             role = "target"
-        else:
+        elif re.match(r"^\s*(?:\$|دلار)?\s*(?:که[^/\d]{0,30})?(?:رو )?(?:هم )?(?:دیروز |دیشب )?(?:فعال (?:شد|شده|کرد|کرده)|فعاله)", post) or re.search(r"(?:قیمت|کوین \w+|بیت ?کوین|اتریوم) (?:بعد از|با) شکست\s*$|(?:تریگر|ناحیه)\s*$", pre) and re.search(r"^[^/]{0,60}(?:فعال (?:شد|شده|کرد|کرده)|ریجکت شد|فیک (?:شد|کرد))", post):
+            role = "outcome"
+        elif re.search(INFO_PRE, pre) or re.match(INFO_POST, post):
+            role = "info"
+        elif cue:
             role = "level"
-        res.append({"v": v, "raw": raw + (k or ""), "pos": a, "end": b, "role": role})
+        else:
+            role = "info"
+        res.append({"v": v, "raw": raw + (k or ""), "pos": a, "end": b, "role": role, "dir": dr})
+    # anaphora: "درگیر 71924 هستش؛ در صورت شکست این ناحیه ..." -> promote the last info number
+    if not any(n["role"] == "level" for n in res) and re.search(r"شکست(?:ش| اون| این| همین| خودِ)|شکستن این|شکسته (?:بشه|شد)|بریک ?اوت (?:این|اون)|شکستش", seg):
+        infos = [n for n in res if n["role"] == "info"]
+        if infos:
+            infos[-1]["role"] = "level"
     return res
 
 
@@ -261,7 +285,7 @@ def label_setup(seg: str, post: str) -> str:
         return "indecision_trigger"
     if re.search(r"پولبک|pullback", s) and re.search(r"(?:با|روی|در صورت|بعد از)[^/]{0,20}پولبک|پولبک[^/]{0,30}(?:پوزیشن|ورود|تریگر)", s):
         return "pullback"
-    if re.search(r"مثلث|وج|کنج|سر و شانه|سقف دوقلو|کف دوقلو|پرچم|وی پترن|v pattern|کانال|ترند(?! صعودی خودش هست)|خط روند|ترند لاین|trend", s) and not re.search(r"باکس|رنج", s):
+    if re.search(r"مثلث|(?<![\u0600-\u06FF])(?:وج|کنج)(?![\u0600-\u06FF])|سر و شانه|سقف دوقلو|کف دوقلو|پرچم|وی پترن|v pattern|کانال|ترند(?! صعودی خودش هست)|خط روند|ترند لاین|trend", s) and not re.search(r"باکس|رنج", s):
         return "pattern"
     if re.search(r"rsi", s) and re.search(r"اوربای|اورسل|over|70|30|50|72|مومنتوم", s):
         return "momentum_trigger_rsi"
@@ -399,7 +423,7 @@ def fold_reposts(posts):
     return orig_of
 
 
-HEADER_RE = re.compile(r"(?im)^.*(?:Pair\s*:|Time\s*Frame\s*:|TimeFrame\s*:).*$|🫥+|🔗\s*لینک چارت.?|لینک چارت.?|https?://\S+|@\w+|LMN Bot.*$|.*جهت دیدن تحلیل های بیشتر.*$|.*برای دیدن تحلیل های روزانه بیشتر.*$|.*روز رایگان.*$|Trading View \|.*$")
+HEADER_RE = re.compile(r"(?im)💵?\s*Pair\s*:\s*#?\S+(?:\s*-\s*Update)?|⏳?\s*Time\s*Frame\s*:\s*#?\w+(?:\s*,\s*#?\w+)?|🕐?\s*TimeFrame\s*:\s*\w+|🫥+|🔗\s*لینک چارت.?|لینک چارت.?|https?://\S+|@\w+|LMN Bot.*$|.*جهت دیدن تحلیل های بیشتر.*$|.*برای دیدن تحلیل های روزانه بیشتر.*$|.*روز رایگان.*$|Trading View \|.*$")
 
 
 def body_text(t: str) -> str:
@@ -413,6 +437,11 @@ def extract_post(p) -> tuple[list[dict], str]:
     """Return (rows, status) where status in setup / chart_only / no_setup."""
     raw = p["text"] or ""
     t = norm(raw)
+    # Persian writers sometimes use ',' as decimal point ("2,149" for ATOM 2.149): if the other
+    # decimals in the post are < 100, treat single-digit "d,ddd" as a decimal number
+    decs = [float(x) for x in re.findall(r"(?<![\d,])\d+\.\d+", t)]
+    if decs and statistics.median(decs) < 100:
+        t = re.sub(r"(?<![\d,.])(\d),(\d{3})(?![\d,])", r"\1.\2", t)
     sym = find_symbol(t)
     tf = find_tf(t)
     body = body_text(t)
@@ -449,6 +478,18 @@ def extract_post(p) -> tuple[list[dict], str]:
                   f"forex position card; strategy={st.group(1).strip() if st else ''}; levels only on image", "low")
         return [r], "setup"
 
+    if re.search(r"نتیجه (?:تحلیل|تریگر|کوین)|بریم برای (?:ادامه )?نتیجه|- ?Update|🔥 نتیجه", t[:160]):
+        return [], "result_report"
+    # clauses that mix a negated/management statement with a new call are split at conjunctions
+    MGMT_RE = r"سیو سود|ریسک فری|استاپتون|استاپ ?تون|خارج شید|ببندید|سیو کنید"
+    cl2 = []
+    for c in clauses:
+        c_ = re.sub(r"بدی نیست|بد نیست", "خوبه", c)
+        if re.search(NEG_RE, c_) or re.search(MGMT_RE, c_):
+            cl2.extend(x.strip() for x in re.split(r"\s(?=(?:اما|ولی)\s)|،|\s,\s|\s(?=و برای)", c_) if x and x.strip())
+        else:
+            cl2.append(c_)
+    clauses = cl2
     for ci, seg in enumerate(clauses):
         hits = side_hits(seg)
         neg = re.search(NEG_RE, seg) is not None
@@ -479,15 +520,30 @@ def extract_post(p) -> tuple[list[dict], str]:
             # management sentence about an existing position, not a new call
             if not (levels and has_break and re.search(r"پوزیشن (?:لانگ|شورت) (?:باز|میده)|تریگر", seg)):
                 continue
-        # assign each level number to nearest side word
+        # assign each level number: direction cue (زیر/حمایت -> short, بالای/مقاومت -> long) if that side is
+        # mentioned in the clause, else the nearest side word
         lv_by_side = defaultdict(list)
         if len(sides) == 1:
             for n in levels:
                 lv_by_side[sides[0]].append(n)
         else:
+            num_pos = sorted([x["pos"] for x in levels])
             for n in levels:
-                best = min(hits, key=lambda h: abs(h[0] - n["pos"]))
-                lv_by_side[best[1]].append(n)
+                nxt_num = min([x for x in num_pos if x > n["pos"]], default=10 ** 9)
+                prv_num = max([x["end"] for x in levels if x["end"] <= n["pos"]], default=-1)
+                after = [h for h in hits if n["end"] <= h[0] < nxt_num and h[0] - n["end"] <= 40]
+                before = [h for h in hits if prv_num <= h[0] < n["pos"]]
+                if n["dir"] and n["dir"] in sides and not after:
+                    lv_by_side[n["dir"]].append(n)
+                elif after:
+                    lv_by_side[after[0][1]].append(n)
+                elif before:
+                    lv_by_side[before[-1][1]].append(n)
+                elif n["dir"] and n["dir"] in sides:
+                    lv_by_side[n["dir"]].append(n)
+                else:
+                    best = min(hits, key=lambda h: abs(h[0] - n["pos"]))
+                    lv_by_side[best[1]].append(n)
         for side in sides:
             lv = lv_by_side.get(side, [])
             sd = side.rstrip("?")
@@ -503,6 +559,25 @@ def extract_post(p) -> tuple[list[dict], str]:
             if len(box) >= 2:
                 lo, hi = sorted([box[0]["v"], box[1]["v"]])
                 bx = f"{fmt(lo)}-{fmt(hi)}"
+            if not lv and ci > 0 and re.search(r"(?:شکست|شکستن|بریک ?اوت|تثبیت[^/]{0,12}(?:زیر|بالای))\s*(?:این|همین|اون|خودِ)\s*(?:ناحیه|لول|محدوده|حمایت|مقاومت|سقف|کف|سطح|نواحی|باکس|ناحیه ها)|شکستش|شکست سقف باکس|شکست کف باکس|شکست باکس", seg):
+                cand = []
+                for cj in range(ci - 1, max(-1, ci - 3), -1):
+                    nn = [n for n in classify_numbers(clauses[cj], None) if n["role"] in ("info", "level", "box_lo", "box_hi")]
+                    if nn:
+                        if any(n["role"] in ("box_lo", "box_hi") for n in nn):
+                            want = "box_hi" if sd == "long" else "box_lo"
+                            nn = [n for n in nn if n["role"] == want] or nn
+                            cand = [nn[-1]]
+                        else:
+                            cand = [nn[-1]] if not re.search(r"این دو|دو نواحی|نواحی", seg) else nn[-2:]
+                        break
+                if cand:
+                    for n in cand:
+                        r = mkrow(p, sym, tf, sd, n["v"], stype, et, bc, tg, cf, sp[0] if sp else None, vl, bx, rr,
+                                  "level taken from preceding sentence (anaphora: 'break of this level')", "medium", clauses[cj] + " || " + seg)
+                        r["_ci"] = ci
+                        rows.append(r)
+                    continue
             if not lv:
                 # positive statement of a breakout call with level only on chart (e.g. "شکست سقف باکس بهمون پوزیشن لانگ میده")
                 if has_break and re.search(r"پوزیشن (?:لانگ|شورت)? ?(?:میده|میدهد|باز کنیم|باز میکنیم|بگیریم)|تریگر (?:لانگ|شورت)|میتونیم[^/]{0,30}پوزیشن|میتونین[^/]{0,30}اقدام|میتوانید[^/]{0,30}اقدام|اقدام (?:کنین|کنید|کنیم|بفرمایید|بنمایید)|میشه (?:لانگ|شورت)", seg):
@@ -559,6 +634,13 @@ def extract_post(p) -> tuple[list[dict], str]:
         if r["setup_type"] in ("range_breakout_trigger", "other") and any(
                 re.search(r"sma|ema", c, re.I) and re.search(r"پولبک|حمایت|برسه|رسیدن", c) for c in same):
             r["setup_type"] = "ma_pullback"
+    all_stops = []
+    for c in clauses:
+        all_stops += [n["v"] for n in classify_numbers(c, None) if n["role"] == "stop"]
+    if len(set(all_stops)) == 1:
+        for r in rows:
+            if r["_stop"] is None:
+                r["_stop"] = all_stops[0]
     # sanity on targets/stops relative to trigger & side
     for r in rows:
         trig = r["_trig"]
@@ -571,6 +653,8 @@ def extract_post(p) -> tuple[list[dict], str]:
                 r["_targets"] = [x for x in r["_targets"] if x < trig]
                 if r["_stop"] is not None and r["_stop"] <= trig:
                     r["_stop"] = None
+    num_sides = {r["side"] for r in rows if r["_trig"] is not None}
+    rows = [r for r in rows if r["_trig"] is not None or r["side"] not in num_sides]
     # de-duplicate identical (side, trigger) within a post
     seen, out = set(), []
     for r in rows:
@@ -599,15 +683,17 @@ def mkrow(p, sym, tf, side, trig, stype, et, bc, targets, conf, stop, valid, box
 
 
 # --------------------------------------------------------------------------- follow-ups
-OUTCOME_PATTERNS = [
-    ("faked", r"فیک (?:شد|شده|کرد|کرده)|فیک شدن|نتونست بالا|نتونست زیر|ریجکت شد"),
+OUTCOME_PATTERNS = [  # past-tense statements only; conditional ("اگر/در صورت ...") matches are skipped
     ("not_triggered", r"فعال نشده|فعال نشد|نتونست فعال|فعال نکرد|هنوز فعال"),
-    ("triggered", r"فعال شد|فعال شده|فعال کرد|فعال کرده|فعاله|پوزیشن(?:مون)? (?:باز|فعال) شد|activated|بعد از شکست(?:ش)?|با شکست[^/]{0,20}(?:حرکت|ریزش|رشد)"),
-    ("stop_hit", r"استاپ (?:خورد|خوردیم|شد|میخوره|بخوره)|حد ضرر خورد"),
+    ("stop_hit", r"استاپ (?:خورد|خوردیم|شد\b)|حد ضرر خورد"),
+    ("faked", r"فیک (?:شد|شده|کرد|کرده)(?![\u0600-\u06FF])|(?:رو|را) فیک کرد|بعد از فیک شدن|داره (?:این ناحیه رو )?فیک میکنه"),
+    ("triggered", r"فعال (?:شد|شده|کرد|کرده)(?![\u0600-\u06FF])|فعاله|رو (?:هم )?فعال کرد|شکسته شد|(?:رو|را) (?:با یک کندل بزرگ )?شکست(?:ه)?(?: و|،|\s*$| الان)|پوزیشن(?:مون)? (?:باز|فعال) شد"),
+    ("rejected", r"ریجکت (?:شد|شده|خورد)|نتونست (?:بالای|بالا|زیر|تثبیت|به)"),
     ("risk_free", r"ریسک فری"),
     ("save_profit", r"سیو سود"),
     ("target_hit", r"تارگت[^/]{0,20}(?:خورد|زد|رسید)"),
 ]
+COND_RE = r"(?:در صورت|اگر|اگه|احتمال|میتونه|ممکنه)[^/]{0,25}$"
 
 
 def num_in_text(v: float, t: str) -> bool:
@@ -616,7 +702,7 @@ def num_in_text(v: float, t: str) -> bool:
             x = parse_num(m.group(1), m.group(2))
         except ValueError:
             continue
-        if x and abs(x - v) / v <= 0.0015:
+        if x and abs(x - v) / v <= 0.0003:
             return True
     return False
 
@@ -643,15 +729,37 @@ def find_followups(rows, posts_by_id, posts_sorted, sym_index):
                 tags = []
                 for s in sents:
                     for name, pat in OUTCOME_PATTERNS:
-                        if re.search(pat, s):
+                        mm = re.search(pat, s)
+                        if mm and not re.search(COND_RE, s[:mm.start()]):
                             tags.append(name)
                             break
                 tags = list(dict.fromkeys(tags))
                 if tags:
                     found.append((q["id"], "+".join(tags), sents[0][:160] if sents else ""))
+            elif r.get("_latest_for_symbol_until", "") and q["date"][:19] <= r["_latest_for_symbol_until"]:
+                # symbol-level past-tense statements without a price ("نقطه ورود ... فعال شد", "ریسک به ریوارد 7")
+                for sq in split_clauses(body_text(tq)):
+                    if NUM_RE.search(re.sub(r"ریسک به ریوارد\s*\d+(?:\.\d+)?|\d+\s*درصد|لورج\s*\d+", "", sq)):
+                        continue
+                    if not re.search(r"نقطه ورود|تریگر|پوزیشن", sq):
+                        continue
+                    sq_sides = {h[1] for h in side_hits(sq)}
+                    if r["side"] not in sq_sides and (sq_sides or r.get("_post_sides") != {r["side"]}):
+                        continue
+                    tags = []
+                    for name, pat in OUTCOME_PATTERNS:
+                        mm = re.search(pat, sq)
+                        if mm and not re.search(COND_RE, sq[:mm.start()]):
+                            tags.append(name)
+                    m2 = re.search(r"ریسک به ریوارد\s*(\d+(?:\.\d+)?)|(\d+)\s*درصد", sq)
+                    if m2:
+                        tags.append(f"RR{m2.group(1)}" if m2.group(1) else f"{m2.group(2)}%")
+                    if tags:
+                        found.append((q["id"], "+".join(dict.fromkeys(tags)) + " [symbol-level]", sq[:160]))
+                        break
             elif trig is None or re.search(r"Update|نتیجه|آپدیت", q["text"] or ""):
                 if re.search(r"Update|نتیجه|آپدیت|پوزیشن[^/]{0,30}فعال|ریسک به ریوارد \d", tq) and (dq - d0) <= timedelta(days=10):
-                    tags = [name for name, pat in OUTCOME_PATTERNS if re.search(pat, tq)]
+                    tags = [name for name, pat in OUTCOME_PATTERNS if (lambda mm: mm and not re.search(COND_RE, tq[:mm.start()]))(re.search(pat, tq))]
                     m = re.search(r"ریسک به ریوارد\s*(\d+(?:\.\d+)?)|(\d+)\s*درصد", tq)
                     if tags or m:
                         extra = ""
@@ -712,6 +820,26 @@ def main():
 
     # ---- manual corrections
     all_rows = apply_manual(all_rows, {p["id"]: p for p in universe})
+    for r in all_rows:  # re-apply direction sanity after manual edits
+        t0 = r["_trig"]
+        if t0 is None:
+            continue
+        if r["side"] == "long":
+            r["_targets"] = [x for x in r["_targets"] if x > t0 * 1.0005]
+            if r["_stop"] is not None and r["_stop"] >= t0:
+                r["_stop"] = None
+        elif r["side"] == "short":
+            r["_targets"] = [x for x in r["_targets"] if x < t0 * 0.9995]
+            if r["_stop"] is not None and r["_stop"] <= t0:
+                r["_stop"] = None
+    dd, seen = [], set()
+    for r in all_rows:
+        k = (r["post_id"], r["side"], r["_trig"]) if r["_trig"] is not None else (r["post_id"], r["side"], id(r))
+        if k in seen:
+            continue
+        seen.add(k)
+        dd.append(r)
+    all_rows = dd
     # restated triggers: same symbol+side+trigger within 14 days of an earlier row
     last = {}
     for r in sorted(all_rows, key=lambda r: (r["date_utc"], r["post_id"])):
@@ -724,9 +852,24 @@ def main():
         r["restated_from"] = str(prev[0][0]) if prev else ""
         last.setdefault(k, []).append((r["post_id"], r["_trig"], r["date_utc"]))
 
+    # for symbol-level follow-ups: a row may claim price-less updates only until the next setup post on that symbol
+    by_sym = defaultdict(list)
+    for r in all_rows:
+        by_sym[r["symbol"]].append(r)
+    for sym_, rs in by_sym.items():
+        dates = sorted({x["date_utc"] for x in rs})
+        for r in rs:
+            later = [d for d in dates if d > r["date_utc"]]
+            lim = (datetime.fromisoformat(r["date_utc"]) + timedelta(days=10)).isoformat(sep="T")
+            r["_latest_for_symbol_until"] = min([later[0].replace(" ", "T")] + [lim]) if later else lim
+    ps = defaultdict(set)
+    for r in all_rows:
+        ps[r["post_id"]].add(r["side"])
+    for r in all_rows:
+        r["_post_sides"] = ps[r["post_id"]]
     find_followups(all_rows, None, None, sym_index)
     for r in all_rows:
-        r["outcome_reported"] = summarise_outcome(r.get("_followups", []))
+        r["outcome_reported"] = r.get("outcome_override") or summarise_outcome(r.get("_followups", []))
         r["outcome_post_ids"] = ";".join(str(x[0]) for x in r.get("_followups", [])[:6])
 
     rows_out = sorted(all_rows + chart_only, key=lambda r: (r["date_utc"], r["post_id"], r["side"], r["_trig"] or 0))
@@ -834,7 +977,139 @@ def main():
 #   "set": {field: value}                 -> override on every row of the post
 #   "set_trig": {trigger: {field: value}} -> override on one row
 #   "add": [ {side, trig, setup_type, ...} ]  -> rows the rules missed
-MANUAL: dict[int, dict] = {}
+MANUAL: dict[int, dict] = {
+    # ---------------- 2022 (two-sided "if X breaks -> long / if Y breaks -> short" posts)
+    8529: {"drop_side": ["short"], "set": {"notes": "box breakout up = risky long; author prefers to find a short later (no level)"}},
+    8593: {"set": {"notes": "restates 8560 short trigger 61.85 with target 55"}},
+    8620: {"drop_blank": True, "add": [{"side": "short", "trig": 2523.0, "box": "2552-2570", "break_confirmation": "break",
+            "notes": "'if 2523 is lost again we drop sharply'; 2552-2570 = no-trade zone; author waits for the break", "confidence": "medium"}]},
+    8636: {"add": [{"side": "long", "trig": None, "setup_type": "pullback", "entry_type": "market", "trigger_role": "risky/early",
+            "confirmations": ["confirmation candle"], "notes": "risky long on pullback after downtrend-line break, after a good candle", "confidence": "low"}]},
+    8648: {"set": {"trig": 178.5, "confidence": "medium", "notes": "level from same post ('resistance 178.5')"}},
+    8669: {"drop_trig": [1.71], "set_trig": {1.71: {}}},
+    8671: {"drop_trig": [1.506], "drop_side_trig": {"short": [1.617]}, "set_trig": {1.617: {"trigger_role": "main"}},
+           "add": [{"side": "short", "trig": None, "setup_type": "pattern", "entry_type": "", "targets": [1.506], "confirmations": ["confirmation candle"],
+                    "notes": "short under the downtrend line if a confirmation candle appears, target support 1.506", "confidence": "low"}]},
+    8697: {"set_trig": {}, "fill_blank": {"long": 49.5}},
+    8700: {"drop_trig": [22.66], "add": [{"side": "long", "trig": 22.66, "targets": [25.8], "break_confirmation": "close",
+            "notes": "'if resistance 22.66 breaks, after confirmation expect targets e.g. 25.8' (side implied)", "confidence": "medium"}]},
+    8708: {"set_trig": {4.82: {"side": "long", "notes": "'after break of 4.82 it will grow well' (side implied)"}}, "drop_trig": [4.8223]},
+    8730: {"add": [{"side": "short", "trig": 93.71, "box": "93.71-107.8", "notes": "'if support is lost -> good short'; support = box low 93.71", "confidence": "medium"}]},
+    8747: {"add": [{"side": "long", "trig": None, "setup_type": "pullback", "entry_type": "market", "break_confirmation": "close", "targets": [1.81, 1.91],
+            "confirmations": ["volume", "candle close beyond level"], "notes": "1h resistance broken + pullback; long on close of this candle with good volume; resistances 1.81 / 1.91",
+            "confidence": "medium"}]},
+    8748: {"set_trig": {2.159: {"setup_type": "range_breakout_trigger", "notes": "broken 1h resistance; long if candle closes with good volume (target text '2.0713' is below entry, likely a typo; omitted)"}},
+           "set_blank": {"short": {"setup_type": "fakeout", "targets": [1.89], "notes": "short if the breakout of 2.159 fails to hold"}}},
+    8749: {"set_trig": {4.35: {"setup_type": "range_breakout_trigger"}}},
+    8768: {"drop_blank": True, "set_trig": {92.0: {"trigger_role": ""}},
+           "add": [{"side": "long", "trig": None, "entry_type": "market", "trigger_role": "risky/early", "setup_type": "other",
+                    "notes": "'you can go long right here, risky, if it is in your strategy'; better after 96", "confidence": "low"}]},
+    8769: {"set": {"notes": "prices as written (5678/5940); ONT traded ~0.57 so likely 0.5678/0.5940"}},
+    8801: {"drop_trig": [1.66], "keep_side_trig": {"short": [1.66]}},
+    8810: {"set_trig": {15.0: {"notes": "as written 'زیر 15'; context (0.1537 resistance) implies 0.15"}}},
+    8819: {"drop_trig": [79.86], "add": [{"side": "short", "trig": 79.86, "targets": [76.61], "break_confirmation": "close", "confidence": "high"},
+                                         {"side": "long", "trig": 85.0, "confidence": "high"}]},
+    8831: {"drop_trig": [21616.0], "drop_blank": True},
+    8834: {"drop_trig": [1.35]},
+    8922: {"drop_trig": [387.0], "set": {"box": "364-387"}},
+    8946: {"drop_trig": [2.32], "set": {"box": "2.32-2.352"}},
+    8956: {"drop_trig": [2.7667], "add": [{"side": "short", "trig": 2.7667, "targets": [2.24], "confidence": "medium",
+            "notes": "'if this support is lost, no strong support until 2.24' (side implied)"}]},
+    8985: {"drop_trig": [128.5], "keep_side_trig": {"short": [128.5]}},
+    9009: {"drop": False, "drop_blank": True, "drop_trig": [147.78], "add": [
+        {"side": "short", "trig": None, "setup_type": "pullback", "entry_type": "market", "trigger_role": "risky/early", "notes": "triangle broken down, pulling back: short possible now", "confidence": "low"},
+        {"side": "short", "trig": 147.78, "trigger_role": "main", "notes": "safer short entry = break of 147.78 (range may form)", "confidence": "high"},
+        {"side": "long", "trig": None, "setup_type": "fakeout", "trigger_role": "risky/early", "notes": "if the downside break is faked: long on break of the triangle's upper side (risky)", "confidence": "low"},
+        {"side": "long", "trig": 164.69, "trigger_role": "main", "break_confirmation": "close", "notes": "safer long after close above 164.69", "confidence": "high"}]},
+    9017: {"set_trig": {88.26: {"trigger_role": "risky/early", "notes": "after trend-line break, risky"}, 91.2: {"trigger_role": "main"}}, "set": {"box": "83.41-91.2"}},
+    9057: {"set_trig": {452.7: {"trigger_role": ""}}},
+    9143: {"set": {"symbol": "AAVEUSDT", "timeframe": "15m"}},
+    9174: {"set_trig": {1.0152: {"trigger_role": "risky/early"}}},
+    9177: {"set_trig": {92.0: {"trigger_role": "risky/early"}}},
+    9179: {"set_trig": {99.95: {"trigger_role": "risky/early"}}},
+    9219: {"drop": True, "add": [{"side": "short", "trig": 25.0, "box": "25-35", "break_confirmation": "close", "notes": "waits for exit from 25-35 range then enters after confirmation", "confidence": "medium"},
+                                 {"side": "long", "trig": 35.0, "box": "25-35", "break_confirmation": "close", "notes": "waits for exit from 25-35 range then enters after confirmation", "confidence": "medium"}]},
+    9248: {"fill_blank": {"short": 0.05148}, "set": {"box": "0.05148-0.05572"}},
+    9260: {"set_trig": {9.0: {"trigger_role": "main"}}},
+    9285: {"drop": True}, 9453: {"drop": True}, 9880: {"drop": True}, 9917: {"drop": True}, 9926: {"drop": True},
+    9314: {"fill_blank": {"long": 5.95}},
+    # ---------------- 2023-2025
+    10587: {"set": {"confidence": "low", "notes": "BTC: shorts meaningless unless 22500 is lost; panic-sell risk below it"}},
+    11561: {"drop": True}, 15996: {"drop": True}, 19448: {"drop": True}, 23666: {"drop": True}, 23860: {"drop": True},
+    17827: {"set": {"notes": "live report: short opened on break of 2675.90, RR ~5 reached at time of post", "outcome_override": "triggered; RR~5 reported in same post (17827)"}},
+    18047: {"add": [{"side": "short", "trig": None, "symbol": "ETHUSDT", "timeframe": "15m", "setup_type": "fakeout", "entry_type": "market",
+            "confirmations": ["setup candle"], "notes": "trend weakness + fake top; setup candle gave small stop; author took profit (save-profit)", "confidence": "low",
+            "outcome_override": "save_profit (18047 same post)"}]},
+    22732: {"set_trig": {110280.0: {"notes": "spot-buy trigger above 110280; futures trigger taken earlier (not stated)"}}},
+    23278: {"keep_only_trig": [4.463, 2.756]},
+    23290: {"set_trig": {3.076: {"trigger_role": "risky/early", "notes": "spot entry trigger / author longs futures here"}}},
+    # ---------------- 2026
+    25418: {"drop": True}, 25436: {"drop": True},
+    25657: {"set": {"targets": [], "confidence": "low", "notes": "BTC 4h range 63-69: no action inside; loss of 63124 = alt-coin dump risk"}},
+    25701: {"fill_blank": {"long": 71362.0}, "set_blank": {"long": {"setup_type": "pullback", "notes": "long on pullback to 71362 with buy volume and a new wave"}}},
+    25702: {"fill_blank": {"long": 74967.0}},
+    25705: {"drop_trig": [67688.0]},
+    25714: {"set_trig": {2186.0: {"side": "long", "trigger_role": "main"}}},
+    25721: {"drop_trig": [62827.0], "add": [{"side": "long", "trig": 69105.0, "notes": "next trigger if 62827(sic, earlier trigger) was missed"},
+                                           {"side": "long", "trig": 71350.0, "trigger_role": "main", "break_confirmation": "close", "notes": "break & hold above 71350 = main confirmation"}]},
+    25738: {"drop_side_trig": {"long": [67827.0, 69105.0]}},
+    25750: {"fill_blank": {"short": 66047.0}},
+    25761: {"add": [{"side": "short", "trig": 1983.0, "notes": "second short trigger ('2033 and 1983')"}]},
+    25764: {"drop_blank": True, "add": [{"side": "long", "trig": 71350.0, "targets": [74967.0], "notes": "next trigger after 69105 activated"},
+                                        {"side": "long", "trig": 69105.0, "setup_type": "pullback", "entry_type": "limit", "notes": "or on pullback to 69105"}],
+            "outcome_note": "reports 69105 trigger activated"},
+    25765: {"set_trig": {2186.0: {"side": "long", "trigger_role": "main"}}},
+    25776: {"set_trig": {}, "fix_anaphora": {"long": 0.09339}, "set": {"box": "0.08982-0.09339"}},
+    25796: {}, 25800: {"set_trig": {0.10335: {"trigger_role": "main"}}},
+    25818: {"drop_trig": [0.0936]},
+    25827: {"add": [{"side": "short", "trig": 0.8501, "trigger_role": "main", "box": "0.8501-0.9050", "notes": "main short entry = breakout of 0.8501 (not 0.9050, inside the range)"}]},
+    25834: {"fill_blank": {"short": 70770.0}},
+    25856: {"drop_trig": [74967.0]},
+    25865: {"drop_blank": True},
+    25870: {"set_trig": {0.3132: {"trig": 0.3241}}},
+    25884: {"set_trig": {75336.0: {"side": "long"}}},
+    25905: {"drop_trig": [15.0], "add": [{"side": "long", "trig": None, "setup_type": "indecision_trigger", "entry_type": "stop", "trigger_role": "risky/early",
+            "notes": "4h setup candle closing = new risky entry; earlier entry +12%, RR>15", "confidence": "low"}]},
+    25906: {"drop_blank": True, "set_trig": {0.10335: {"side": "long"}, 0.8982: {"notes": "as written 0.8982 (DOGE ~0.09: likely 0.08982)"}}},
+    25911: {"drop": True},
+    25954: {"drop_blank": True, "drop_trig": [72.73], "set": {"box": "77777-78858"}},
+    25958: {"fill_blank": {"long": 78858.0}, "set_blank": {"long": {"notes": "wait for another reaction to the top to get exact resistance (~78858)"}}},
+    25993: {"fill_blank": {"short": 0.916}, "set_blank": {"short": {"notes": "needs more touches of 0.916 first"}}},
+    26020: {"set_trig": {0.07769: {"trig": 0.0841}}},
+    26050: {"drop": True},
+    26088: {"fill_blank": {"long": 79148.0}},
+    26124: {"drop_trig": [0.09511]},
+    26125: {"drop_trig": [80418.0]},
+    26126: {"fill_blank": {"long": 293.3}},
+    26136: {"fill_blank": {"long": 0.1251}, "set": {"box": "0.1213-0.1251"}},
+    26154: {"set_trig": {3.0: {"trig": None, "notes": "break of daily resistance with volume (level on chart only)", "confidence": "low"}}},
+    26174: {"drop_side_trig": {"short": [81600.0]}},
+    26227: {"set": {"symbol": "CRVUSDT", "notes": "header says XRPUSDT but text is about CRV"}},
+    26242: {"fill_blank": {"long": 81957.0}},
+    26252: {"fill_blank": {"short": 78760.0}, "set_blank": {"short": {"setup_type": "pullback", "notes": "if missed the break of 78760: short on pullback or setup candle; LH/LL below 75557 = trend confirmation"}}},
+    26311: {"drop": True},
+    26325: {"fill_blank": {"long": 0.3523}, "set_blank": {"long": {"notes": "long needs retest/reject of 0.3523 and a higher low first"}}},
+    26326: {"set_trig": {1.998: {"trigger_role": "risky/early"}, 1.864: {"trigger_role": "main"}, 2.149: {"trigger_role": ""}}},
+    26334: {"drop_blank": True, "set_trig": {661.63: {"side": "long", "setup_type": "range_breakout_trigger"}, 655.02: {"setup_type": "fakeout"}}},
+    26342: {"drop_blank": True, "add": [{"side": "long", "trig": 679.24, "trigger_role": "risky/early"}, {"side": "long", "trig": 724.94, "trigger_role": "main", "notes": "ATH"}]},
+    26363: {"drop_trig": [58.976]},
+    26627: {"set_trig": {0.08275: {"trigger_role": "first sign", "break_confirmation": "close"}, 0.08385: {"trigger_role": "risky/early"}}},
+    26677: {"drop_side_trig": {"short": [0.0868]}},
+    26685: {"drop_side_trig": {"long": [0.719]}},
+    26941: {"drop_side_trig": {"long": [0.08192]}},
+    27041: {"drop_side_trig": {"long": [0.378]}},
+    27159: {"fill_blank": {"short": 0.6743}, "set": {"box": "0.6743-0.7012"}},
+    27170: {"drop_side_trig": {"long": [0.04074]}},
+    27403: {"drop": True},
+    25792: {"add": [{"side": "short", "trig": 68088.0, "trigger_role": "risky/early", "notes": "momentum is bullish so no logical short now; if a sharp drop: first short trigger 68088", "confidence": "medium"}]},
+    25962: {"add": [{"side": "long", "trig": 0.1337, "confirmations": ["volume"], "notes": "long if price moves to the 0.1337 top with rising volume (break of top)", "confidence": "medium"}]},
+    27498: {"add": [{"side": "long", "trig": 0.29, "box": "0.28-0.29", "entry_type": "stop", "confirmations": ["order book"],
+                     "notes": "resistance zone 0.28-0.29 full of sell orders; long once price clears them, stop-buy near the zone (re-check order book)", "confidence": "medium"}]},
+    27565: {"drop_trig": [116.28]},
+    27577: {"drop_trig": [11.467], "set_trig": {10.674: {"side": "long"}}, "set": {"box": "10.07-10.674", "validity_level": ""}},
+    27584: {"set_trig": {0.2239: {}}, "fix_anaphora": {"short": 0.2159}, "set": {"box": "0.2159-0.2239"}},
+}
+
 
 
 def apply_manual(rows, posts):
@@ -851,14 +1126,33 @@ def apply_manual(rows, posts):
             continue
         keep = []
         for r in rs:
-            if r["_trig"] is not None and any(abs(r["_trig"] - x) < 1e-12 for x in m.get("drop_trig", [])):
+            T = r["_trig"]
+            eq = lambda xs: T is not None and any(abs(T - x) < 1e-9 for x in xs)
+            if eq(m.get("drop_trig", [])) and not eq(m.get("keep_side_trig", {}).get(r["side"], [])):
                 continue
-            if r["_trig"] is None and m.get("drop_blank"):
+            if eq(m.get("drop_side_trig", {}).get(r["side"], [])):
                 continue
+            if r["side"] in m.get("drop_side", []):
+                continue
+            if m.get("keep_only_trig") and not eq(m["keep_only_trig"]):
+                continue
+            if T is None and m.get("drop_blank"):
+                continue
+            if T is None and r["side"] in m.get("fill_blank", {}):
+                r["_trig"] = m["fill_blank"][r["side"]]
+                r["confidence"] = "medium"
+                r["notes"] = (r["notes"] + "; " if r["notes"] else "") + "level filled in manual review from the same post"
+                for k, v in m.get("set_blank", {}).get(r["side"], {}).items():
+                    set_field(r, k, v)
+            elif T is None and r["side"] in m.get("set_blank", {}):
+                for k, v in m["set_blank"][r["side"]].items():
+                    set_field(r, k, v)
+            if r["side"] in m.get("fix_anaphora", {}) and "anaphora" in r["notes"]:
+                r["_trig"] = m["fix_anaphora"][r["side"]]
             for k, v in m.get("set", {}).items():
                 set_field(r, k, v)
             for tv, fields in m.get("set_trig", {}).items():
-                if r["_trig"] is not None and abs(r["_trig"] - tv) < 1e-12:
+                if T is not None and abs(T - tv) < 1e-9:
                     for k, v in fields.items():
                         set_field(r, k, v)
             keep.append(r)
@@ -872,6 +1166,8 @@ def apply_manual(rows, posts):
                       a.get("validity_level", ""), a.get("box", ""), a.get("stated_rr", ""), a.get("notes", "added in manual review"),
                       a.get("confidence", "medium"), a.get("clause", ""))
             r["trigger_role"] = a.get("trigger_role", "")
+            if "outcome_override" in a:
+                r["outcome_override"] = a["outcome_override"]
             r["record_type"] = "setup"
             r["_reposts"] = base["_reposts"] if base else []
             if "conditional" in a:
