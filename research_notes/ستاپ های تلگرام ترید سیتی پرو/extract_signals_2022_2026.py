@@ -279,7 +279,7 @@ def label_setup(seg: str, post: str) -> str:
     s = seg.lower()
     if re.search(r"فیک|fake", s) and re.search(r"(?:فیک (?:بریک ?اوت|بشه|شد|کنیم|کرد|بودن)|در صورت فیک|اگر[^/]{0,40}فیک|fake)", s):
         return "fakeout"
-    if re.search(r"sma|ema|میانگین متحرک", s):
+    if re.search(r"sma|ema|میانگین متحرک", s) and re.search(r"پولبک|رسیدن|برسه|حمایت (?:شد|بشه|نشد)", s):
         return "ma_pullback"
     if re.search(r"ایندیسیژن|indecision|کندل ستاپ|کندل تایید|شدو", s) and re.search(r"(?:با|همراه)[^/]{0,15}(?:کندل ستاپ|ایندیسیژن|کندل تایید)|کندل ستاپ[^/]{0,30}(?:پوزیشن|ورود)|اگه کندل ستاپی|استاپ بای[^/]{0,20}shadow", s):
         return "indecision_trigger"
