@@ -1,0 +1,43 @@
+{
+ "input_posts": 456,
+ "canonical_posts": 331,
+ "duplicate_posts": 125,
+ "canonical_by_category": {
+  "call_candidate": 205,
+  "commentary": 75,
+  "result": 20,
+  "image_only": 1,
+  "market_data": 30
+ },
+ "image_only_in_input": 1,
+ "call_posts": 0,
+ "legs_total": 0,
+ "legs_public": 0,
+ "legs_by_origin": {},
+ "by_setup": {},
+ "by_symbol": {},
+ "by_asset": {},
+ "by_timeframe": {},
+ "by_side": {},
+ "by_entry_type": {},
+ "by_year": {},
+ "by_year_month": {},
+ "by_completeness": {},
+ "by_confidence": {},
+ "stop_pct": {},
+ "rr_tp1_calc": {},
+ "stated_rr": {},
+ "n_targets": {},
+ "n_targets_dist": {},
+ "with_outcome": 0,
+ "setup_by_year": {
+  "2019": {},
+  "2020": {},
+  "2021": {}
+ },
+ "completeness_by_year": {
+  "2019": {},
+  "2020": {},
+  "2021": {}
+ }
+}
