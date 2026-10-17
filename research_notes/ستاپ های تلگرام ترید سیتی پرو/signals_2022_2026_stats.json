@@ -1,0 +1,231 @@
+{
+ "universe_posts_2022_2026": 18599,
+ "B_file_posts": 597,
+ "post_status_counts": {
+  "chart_only": 436,
+  "no_setup": 15531,
+  "repost": 1831,
+  "pin_notice": 328,
+  "setup": 473
+ },
+ "setup_posts": 473,
+ "setup_posts_not_in_B": 153,
+ "setup_rows": 742,
+ "setup_rows_with_trigger_price": 647,
+ "unique_rows_not_restated": 694,
+ "chart_only_posts": 436,
+ "chart_only_by_year": {
+  "2022": 120,
+  "2023": 39,
+  "2024": 96,
+  "2025": 134,
+  "2026": 47
+ },
+ "B_posts_with_photo": 292,
+ "B_posts_image_only_like": 2,
+ "by_setup_type": {
+  "range_breakout_trigger": 558,
+  "pattern": 94,
+  "other": 58,
+  "fakeout": 17,
+  "indecision_trigger": 10,
+  "pullback": 3,
+  "momentum_trigger_rsi": 2
+ },
+ "by_symbol_top30": {
+  "BTCUSDT": 122,
+  "": 42,
+  "ETHUSDT": 38,
+  "MATICUSDT": 28,
+  "AVAXUSDT": 25,
+  "FTMUSDT": 23,
+  "LINKUSDT": 23,
+  "SOLUSDT": 22,
+  "BNBUSDT": 20,
+  "LUNAUSDT": 20,
+  "UNIUSDT": 16,
+  "DOGEUSDT": 14,
+  "MANAUSDT": 13,
+  "BCHUSDT": 13,
+  "HYPEUSDT": 13,
+  "ENJUSDT": 12,
+  "SANDUSDT": 12,
+  "ADAUSDT": 12,
+  "NEARUSDT": 12,
+  "AAVEUSDT": 10,
+  "TRXUSDT": 10,
+  "SHIBUSDT": 9,
+  "FILUSDT": 9,
+  "FETUSDT": 9,
+  "ENAUSDT": 8,
+  "GALAUSDT": 7,
+  "COMPUSDT": 7,
+  "IOSTUSDT": 7,
+  "ATOMUSDT": 7,
+  "ALGOUSDT": 7
+ },
+ "n_symbols": 87,
+ "by_timeframe": {
+  "4h": 240,
+  "1h": 195,
+  "(blank)": 156,
+  "15m": 69,
+  "1d": 68,
+  "1w": 9,
+  "1h/4h": 3,
+  "4h/1h": 2
+ },
+ "by_side": {
+  "short": 327,
+  "long": 415
+ },
+ "by_year_rows": {
+  "2022": 251,
+  "2023": 24,
+  "2024": 15,
+  "2025": 44,
+  "2026": 408
+ },
+ "by_year_posts": {
+  "2022": 158,
+  "2023": 18,
+  "2024": 10,
+  "2025": 25,
+  "2026": 262
+ },
+ "by_year_setup_type": {
+  "2022": {
+   "other": 13,
+   "range_breakout_trigger": 195,
+   "pattern": 41,
+   "fakeout": 1,
+   "pullback": 1
+  },
+  "2023": {
+   "pattern": 4,
+   "other": 12,
+   "range_breakout_trigger": 8
+  },
+  "2024": {
+   "other": 7,
+   "range_breakout_trigger": 8
+  },
+  "2025": {
+   "pattern": 3,
+   "other": 17,
+   "range_breakout_trigger": 22,
+   "indecision_trigger": 2
+  },
+  "2026": {
+   "range_breakout_trigger": 325,
+   "fakeout": 16,
+   "other": 9,
+   "pullback": 2,
+   "pattern": 46,
+   "indecision_trigger": 8,
+   "momentum_trigger_rsi": 2
+  }
+ },
+ "by_entry_type": {
+  "market": 3,
+  "(blank)": 65,
+  "stop": 673,
+  "limit": 1
+ },
+ "by_break_confirmation": {
+  "(blank)": 102,
+  "break": 502,
+  "close": 138
+ },
+ "by_trigger_role": {
+  "(blank)": 626,
+  "risky/early": 67,
+  "main": 48,
+  "risky": 1
+ },
+ "by_confidence": {
+  "high": 570,
+  "low": 138,
+  "medium": 34
+ },
+ "conditional": {
+  "no": 2,
+  "yes": 740
+ },
+ "rows_with_stop": 8,
+ "rows_with_targets": 42,
+ "n_targets_dist": {
+  "1": 41,
+  "0": 700,
+  "2": 1
+ },
+ "rows_with_stated_rr": 4,
+ "stated_rr_values": {
+  "3": 1,
+  "5": 2,
+  "2": 1
+ },
+ "rows_with_validity_level": 4,
+ "rows_with_box": 6,
+ "confirmation_counts": {
+  "candle close beyond level": 141,
+  "volume": 41,
+  "BTC context": 40,
+  "multiple touches": 22,
+  "HH/HL or LH/LL structure": 19,
+  "setup candle": 10,
+  "RSI": 7,
+  "BTC dominance": 6,
+  "confirmation candle": 2
+ },
+ "rows_with_outcome": 53,
+ "rows_with_outcome_by_year": {
+  "2022": 1,
+  "2026": 52
+ },
+ "outcome_tags": {
+  "triggered": 36,
+  "save_profit": 4,
+  "faked": 41,
+  "15%": 1
+ },
+ "first_outcome_tag": {
+  "triggered": 26,
+  "save_profit": 2,
+  "faked": 25
+ },
+ "stop_dist_pct": {
+  "n": 6,
+  "median": 37.702,
+  "p25": 27.273,
+  "p75": 42.129,
+  "min": 20.356,
+  "max": 94.48
+ },
+ "stop_dist_over_box": {},
+ "first_target_dist_pct": {
+  "n": 31,
+  "median": 8.788,
+  "p25": 5.524,
+  "p75": 23.218,
+  "min": 2.121,
+  "max": 1300.0
+ },
+ "implied_R_first_target": {},
+ "validity_level_dist_pct": {
+  "n": 2,
+  "median": 5.321,
+  "p25": 2.965,
+  "p75": 7.677,
+  "min": 2.965,
+  "max": 7.677
+ },
+ "box_width_pct_of_trigger": {
+  "n": 5,
+  "median": 8.542,
+  "p25": 5.715,
+  "p75": 8.826,
+  "min": 0.01,
+  "max": 9.843
+ }
+}
