@@ -1,0 +1,434 @@
+# Rule ledger. Every coded TCP rule must reference an id here (T29).
+title: Trade City Pro rule ledger (T29)
+source: docs/research/ستاپ های تلگرام ترید سیتی پرو.md (Telegram archive analysis)
+conventions:
+  evidence: '#N = https://t.me/tradecity_pro/N ; EDU#N = https://t.me/Tradecitypro_Education/N'
+  type: mechanical = codable as stated; operationalisable = needs our definition (grid below); discretionary = not coded
+  canonical: values in [brackets] inside definition_fa are the canonical (pre-registered default) values
+  priority: P1 canonical config; P2 single-factor ablation only; P3 deferred or dropped
+rules:
+- id: R01
+  rule_fa: سایز از فاصلهٔ استاپ؛ اهرم فقط برای مارجین
+  era: هر دو
+  evidence:
+  - EDU#50
+  - EDU#68
+  - '#18749'
+  - '#23346'
+  type: mechanical
+  definition_fa: '`units = equity·risk/|entry−stop|`؛ چک مارجین با اهرم ≤ [10]، ایزوله، گارد لیکوئیدیشن'
+  priority: P1
+- id: R02
+  rule_fa: ریسک هر معامله
+  era: 2021 / 2026
+  evidence:
+  - EDU#50
+  - '#4317'
+  - '#18323'
+  - '#27460'
+  - '#27415'
+  type: mechanical
+  definition_fa: '2021: {1, [3]}٪. 2026: پایه R ∈ {0.5, [1]}٪ ضرب در ضریب رده'
+  priority: P1
+- id: R03
+  rule_fa: چهار ردهٔ ریسک با پرچم‌ها
+  era: '2026'
+  evidence:
+  - '#27460'
+  - '#26264'
+  - '#25840'
+  type: operationalisable
+  definition_fa: 'سیف 1·R، معمولی 0.75·R، ریسکی 0.5·R، خیلی ریسکی 0.25·R. از سیف شروع کن و برای هر پرچم یک رده پایین برو (خلاف
+    روند، داخل باکس، برخورد اول، آخر هفته، بدون حجم، تریگر ریسکی، 15m). کف: خیلی ریسکی'
+  priority: P1 (2026)
+- id: R04
+  rule_fa: 'خلاف روند: ریسک ≤ 0.25٪ و 2R کامل'
+  era: '2026'
+  evidence:
+  - '#26593'
+  - '#26043'
+  - '#27331'
+  type: mechanical
+  definition_fa: '{[رد کامل]، مجاز با 0.25٪ و TP=2R برای کل حجم}'
+  priority: P1
+- id: R05
+  rule_fa: حداقل 2R تا تارگت اول (فارکس 3R)
+  era: هر دو
+  evidence:
+  - EDU#117
+  - EDU#152
+  - '#10710'
+  - '#25793'
+  type: mechanical
+  definition_fa: TP1 = نزدیک‌ترین زون مخالف (پیوت k=[5] روی HTF). رد اگر (TP1−entry)/(entry−stop) < 2
+  priority: P1
+- id: R06
+  rule_fa: استاپ اجباری، هم‌زمان با ورود، از نوع مارکت
+  era: هر دو
+  evidence:
+  - '#2296'
+  - '#22639'
+  - '#25657'
+  type: mechanical
+  definition_fa: استاپ-مارکت با لغزش از مدل هزینه؛ گپ در open پر می‌شود
+  priority: P1
+- id: R07
+  rule_fa: جای استاپ
+  era: 2021 / 2026
+  evidence:
+  - EDU#85
+  - EDU#143
+  - '#26143'
+  - '#22838'
+  type: mechanical
+  definition_fa: '2021: شدوی مقابل کندل تریگر یا شدوی کندل پولبک. 2026: پشت کندل شکست یا ستاپ؛ در شکست باکس، لبهٔ مقابل. بافر
+    ∈ {[0], 0.1}·ATR14'
+  priority: P1
+- id: R08
+  rule_fa: استاپ نه خیلی تنگ، نه خیلی گشاد؛ «قانون 6»
+  era: هر دو
+  evidence:
+  - EDU#88
+  - EDU#203
+  - '#25630'
+  type: operationalisable
+  definition_fa: رد اگر فاصله < 0.5·ATR یا > s·ATR، s ∈ {1.5, [2], 3} (ATR تایم‌فریم تریگر)
+  priority: P1
+- id: R09
+  rule_fa: در 2R، 30٪ بستن و ریسک‌فری
+  era: هر دو
+  evidence:
+  - EDU#70
+  - EDU#203
+  - '#8548'
+  - '#27379'
+  type: mechanical
+  definition_fa: f1 ∈ {[0.30], 0.35}؛ استاپ به entry
+  priority: P1
+- id: R10
+  rule_fa: بستن اختیاری پیش از 2R ممنوع
+  era: '2021'
+  evidence:
+  - EDU#47
+  - '#4043'
+  type: mechanical
+  definition_fa: هیچ خروج دستی؛ فقط استاپ، BE یا قواعد کد شده
+  priority: P1
+- id: R11
+  rule_fa: 'رانر: دنبال کردن ساختار و سقف 20R تا 30R؛ 40٪ در 5R و رانر 10٪'
+  era: 2021 / 2026
+  evidence:
+  - EDU#152
+  - '#10711'
+  - '#26181'
+  - '#26436'
+  - '#27565'
+  type: operationalisable
+  definition_fa: '2021: تریل زیر آخرین پیوت k ∈ {2, [3]}، سقف {20, [30]}R. 2026: علاوه بر آن 40٪ در [5R]، 10٪ رانر با همان
+    تریل'
+  priority: P1
+- id: R12
+  rule_fa: 'سیو سود با RSI: نگه داشتن در اوربای و سیو سود با خروج'
+  era: '2026'
+  evidence:
+  - '#27444'
+  - '#27296'
+  - '#21119'
+  type: mechanical
+  type_note: M (دوره فرض)
+  definition_fa: RSI(14)؛ اگر در 2R RSI>70 است، f1 تا عبور RSI به زیر 70 به تعویق بیفتد. {[on], off}
+  priority: P2
+- id: R13
+  rule_fa: فقط دو تریگر (whitelist)
+  era: '2021'
+  evidence:
+  - EDU#87
+  - '#4447'
+  type: mechanical
+  definition_fa: موتور H2021 فقط ماژول‌های 14 و 15 را دارد
+  priority: P1 (2021)
+- id: R14
+  rule_fa: کندل ایندیسیژن روی زون، سپس سفارش استاپ پشت شدو
+  era: '2021'
+  evidence:
+  - EDU#81
+  - EDU#85
+  type: operationalisable
+  definition_fa: شدوی رد ≥ w·range (w ∈ {0.5, [0.6]})، بدنه ≤ b·range (b ∈ {0.3, [0.4]})، لمس زون در ≤ 0.25·ATR. سفارش در
+    high+tick، معتبر n ∈ {1, [2], 3} بار
+  priority: P1 (2021)
+- id: R15
+  rule_fa: شکست، پولبک، کندل پرقدرت با حجم
+  era: '2021'
+  evidence:
+  - EDU#143
+  - EDU#134
+  type: operationalisable
+  definition_fa: 'شکست = کلوز ≥ 0.1·ATR پشت سطح. پولبک تا ≤ {0.25, [0.5]}·ATR از سطح در ≤ {5, [10]} بار. کندل تأیید: بدنه
+    ≥ [0.6]·range، دامنه ≥ 1·ATR، حجم ≥ {1.2, [1.5]}×SMA20'
+  priority: P1 (2021)
+- id: R16
+  rule_fa: شکست سطح تریگر با سفارش استاپ
+  era: '2026'
+  evidence:
+  - '#23423'
+  - '#20910'
+  type: mechanical
+  type_note: M با فرض سطح
+  definition_fa: سطح = آخرین پیوت تأییدشده (k ∈ {2, [3], 5}) یا لبهٔ باکس. استاپ در سطح + {[0], 0.1}·ATR. نسخهٔ «تثبیت» (کلوز
+    پشت سطح) در ablation
+  priority: P1 (2026)
+- id: R17
+  rule_fa: ردهٔ تریگر ریسکی در برابر اصلی
+  era: 2026 (و 2022)
+  evidence:
+  - '#27331'
+  - '#25800'
+  - '#9172'
+  type: operationalisable
+  definition_fa: ریسکی = پیوت جزئی k=2 (رده −1). اصلی = پیوت k=5 یا لبهٔ باکس. افزودن حجم روی تریگر اصلی {[off], on}
+  priority: P1 (2026)
+- id: R18
+  rule_fa: هم‌جهتی با روند داو روی HTF
+  era: 2026 (2021 دیر)
+  evidence:
+  - '#25436'
+  - '#26627'
+  - '#6580'
+  type: operationalisable
+  definition_fa: روند = HH+HL یا LH+LL با پیوت k ∈ {3, [5]} روی HTF (×4 تایم تریگر). در H2021 فقط ablation
+  priority: P1 (2026)، P2 (2021)
+- id: R19
+  rule_fa: گیت حجم
+  era: هر دو
+  evidence:
+  - '#25954'
+  - '#25981'
+  - '#27050'
+  - '#25955'
+  type: operationalisable
+  definition_fa: حجم بار شکست ≥ v×SMA20(vol)، v ∈ {1.0, [1.2], 1.5}. نسخهٔ «حجم ضعیف → ریسک ×0.5» در برابر «رد»
+  priority: P1
+- id: R20
+  rule_fa: تأیید مومنتوم RSI
+  era: '2026'
+  evidence:
+  - '#18749'
+  - '#26122'
+  - '#27087'
+  - '#25955'
+  type: operationalisable
+  definition_fa: 'RSI(14) در ±q بار از شکست وارد >70 (لانگ) یا <30 (شورت) شود، q ∈ {[3], 6}. نسخهٔ ضعیف: RSI>50. در رژیم رنج
+    خاموش'
+  priority: P2
+- id: R21
+  rule_fa: 'باکس: داخلش معامله نکن؛ استاپ لبهٔ مقابل؛ تارگت یک ارتفاع'
+  era: '2026'
+  evidence:
+  - '#27029'
+  - '#25702'
+  - '#22838'
+  - '#25989'
+  type: operationalisable
+  definition_fa: باکس = N بار (N ∈ {20, [40], 80}) با عرض ≤ r·ATR·√N (r ∈ {1.5, [2]})، ≥ 2 برخورد هر لبه. ورود داخل باکس =
+    رده «خیلی ریسکی» یا رد
+  priority: P1 (2026)
+- id: R22
+  rule_fa: کندل ستاپ با SMA 7/25
+  era: '2026'
+  evidence:
+  - '#23522'
+  - '#26143'
+  - '#26038'
+  type: operationalisable
+  definition_fa: شیب SMA7>0 (اختیاری SMA7>SMA25). کندل با بدنه ≤ {0.3, [0.5]}·range که low آن در ≤ 0.25·ATR از SMA7 است و
+    بالای SMA7 کلوز می‌کند. buy-stop در high و stop در low. اعتبار [2] بار
+  priority: P2
+- id: R23
+  rule_fa: فیک V
+  era: '2026'
+  evidence:
+  - '#21119'
+  - '#22748'
+  - '#14733'
+  type: operationalisable
+  definition_fa: کلوز زیر سطح L (≥ 2 برخورد) و برگشت بالای L ظرف w ∈ {1, [3], 5} بار. تریگر = بیشینهٔ high از آخرین سقف پیش
+    از شکست. stop = کف حرکت فیک. ردهٔ ریسکی
+  priority: P2
+- id: R24
+  rule_fa: رژیم دامیننس
+  era: هر دو
+  evidence:
+  - '#4523'
+  - '#23029'
+  - '#22732'
+  - '#27711'
+  type: operationalisable
+  definition_fa: روند BTC.D با پیوت k=[3] روی 1D. BTC.D نزولی ← فقط لانگ آلت. صعودی ← BTC یا آلت با جفت BTC صعودی. صعودی و
+    BTC نزولی ← شورت آلت. رنج ← بدون فیلتر
+  priority: P2
+- id: R25
+  rule_fa: 'سقف هم‌زمانی: 2 پوزیشن و بودجهٔ مشترک'
+  era: 2021 / 2026
+  evidence:
+  - '#4588'
+  - EDU#60
+  - '#25768'
+  type: mechanical
+  definition_fa: max_positions ∈ {1, [2], 3}. ریسک باز کل ≤ [3]٪ (2021) یا ≤ 2·R (2026). پوزیشن ریسک‌فری صفر حساب می‌شود
+  priority: P1
+- id: R26
+  rule_fa: سقف ضرر روزانه
+  era: 2021 (2022 تکرار)
+  evidence:
+  - '#5864'
+  - '#9233'
+  type: mechanical
+  definition_fa: '{[3]٪، 1.5٪ (TradingView)}، ریست 00:00 UTC'
+  priority: P1
+- id: R27
+  rule_fa: 3 استاپ ← 24 ساعت توقف
+  era: '2021'
+  evidence:
+  - EDU#65
+  - '#4579'
+  type: mechanical
+  definition_fa: '3 استاپ متوالی ← 24 ساعت. نسخه: 3 استاپ در 24 ساعت غلتان. در H2026 فقط ablation'
+  priority: P1 (2021)، P2 (2026)
+- id: R28
+  rule_fa: سود یا ضرر بزرگ ← یک هفته توقف
+  era: '2021'
+  evidence:
+  - EDU#64
+  - '#4563'
+  type: operationalisable
+  definition_fa: تک‌معامله ≥ 10R یا روز ≤ −3٪ ← 7 روز
+  priority: P3
+- id: R29
+  rule_fa: سه تایم‌فریم، هرگز زیر تایم ورود
+  era: هر دو
+  evidence:
+  - EDU#127
+  - '#25418'
+  - '#26050'
+  type: mechanical
+  definition_fa: سه‌تایی ∈ {(1D, [4H], 1H)، (4H, 1H, 15m)}. HTF وتو دارد
+  priority: P1
+- id: R30
+  rule_fa: برخورد اول نه؛ بودجهٔ ورود دوباره برای هر سطح
+  era: '2026'
+  evidence:
+  - '#25840'
+  - '#27469'
+  type: operationalisable
+  definition_fa: 'برخورد = high در ≤ 0.1·ATR بدون کلوز پشت سطح، با فاصلهٔ ≥ 3 بار. تریگر تایم پایین از برخورد دوم. بودجه:
+    1D ≤ 3 و 4H ≤ 2 و 1H ≤ 1'
+  priority: P2
+- id: R31
+  rule_fa: آخر هفته رده را پایین می‌آورد
+  era: '2026 (2022: معامله نکن)'
+  evidence:
+  - '#25834'
+  - '#26264'
+  - '#9256'
+  type: mechanical
+  definition_fa: 'شنبه و یکشنبه UTC: {[رده −1]، بدون ورود}'
+  priority: P1 (2026)
+- id: R32
+  rule_fa: سشن نیویورک
+  era: '2026'
+  evidence:
+  - '#25999'
+  - '#23079'
+  type: operationalisable
+  definition_fa: ورود فقط از open بازار آمریکا −1h تا +h، h ∈ {4, 8}، در برابر [بدون فیلتر]
+  priority: P3
+- id: R33
+  rule_fa: 'تعقیب نکن: بعد از پامپ یا کندل روزانهٔ بزرگ'
+  era: هر دو
+  evidence:
+  - '#4610'
+  - '#10879'
+  - '#26311'
+  type: operationalisable
+  definition_fa: رد لانگ اگر بازده 24h > {[8], 15}٪ یا کندل روزانهٔ قبلی > [2.5]·ATR
+  priority: P2
+- id: R34
+  rule_fa: تریگر از دست رفته را رها کن؛ اعتبار مشروط تریگر
+  era: هر دو
+  evidence:
+  - EDU#267
+  - '#25586'
+  - '#27577'
+  type: mechanical
+  definition_fa: سفارش n بار معتبر است؛ با شکست سطح اعتبار (لبهٔ مقابل یا پیوت مقابل) لغو می‌شود
+  priority: P1
+- id: R35
+  rule_fa: 'استثنای فشردگی: شکست بدون پولبک'
+  era: '2021'
+  evidence:
+  - EDU#49
+  type: operationalisable
+  definition_fa: ≥ N بار (N ∈ {20, 40}) در ≤ 1·ATR زیر سطح ← ورود استاپ بدون انتظار پولبک
+  priority: P2
+- id: R36
+  rule_fa: 'استراتژی کیان: شکست خط روند + زون با کندل فول‌بادی'
+  era: '2021'
+  evidence:
+  - EDU#124
+  type: operationalisable
+  definition_fa: خط روند از دو پیوت آخر (k=3). زون با ≥ 2 برخورد. کندل بدنه ≥ 0.7·range، حجم ≥ 1.5×. TP1 = سقف یا کف قبلی،
+    30٪ + BE
+  priority: P2
+- id: R37
+  rule_fa: 'خطوط تکمیلی: ورود پله‌ای روی تریگر بعدی'
+  era: '2026'
+  evidence:
+  - '#22992'
+  - '#22748'
+  type: operationalisable
+  definition_fa: افزودن 0.5·ریسک اولیه در شکست تریگر اصلی بعد از ریسک‌فری شدن پوزیشن اول
+  priority: P3
+- id: R38
+  rule_fa: هج 2 آلت + 1 شورت BTC
+  era: '2021'
+  evidence:
+  - EDU#44
+  - EDU#45
+  type: discretionary
+  definition_fa: حذف (با «پیشواز نرو» در [EDU#103](https://t.me/Tradecitypro_Education/103) در تضاد است)
+  priority: P3
+- id: R39
+  rule_fa: خرید پله‌ای اسپات و استاپ 10٪
+  era: '2021'
+  evidence:
+  - EDU#145
+  type: operationalisable
+  definition_fa: خارج از آزمون فیوچرز؛ ماژول جداگانهٔ اسپات
+  priority: P3
+- id: R40
+  rule_fa: جابه‌جایی سطح با اوردربوک
+  era: '2026'
+  evidence:
+  - '#27143'
+  - '#27192'
+  type: discretionary
+  definition_fa: 'تاریخچهٔ اوردربوک نداریم؛ پراکسی: سطح به‌صورت زون [L, L+0.25·ATR]'
+  priority: P3
+- id: R41
+  rule_fa: universe = 100 کوین اول، نقطه‌ای در زمان
+  era: هر دو
+  evidence:
+  - EDU#98
+  - '#22542'
+  type: mechanical
+  definition_fa: بازسازی هفتگی یکشنبه؛ تیکت 06 موجود
+  priority: P1
+- id: R42
+  rule_fa: KBSM
+  era: ؟
+  evidence:
+  - '#10146'
+  type: discretionary
+  definition_fa: تعریفی وجود ندارد؛ حذف
+  priority: —

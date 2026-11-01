@@ -334,6 +334,19 @@ def cmd_ui(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_prereg(args: argparse.Namespace) -> int:
+    from nnfx.research.prereg import Prereg
+    from nnfx.research.trials import ResearchState
+
+    p = Prereg(Path(args.file))
+    rs = ResearchState(Path(args.research))
+    print(f"{args.file}: frozen {p.data['frozen_on']}, digest {p.digest[:16]}, ledger ok")
+    for g, budget in p.data["trial_budget"].items():
+        if g in p.data["hypotheses"]:
+            print(f"  {g}: budget {budget}, remaining {p.remaining(rs, g)}")
+    return 0
+
+
 def cmd_live(args: argparse.Namespace) -> int:
     from nnfx.brokers.paper import PaperBroker
     from nnfx.harness.conversion import Conversion
@@ -431,6 +444,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--root", default=".", help="repository root holding config/ data/ research/")
     p.set_defaults(fn=cmd_ui)
+
+    p = sub.add_parser("prereg", help="verify a frozen pre-registration and show trial budgets")
+    p.add_argument("file", nargs="?", default="research/tcp_prereg.frozen.json")
+    p.add_argument("--research", default="research")
+    p.set_defaults(fn=cmd_prereg)
 
     p = sub.add_parser("live", help="run one daily cycle against the PaperBroker")
     _add_common(p)

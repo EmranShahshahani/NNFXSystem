@@ -1,0 +1,225 @@
+{
+  "status": "frozen",
+  "frozen_on": "2026-11-01",
+  "ticket": "T30",
+  "title": "Trade City Pro pre-registration: hypotheses H2021 and H2026",
+  "source": "docs/research/ستاپ های تلگرام ترید سیتی پرو.md",
+  "ledger": "research/tcp_rules.yaml",
+  "ledger_sha256": "d81ec77ee478c058bb58bfc7824e8c09d0722378be21c65cab586a51f3586cc2",
+  "data_seen_before_freeze": "None. No price bars for any symbol had been fetched when this file was frozen; only Telegram text, the call CSVs (levels without outcomes checked against prices) and the 941 extracted calls were seen.",
+  "change_policy": "Never edit. A rule, filter or parameter added after any result is seen is a NEW hypothesis with its own budget and its own pre-registration file. .gitattributes marks this file -merge.",
+
+  "verdict": {
+    "thresholds_file": "research/thresholds.frozen.json",
+    "market": "crypto",
+    "primary_hypothesis": "expectancy per entry > 0.10R after full modelled costs (criterion 3) with BCa 95% lower bound > 0 (criterion 1)",
+    "notes": [
+      "Risk tiers change size, not R: tier rules are judged on MAR (7) and drawdown (8), not on R criteria.",
+      "Criterion 9 random control uses the same stop, the same 2R/5R/runner management and the same time windows as the strategy.",
+      "H2026 holdout (2025-2026) is contaminated: most of its source text dates from 2025-02 to 2026-10. Its verdict must say so; forward paper trading (T45) is its real holdout."
+    ]
+  },
+
+  "data": {
+    "venue": "binance-usdm",
+    "cross_check_venue": "bybit-linear",
+    "early_venue": {"venue": "bitmex", "symbols": ["XBTUSD"], "years": [2019, 2020]},
+    "bar": "H1, labelled by close, UTC; higher timeframes resampled from H1 in the data layer",
+    "universe": {"rule": "R41", "definition": "top 100 by market cap, point in time, rebuilt weekly on Sunday 00:00 UTC; stablecoins excluded"},
+    "core_symbols": ["BTC/USDT:USDT", "ETH/USDT:USDT"],
+    "dominance": {"series": ["BTC.D", "TOTAL2", "USDT.D"], "source": "TradingView export via nnfx import-tv", "used_by": ["R24"]},
+    "volume": "traded volume from the same venue as price (doc 03 §2b)"
+  },
+
+  "segments": {
+    "partition": "crypto",
+    "development": ["2017-01-01", "2021-12-31"],
+    "validation": ["2022-01-01", "2024-12-31"],
+    "holdout": ["2025-01-01", "2026-12-31"],
+    "forward": "paper trading from 2026-11-01 (T45), minimum 100 triggered trades before any judgement (EDU#39)"
+  },
+
+  "trial_budget": {
+    "H2021": 20,
+    "H2026": 32,
+    "risk_layer": 8,
+    "total": 60,
+    "call_replay_variants": 12,
+    "plateau": "criterion 11 neighbours are the ablation values (+/-1 grid step around canonical); trial ids are content hashes, so a neighbour already run as an ablation is counted once. Budget left after the planned runs is the only room for a finalist that differs from canonical.",
+    "counting": "every evaluated configuration is a trial in research/trials.jsonl; its stage must start with the budget group name (e.g. 'H2026/ablation'). The plateau sweep of a finalist counts against the same group."
+  },
+
+  "costs": {
+    "venue_file": "config/venues/backtest.yaml",
+    "market_class": "crypto_perp",
+    "entry_fill": "stop entries are taker fills with modelled slippage; gaps fill at the open",
+    "stress_multiplier": 1.5
+  },
+
+  "timeframes": {
+    "rule": "R29",
+    "canonical": ["1D", "4H", "1H"],
+    "variants": [["4H", "1H", "15m"]],
+    "htf_veto": true,
+    "note": "The 15m variant needs 15m bars and is evaluated only if the canonical triple passes screening."
+  },
+
+  "hypotheses": {
+    "H2021": {
+      "summary": "2021 education-era system: two triggers only, shared 3% risk, min 2R to TP1, 30% at 2R then breakeven, structural trail, 3-loss cooldown.",
+      "out_of_sample_note": "Rules were written before 2022, so 2022-2026 is genuinely out of sample for this hypothesis.",
+      "modules": {
+        "indecision_trigger": {"rule": "R14", "enabled": true},
+        "break_pullback_volume": {"rule": "R15", "enabled": true},
+        "compression_breakout": {"rule": "R35", "enabled": false, "ablation_only": true},
+        "kian_trendline_breakout": {"rule": "R36", "enabled": false, "ablation_only": true}
+      },
+      "canonical": {
+        "risk_per_trade": 0.03,
+        "max_open_risk": 0.03,
+        "max_positions": 2,
+        "daily_loss_limit": 0.03,
+        "cooldown": {"stops": 3, "hours": 24, "mode": "consecutive"},
+        "min_rr_tp1": 2.0,
+        "tp1_fraction": 0.30,
+        "breakeven_at_tp1": true,
+        "runner": {"trail_pivot_k": 3, "cap_r": 30},
+        "stop_buffer_atr": 0.0,
+        "stop_width_atr": {"min": 0.5, "max": 2.0},
+        "order_valid_bars": 2,
+        "zone_pivot_k": 5,
+        "indecision": {"wick_frac": 0.6, "body_frac": 0.4, "zone_tol_atr": 0.25},
+        "break_pullback": {"break_close_atr": 0.1, "pullback_tol_atr": 0.5, "pullback_max_bars": 10, "strong_body_frac": 0.6, "strong_range_atr": 1.0, "volume_mult": 1.5, "volume_sma": 20},
+        "dow_trend_filter": false,
+        "no_manual_exit_before_tp1": true,
+        "leverage_max": 10,
+        "margin": "isolated"
+      },
+      "ablations": [
+        {"param": "risk_per_trade", "values": [0.01]},
+        {"param": "indecision.wick_frac", "values": [0.5]},
+        {"param": "indecision.body_frac", "values": [0.3]},
+        {"param": "order_valid_bars", "values": [1, 3]},
+        {"param": "break_pullback.pullback_tol_atr", "values": [0.25]},
+        {"param": "break_pullback.pullback_max_bars", "values": [5]},
+        {"param": "break_pullback.volume_mult", "values": [1.2]},
+        {"param": "runner.trail_pivot_k", "values": [2]},
+        {"param": "runner.cap_r", "values": [20]},
+        {"param": "dow_trend_filter", "values": [true]},
+        {"param": "stop_buffer_atr", "values": [0.1]},
+        {"param": "stop_width_atr.max", "values": [1.5, 3.0]},
+        {"param": "modules.compression_breakout.enabled", "values": [true]},
+        {"param": "modules.kian_trendline_breakout.enabled", "values": [true]}
+      ],
+      "frequency_band": {"unit": "triggered trades per month, whole universe", "min": 3, "max": 30, "anchor": "EDU#86: about 10 indecision positions a month"},
+      "secondary_predictions": [
+        {"claim": "most trades close near 5R", "source": "#5853", "test": "median R of trades that reach TP1 is between 3 and 7"},
+        {"claim": "10R-30R runners 2-3 times a month", "source": "EDU#152", "test": "count of trades >= 10R per month"}
+      ]
+    },
+
+    "H2026": {
+      "summary": "Current method: stop-order breakout of risky/main triggers with Dow trend, box, volume and RSI gates, tiered risk, 2R/5R partials and a 10% runner.",
+      "modules": {
+        "trigger_breakout": {"rules": ["R16", "R17"], "enabled": true},
+        "box": {"rule": "R21", "enabled": true},
+        "dow_trend": {"rule": "R18", "enabled": true},
+        "volume_gate": {"rule": "R19", "enabled": true},
+        "rsi_confirmation": {"rule": "R20", "enabled": false, "ablation_only": true},
+        "setup_candle_sma": {"rule": "R22", "enabled": false, "ablation_only": true},
+        "fakeout_v": {"rule": "R23", "enabled": false, "ablation_only": true},
+        "dominance_regime": {"rule": "R24", "enabled": false, "ablation_only": true},
+        "first_touch_rule": {"rule": "R30", "enabled": false, "ablation_only": true},
+        "rsi_profit_deferral": {"rule": "R12", "enabled": false, "ablation_only": true},
+        "no_chase": {"rule": "R33", "enabled": false, "ablation_only": true}
+      },
+      "canonical": {
+        "base_risk": 0.01,
+        "tiers": {"safe": 1.0, "normal": 0.75, "risky": 0.5, "very_risky": 0.25},
+        "tier_flags": ["counter_trend", "inside_box", "first_touch", "weekend", "low_volume", "risky_trigger", "m15"],
+        "counter_trend": "reject",
+        "weekend": "tier_minus_one",
+        "max_positions": 2,
+        "max_open_risk_r": 2.0,
+        "daily_loss_limit": 0.03,
+        "cooldown": null,
+        "min_rr_tp1": 2.0,
+        "partials": [{"at_r": 2.0, "fraction": 0.30, "breakeven": true}, {"at_r": 5.0, "fraction": 0.40}],
+        "runner": {"fraction": 0.10, "trail_pivot_k": 3, "cap_r": 30, "only_if_htf_trend": true, "else_close_at_r": 5.0},
+        "trigger": {"pivot_k_main": 5, "pivot_k_risky": 2, "offset_atr": 0.0, "confirm_by_close": false, "volume_on_main": false},
+        "box": {"bars": 40, "width_r": 2.0, "min_touches": 2},
+        "dow": {"pivot_k": 5, "htf_mult": 4},
+        "volume": {"mult": 1.2, "sma": 20, "weak_volume": "reject"},
+        "stop": {"placement": "behind_breakout_candle_or_box_edge", "buffer_atr": 0.0, "width_atr": {"min": 0.5, "max": 2.0}},
+        "order_valid_bars": 2,
+        "zone_pivot_k": 5,
+        "rsi_period": 14,
+        "leverage_max": 10,
+        "margin": "isolated"
+      },
+      "ablations": [
+        {"param": "base_risk", "values": [0.005]},
+        {"param": "trigger.pivot_k_main", "values": [3]},
+        {"param": "trigger.offset_atr", "values": [0.1]},
+        {"param": "trigger.confirm_by_close", "values": [true]},
+        {"param": "trigger.volume_on_main", "values": [true]},
+        {"param": "box.bars", "values": [20, 80]},
+        {"param": "box.width_r", "values": [1.5]},
+        {"param": "dow.pivot_k", "values": [3]},
+        {"param": "volume.mult", "values": [1.0, 1.5]},
+        {"param": "volume.weak_volume", "values": ["half_risk"]},
+        {"param": "stop.buffer_atr", "values": [0.1]},
+        {"param": "stop.width_atr.max", "values": [1.5, 3.0]},
+        {"param": "partials.0.fraction", "values": [0.35]},
+        {"param": "runner.trail_pivot_k", "values": [2]},
+        {"param": "runner.cap_r", "values": [20]},
+        {"param": "weekend", "values": ["no_entry"]},
+        {"param": "counter_trend", "values": ["allow_0.25pct_full_2r"]},
+        {"param": "modules.rsi_confirmation.enabled", "values": [true]},
+        {"param": "modules.setup_candle_sma.enabled", "values": [true]},
+        {"param": "modules.fakeout_v.enabled", "values": [true]},
+        {"param": "modules.dominance_regime.enabled", "values": [true]},
+        {"param": "modules.first_touch_rule.enabled", "values": [true]},
+        {"param": "modules.rsi_profit_deferral.enabled", "values": [true]},
+        {"param": "modules.no_chase.enabled", "values": [true]},
+        {"param": "cooldown", "values": [{"stops": 3, "hours": 24, "mode": "consecutive"}]}
+      ],
+      "module_grids": {
+        "rsi_confirmation": {"window_bars": [3, 6], "mode": ["70_30", "50"]},
+        "setup_candle_sma": {"body_frac": [0.3, 0.5], "sma_fast": 7, "sma_slow_agree": [false, true], "valid_bars": 2},
+        "fakeout_v": {"reclaim_bars": [1, 3, 5], "min_level_touches": 2, "tier": "risky"},
+        "dominance_regime": {"pivot_k": 3, "timeframe": "1D"},
+        "first_touch_rule": {"touch_tol_atr": 0.1, "min_gap_bars": 3},
+        "no_chase": {"ret_24h_max": [0.08, 0.15], "prev_daily_range_atr_max": 2.5}
+      },
+      "frequency_band": {"unit": "triggered trades per month, whole universe", "min": 5, "max": 60},
+      "contamination": "holdout 2025-2026 overlaps the source posts; see verdict.notes"
+    },
+
+    "risk_layer": {
+      "summary": "Shared risk-management variants, evaluated on the finalist of each hypothesis; judged on MAR and drawdown.",
+      "variants": [
+        {"param": "daily_loss_limit", "values": [0.015]},
+        {"param": "max_positions", "values": [1, 3]},
+        {"param": "cooldown.mode", "values": ["rolling_24h"]},
+        {"param": "big_result_pause", "rule": "R28", "values": [{"trade_r_ge": 10, "day_loss_le": -0.03, "days": 7}]},
+        {"param": "monthly_stop", "source": "TradingView academy post, unverified", "values": [0.10]},
+        {"param": "tiered_risk", "values": ["off"]}
+      ]
+    }
+  },
+
+  "screening": {
+    "gates": "Gates 1, 2, 5 unchanged. Gate 3 uses the frequency bands above instead of 6-50 signals per instrument-year. Gate 4 applies to filter-vs-trigger agreement (volume, RSI, Dow): 0.15 <= rho <= 0.60 on development only.",
+    "adr": "docs/adr/09 records these redefinitions (to be written with T30 code)."
+  },
+
+  "excluded": {
+    "R38": "hedge (discretionary, contradicts EDU#103)",
+    "R39": "spot DCA buying: separate spot module, not in this test",
+    "R40": "order-book level shifts: no order-book history",
+    "R42": "KBSM: no definition exists",
+    "R32": "New York session filter: deferred (P3)",
+    "R37": "scaling in on the next trigger: deferred (P3)"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "status": "frozen",
+  "frozen_on": "2026-11-01",
+  "ticket": "T31",
+  "title": "Trade City Pro historical call replay policy",
+  "inputs": [
+    "research_notes/ستاپ های تلگرام ترید سیتی پرو/signals_2018_2021.csv",
+    "research_notes/ستاپ های تلگرام ترید سیتی پرو/signals_2022_2026.csv"
+  ],
+  "data_seen_before_freeze": "None. No price bars had been fetched; call outcomes were never checked against prices.",
+  "change_policy": "Never edit. A new policy is a new file. Variants beyond the list below are not allowed.",
+
+  "purpose": "Measure how the channel's published calls would actually have played out. This audit is separate from the strategy verdict and is not a strategy trial.",
+
+  "sealed": {
+    "from": "2025-01-01",
+    "rule": "Calls dated on or after this date are not replayed until the crypto holdout has been touched once (T44). Until then they are counted, not evaluated."
+  },
+
+  "timing": {
+    "clock": "Telegram post time, UTC",
+    "first_eligible_bar": "the first 1H bar that OPENS at or after the post time; the bar containing the post time is never used",
+    "stale": "if, at the post time, price is already beyond the trigger by more than 0.5 x ATR14(1H) in the trigger direction, the call is marked stale and not filled"
+  },
+
+  "entry": {
+    "stop_trigger": "long fills when high >= trigger, at max(trigger, open); short mirrors. Gap through the trigger fills at the open.",
+    "close_confirmation": "calls worded 'if it closes above/below X' fill at the open of the bar after the first close beyond X on the call's timeframe (1H if unstated)",
+    "market": "calls marked market fill at the open of the first eligible bar",
+    "zone_or_limit": "fills when the bar trades through the zone's near edge, at that edge",
+    "validity_days": 5,
+    "two_sided_posts": "OCO: the first side to fill cancels the other",
+    "missing_trigger": "rows without a numeric trigger are counted as 'no level' and not replayed"
+  },
+
+  "stop": {
+    "hierarchy": [
+      "stated stop",
+      "stated invalidation level ('valid while above/below X')",
+      "opposite edge of the stated box",
+      "last confirmed pivot (k=3) on the call timeframe beyond the entry",
+      "fallback: 2.4% from entry (median stated stop distance 2019-2021)"
+    ],
+    "report_by_source": true,
+    "intrabar": "if stop and a target are both inside one bar, the stop is assumed hit first"
+  },
+
+  "exits": {
+    "with_stated_targets": "30% at 2R and stop to entry (house rule); remainder closed at the LAST stated target, else by the stop",
+    "without_targets": "house management: 30% at 2R + breakeven, 40% at 5R, 10% runner trailing the last k=3 pivot on the call timeframe, cap 30R, close remainder at 5R if no runner",
+    "horizon_metrics": ["MFE and MAE in R at 24h, 72h and 7d after fill, independent of exits"]
+  },
+
+  "costs": {"venue_file": "config/venues/backtest.yaml", "market_class": "crypto_perp"},
+
+  "symbols": {
+    "mapping": "normalise to venue symbols; renamed or delisted coins use the cross-check venue; if no venue has bars the row is reported as 'no data', never dropped",
+    "satoshi_pairs": "BTC-quoted calls replay on the BTC pair, with R computed in BTC"
+  },
+
+  "controls": {
+    "random": "for each replayed call: same post time, same side chosen at random, trigger placed at the same distance from price on a random side, same stop distance and management; 100 samples",
+    "outcome_bias": "compare replayed results of calls the channel later reported on vs calls it never followed up"
+  },
+
+  "report": {
+    "breakdowns": ["fill rate", "time to fill", "R by stop source", "R by setup_type", "R by year", "R by risky/main tier", "R with vs without stated volume/RSI confirmation"],
+    "never_pool": "2019-2021 and 2022-2024 are reported separately; sealed rows are listed only as counts"
+  },
+
+  "variants": [
+    {"name": "canonical"},
+    {"name": "stated_stops_only", "change": "only rows with a stated stop are replayed"},
+    {"name": "validity_3d", "change": "entry.validity_days = 3"},
+    {"name": "validity_10d", "change": "entry.validity_days = 10"},
+    {"name": "no_oco", "change": "two-sided posts may fill both sides"},
+    {"name": "house_management_always", "change": "ignore stated targets"}
+  ]
+}

@@ -12,3 +12,5 @@ journal/*.jsonl merge=union
 # Frozen thresholds: never auto-merge. A conflict here means somebody is moving
 # a goalpost and a human must look at it (ADR 08 §2c, doc 03 §8.3).
 research/thresholds.frozen.json -merge
+research/*.frozen.json -merge
+research/tcp_rules.yaml -merge
