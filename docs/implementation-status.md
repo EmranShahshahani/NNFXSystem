@@ -84,3 +84,14 @@ tests. Tickets 00-09 had full acceptance criteria in the ticket file; tickets
   directional indicators placed in the volume slot gate on reading strength.
 * Out of scope per spec: live venue adapters, venue choice, numeric kill-switch
   and exposure thresholds, news/rollover avoidance, sub-daily timeframes.
+
+## Trade City Pro track and beta service
+
+* Pre-registration frozen before any price data: `research/tcp_rules.yaml`
+  (42-rule ledger), `research/tcp_prereg.frozen.json` (H2021 / H2026, 60-trial
+  budget), `research/tcp_callreplay.frozen.json`; decisions in ADR 09;
+  `nnfx prereg` verifies them. Next tickets: T32 (H1 data) and T33 (pivots,
+  boxes, volume/RSI/Dow indicators).
+* Beta service plan (Persian): `docs/beta-service-plan.md`. B0/B1 do not depend
+  on research results; B2's live scanner reuses T32/T33 and doubles as the
+  H2026 forward test (T45).
