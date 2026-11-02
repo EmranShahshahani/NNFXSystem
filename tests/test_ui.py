@@ -105,3 +105,26 @@ def test_ui_logs_no_trials(base: str):
         {"datasets": [{"path": "data/sample/GBPUSD.D1.csv", "symbol": "GBPUSD"}]},
     )
     assert ResearchState(ROOT / "research").trial_count() == before
+
+
+def test_research_endpoint_reports_prereg_budgets(base: str):
+    res = get(base + "/api/research")
+    assert res["prereg"]["budgets"]["H2026"]["budget"] == 32
+
+
+def test_static_report_is_self_contained(tmp_path):
+    from nnfx.ui.report import write_report
+
+    out = write_report(
+        [("EURUSD", ROOT / "data/sample/EURUSD.D1.csv")],
+        tmp_path / "r.html",
+        config=ROOT / "config/system.yaml",
+        instruments=ROOT / "config/instruments.yaml",
+        venue=ROOT / "config/venues/backtest.yaml",
+        title="</script><b>x",
+    )
+    html = out.read_text(encoding="utf-8")
+    assert "window.NNFX_STATIC" in html and "fetch(" in html
+    head = html.split("window.NNFX_STATIC", 1)[1].split("</script>", 1)[0]
+    # The title's "</script>" is escaped, so the payload cannot close its own script tag.
+    assert "<\\/script><b>x" in head and '"trades"' in head

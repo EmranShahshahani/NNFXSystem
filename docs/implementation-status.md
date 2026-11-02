@@ -76,9 +76,15 @@ tests. Tickets 00-09 had full acceptance criteria in the ticket file; tickets
   holdout is untouched. `nnfx ablate` and `SelectionPipeline` are ready for it.
 * The selection pipeline evaluates published defaults; `nnfx plateau` then sweeps
   the finalist's grid neighbourhood (each point a counted trial) for criterion 11.
-* `nnfx verdict` scores an evidence JSON; assembling every evidence field
-  (walk-forward, PBO across the selection's configurations, cost stress, holdout)
-  from a real run is still a manual sequence of the existing functions.
+* `nnfx validate` assembles the evidence for criteria 1-11, 13 and 14 from
+  counted development/validation runs (finalist, cost stress x1.5, PBO over the
+  selection's configurations, walk-forward over development+validation years,
+  plateau sweep, random control from the selection checkpoint, deflated Sharpe
+  against the final logged trial count). Criterion 12 runs only with
+  `--touch-holdout REASON` (once per market, ever); criterion 15 is passed in
+  with `--cross-market yes|no` from the other market's run.
+* `nnfx report` writes one self-contained HTML file per backtest (the UI's own
+  page with the data embedded; opens offline).
 * All 64 doc 05 indicators are wrapped (`library.py`, `library_ext.py`). Kase
   permission stochastic is a daily approximation (higher-timeframe window);
   directional indicators placed in the volume slot gate on reading strength.

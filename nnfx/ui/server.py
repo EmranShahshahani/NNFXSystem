@@ -251,12 +251,30 @@ class App:
         except (OSError, ValueError) as e:
             thresholds = f"unavailable: {e}"
         trials = list(rs.trials.distinct().values())
+        prereg: dict[str, Any] | None = None
+        pre_path = self.research / "tcp_prereg.frozen.json"
+        if pre_path.exists():
+            from nnfx.research.prereg import Prereg, PreregError
+
+            try:
+                p = Prereg(pre_path, self.root)
+                prereg = {
+                    "frozen_on": p.data["frozen_on"],
+                    "budgets": {
+                        g: {"budget": b, "remaining": p.remaining(rs, g)}
+                        for g, b in p.data["trial_budget"].items()
+                        if g in p.data["hypotheses"]
+                    },
+                }
+            except (PreregError, OSError, KeyError) as e:
+                prereg = {"frozen_on": "?", "error": str(e)}
         return _clean_dict(
             {
                 "trial_count": rs.trial_count(),
                 "validation_passes": rs.validation_passes(),
                 "holdout": list(rs.holdout.distinct().values()),
                 "trials": trials[-500:],
+                "prereg": prereg,
                 "thresholds": thresholds,
             }
         )

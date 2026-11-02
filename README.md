@@ -33,7 +33,10 @@ uv run nnfx ablate   --csv EURUSD=... --market fx                     # rule abl
 uv run nnfx live     --csv EURUSD=... --now 2015-09-08T22:05Z         # one daily cycle against the PaperBroker
 uv run nnfx select   --csv EURUSD=... --csv GBPUSD=... --market fx  # staged selection + random control -> runs/selection/
 uv run nnfx plateau  --config runs/selection/finalist.fx.yaml --slot c1 --csv EURUSD=...   # criterion 11
-uv run nnfx verdict  --evidence evidence.json                        # the 15 frozen criteria
+uv run nnfx validate --config runs/selection/finalist.fx.yaml --csv EURUSD=... --checkpoint runs/selection/checkpoint.fx.json
+uv run nnfx verdict  --evidence runs/validation/evidence.json          # the 15 frozen criteria
+uv run nnfx report   --csv EURUSD=... --out reports/backtest.html      # self-contained HTML report
+uv run nnfx prereg                                                    # verify the TCP pre-registration and budgets
 uv run nnfx fetch    --feed dukascopy --symbol EURUSD --start 2003-05-05 --end 2026-10-01
 uv run nnfx fetch    --feed nobitex --symbol BTC/USDT --start 2020-01-01 --end 2026-10-01
 uv run nnfx fetch    --feed udf --base-url https://<exchange>/udf --venue-name <exchange> --symbol BTC/USDT ...
@@ -47,6 +50,10 @@ uv run nnfx catalogue
 ```bash
 uv run nnfx ui            # http://127.0.0.1:8765
 ```
+
+For the invite-only beta (Persian UI, accounts, deployment to a server) see
+[`docs/beta-service-plan.md`](docs/beta-service-plan.md) and
+[`deploy/README.fa.md`](deploy/README.fa.md).
 
 A local dashboard over the same code the CLI runs (standard library only, no
 extra install): **Backtest** (pick datasets, swap any slot, toggle any rule,

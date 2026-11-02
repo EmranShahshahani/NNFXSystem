@@ -59,7 +59,8 @@ button.primary:disabled { opacity: .5; cursor: wait; }
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
 .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
 .kpi .v.small { font-size: 15px; padding-top: 4px; }
-.kpi .v { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.kpi .v .ci { direction: rtl; unicode-bidi: isolate; }
+.kpi .v { direction: ltr; unicode-bidi: isolate; text-align: right; font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .kpi .k { color: var(--muted); font-size: 12px; }
 .chart { width: 100%; height: 260px; display: block; }
 .tablewrap { overflow: auto; max-height: 420px; }
@@ -215,7 +216,7 @@ function lineChart(svg, { n, series, markers = [], labels = [], yfmt = v => v.to
     const tt = document.createElementNS(NS, "title"); tt.textContent = m.title; e.append(tt);
   }
 }
-const yearLabels = ts => { const out = []; let last = ""; ts.forEach((t, i) => { const yr = jyear(t); if (yr !== last) { out.push([i, yr]); last = yr; } }); return out.length > 12 ? out.filter((_, k) => k % Math.ceil(out.length / 12) === 0) : out; };
+const yearLabels = ts => { const out = []; let last = ""; const gap = Math.max(1, ts.length * 0.04); ts.forEach((t, i) => { const yr = jyear(t); if (yr !== last) { if (out.length && i - out[out.length - 1][0] < gap) out.pop(); out.push([i, yr]); last = yr; } }); return out.length > 12 ? out.filter((_, k) => k % Math.ceil(out.length / 12) === 0) : out; };
 
 // ---------------------------------------------------------------- backtest form
 let CAT = [], CFG = null;
@@ -280,7 +281,7 @@ function renderBacktest(r) {
   const lo = m.expectancy_ci[0], hi = m.expectancy_ci[1];
   out.append(el("div", { class: "kpis" },
     kpi("تعداد ورود", m.n_entries), kpi("میانگین R هر ورود", signed(m.expectancy_r), m.expectancy_r >= 0 ? "pos" : "neg"),
-    kpi("بازهٔ اطمینان ۹۵٪", `${signed(lo, 2)} تا ${signed(hi, 2)}`, "small"), kpi("نرخ برد", pct(m.win_rate)),
+    kpi("بازهٔ اطمینان ۹۵٪", el("span", { class: "ci" }, el("bdi", { dir: "ltr" }, signed(lo, 2)), " تا ", el("bdi", { dir: "ltr" }, signed(hi, 2))), "small"), kpi("نرخ برد", pct(m.win_rate)),
     kpi("فاکتور سود", fmt(m.profit_factor)), kpi("شارپ", fmt(m.sharpe)), kpi("بیشترین افت سرمایه", pct(m.max_drawdown), "neg"),
     kpi("بازده کل", pct(m.total_return), m.total_return >= 0 ? "pos" : "neg")));
   if (m.provisional) out.append(el("div", { class: "note" }, "موقت: کمتر از ۵۰۰ ورود؛ از نظر آماری قابل اتکا نیست. ", m.flags.map(f => `[${f}] `)));
@@ -333,7 +334,7 @@ async function loadIndicators() {
   const f = $("#ind-filter"), t = $("#ind-table");
   const show = (k) => {
     f.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.k === k));
-    t.innerHTML = ""; t.append(el("tr", {}, ["slot", "name", "family", "published defaults", "grid"].map(h => el("th", {}, h))));
+    t.innerHTML = ""; t.append(el("tr", {}, ["اسلات", "نام", "خانواده", "پیش‌فرض منتشرشده", "شبکهٔ پارامتر"].map(h => el("th", {}, h))));
     for (const e of cat.filter(e => k === "all" || e.kind === k))
       t.append(el("tr", {}, el("td", {}, e.kind), el("td", {}, el("b", {}, e.name)), el("td", { class: "muted" }, e.family),
         el("td", {}, Object.entries(e.defaults).map(([a, b]) => `${a}=${b}`).join(", ")),
@@ -350,21 +351,24 @@ async function loadResearch() {
     const r = await api("/api/research"); out.innerHTML = ""; out.classList.remove("muted");
     const touched = new Set(r.holdout.map(h => h.market));
     out.append(el("div", { class: "kpis" },
-      ...[["logged trials", r.trial_count], ["validation passes", r.validation_passes], ["FX holdout", touched.has("fx") ? "touched" : "sealed"], ["crypto holdout", touched.has("crypto") ? "touched" : "sealed"]]
+      ...[["آزمون‌های ثبت‌شده", r.trial_count], ["دفعات اعتبارسنجی", r.validation_passes], ["دادهٔ نهایی فارکس", touched.has("fx") ? "باز شده" : "مهروموم"], ["دادهٔ نهایی کریپتو", touched.has("crypto") ? "باز شده" : "مهروموم"]]
         .map(([k, v]) => el("div", { class: "kpi" }, el("div", { class: "v" }, v), el("div", { class: "k" }, k)))));
+    if (r.prereg) out.append(el("div", { class: "panel" }, el("h2", {}, `پیش‌ثبت ترید سیتی پرو (قفل ${r.prereg.frozen_on})`),
+      r.prereg.error ? el("div", { class: "err" }, r.prereg.error) : el("table", {}, el("tr", {}, el("th", {}, "گروه"), el("th", {}, "بودجه"), el("th", {}, "باقی‌مانده")),
+        Object.entries(r.prereg.budgets).map(([g, v]) => el("tr", {}, el("td", {}, g), el("td", { class: "num" }, v.budget), el("td", { class: "num" }, v.remaining))))));
     if (typeof r.thresholds === "object") {
       const c = r.thresholds.criteria;
-      out.append(el("div", { class: "panel" }, el("h2", {}, `Pre-registered thresholds (frozen ${r.thresholds.frozen_on || ""})`),
-        el("div", { class: "tablewrap", style: "max-height:none" }, el("table", {}, el("tr", {}, el("th", {}, "#"), el("th", {}, "criterion"), el("th", {}, "rule")),
-          Object.entries(c).map(([k, v]) => { const [n, ...rest] = k.split("_"); return el("tr", {}, el("td", {}, n), el("td", {}, rest.join(" ")), el("td", { class: "muted" }, v.op ? `${v.op} ${v.value}` : v.multiplier ? `criteria 1 and 3 hold at ×${v.multiplier} costs` : (typeof v.requires === "string" ? v.requires : JSON.stringify(v)))); })))));
+      out.append(el("div", { class: "panel" }, el("h2", {}, `۱۵ معیار قبولی قفل‌شده (${r.thresholds.frozen_on || ""})`),
+        el("div", { class: "tablewrap", style: "max-height:none" }, el("table", {}, el("tr", {}, el("th", {}, "#"), el("th", {}, "معیار"), el("th", {}, "شرط")),
+          Object.entries(c).map(([k, v]) => { const [n, ...rest] = k.split("_"); return el("tr", {}, el("td", {}, n), el("td", {}, rest.join(" ")), el("td", { class: "muted" }, el("bdi", { dir: "ltr" }, v.op ? `${v.op} ${v.value}` : v.multiplier ? `criteria 1 and 3 hold at ×${v.multiplier} costs` : (typeof v.requires === "string" ? v.requires : JSON.stringify(v))))); })))));
     } else out.append(el("div", { class: "panel err" }, r.thresholds));
     const cols = ["id", "stage", "market", "segment", "symbols"];
     const rows = r.trials.slice().reverse();
-    out.append(el("div", { class: "panel" }, el("h2", {}, "Trials log (newest first)"),
-      rows.length ? el("div", { class: "tablewrap" }, el("table", {}, el("tr", {}, cols.concat(["E[R]", "Sharpe", "entries"]).map(c => el("th", {}, c))),
+    out.append(el("div", { class: "panel" }, el("h2", {}, "دفتر آزمون‌ها (جدیدترین اول)"),
+      rows.length ? el("div", { class: "tablewrap", dir: "ltr" }, el("table", {}, el("tr", {}, cols.concat(["E[R]", "Sharpe", "entries"]).map(c => el("th", {}, c))),
         rows.map(t => el("tr", {}, cols.map(c => el("td", {}, Array.isArray(t[c]) ? t[c].join(" ") : t[c])),
           el("td", { class: "num" }, signed(t.metrics?.expectancy_r)), el("td", { class: "num" }, fmt(t.metrics?.sharpe)), el("td", { class: "num" }, t.metrics?.entries ?? "–")))))
-        : el("div", { class: "muted" }, "No trials yet. Run nnfx ablate / nnfx select on real data.")));
+        : el("div", { class: "muted" }, "هنوز آزمونی ثبت نشده؛ پژوهش روی دادهٔ واقعی شروع نشده است.")));
   } catch (e) { out.innerHTML = ""; out.append(el("div", { class: "err" }, e.message)); }
 }
 
@@ -375,18 +379,27 @@ async function loadLive() {
     const r = await api("/api/live"); out.innerHTML = ""; out.classList.remove("muted");
     const b = r.broker;
     out.append(el("div", { class: "kpis" },
-      el("div", { class: "kpi" }, el("div", { class: "v" }, r.cycles.length), el("div", { class: "k" }, "journal cycles shown")),
-      el("div", { class: "kpi" }, el("div", { class: "v" }, b ? Object.keys(b.positions || b.open || {}).length : "–"), el("div", { class: "k" }, "open positions")),
-      el("div", { class: "kpi" }, el("div", { class: "v" }, r.reports.length), el("div", { class: "k" }, "daily reports"))));
+      el("div", { class: "kpi" }, el("div", { class: "v" }, r.cycles.length), el("div", { class: "k" }, "چرخه‌های ژورنال")),
+      el("div", { class: "kpi" }, el("div", { class: "v" }, b ? Object.keys(b.positions || b.open || {}).length : "–"), el("div", { class: "k" }, "پوزیشن باز")),
+      el("div", { class: "kpi" }, el("div", { class: "v" }, r.reports.length), el("div", { class: "k" }, "گزارش روزانه"))));
     const last = r.reports[r.reports.length - 1];
-    out.append(el("div", { class: "panel" }, el("h2", {}, last ? `Latest daily report · ${last.name}` : "Daily report"), last ? el("pre", {}, last.text) : el("div", { class: "muted" }, "No report yet. Run nnfx live to produce one.")));
-    if (r.cycles.length) out.append(el("div", { class: "panel" }, el("h2", {}, `Recent cycles · ${r.journal}`),
+    out.append(el("div", { class: "panel" }, el("h2", {}, last ? `آخرین گزارش روزانه · ${last.name}` : "گزارش روزانه"), last ? el("pre", {}, last.text) : el("div", { class: "muted" }, "هنوز گزارشی نیست؛ معاملهٔ کاغذی زنده هنوز راه نیفتاده است.")));
+    if (r.cycles.length) out.append(el("div", { class: "panel" }, el("h2", {}, `چرخه‌های اخیر · ${r.journal}`),
       el("div", { class: "tablewrap" }, el("pre", {}, r.cycles.slice().reverse().map(c => JSON.stringify(c)).join("\n")))));
-    if (b) out.append(el("div", { class: "panel" }, el("h2", {}, "PaperBroker state"), el("div", { class: "tablewrap" }, el("pre", {}, JSON.stringify(b, null, 1)))));
+    if (b) out.append(el("div", { class: "panel" }, el("h2", {}, "وضعیت حساب کاغذی"), el("div", { class: "tablewrap" }, el("pre", {}, JSON.stringify(b, null, 1)))));
   } catch (e) { out.innerHTML = ""; out.append(el("div", { class: "err" }, e.message)); }
 }
 
 // ---------------------------------------------------------------- rules (TCP ledger)
+// Formulas inside Persian text: isolate each Latin/maths run so its order survives RTL layout.
+const ltrRuns = text => {
+  const out = []; let last = 0;
+  for (const m of text.matchAll(/[A-Za-z0-9_`·−\-+*/=<>≤≥∈()\[\]{}.,|%×' ]*[A-Za-z0-9_`()\[\]{}][A-Za-z0-9_`·−\-+*/=<>≤≥∈()\[\]{}.,|%×' ]*/g)) {
+    if (m[0].trim().length < 2) continue;
+    out.push(text.slice(last, m.index), el("bdi", { dir: "ltr" }, m[0].replaceAll("`", ""))); last = m.index + m[0].length;
+  }
+  out.push(text.slice(last)); return out;
+};
 async function loadRules() {
   const out = $("#rules-out");
   try {
@@ -398,7 +411,7 @@ async function loadRules() {
       el("div", { class: "tablewrap", style: "max-height:none" }, el("table", {},
         el("tr", {}, ["#", "قانون", "دوره", "نوع", "تعریف", "اولویت", "منبع"].map(h => el("th", {}, h))),
         r.rules.map(x => el("tr", {}, el("td", {}, x.id), el("td", { style: "white-space:normal;min-width:180px" }, x.rule_fa), el("td", {}, x.era),
-          el("td", {}, typ[x.type] || x.type), el("td", { style: "white-space:normal;min-width:260px" }, x.definition_fa), el("td", {}, x.priority),
+          el("td", {}, typ[x.type] || x.type), el("td", { style: "white-space:normal;min-width:260px" }, ...ltrRuns(x.definition_fa)), el("td", {}, x.priority),
           el("td", { style: "white-space:normal" }, ...(x.evidence || []).flatMap((e, i) => i ? [" ", link(e)] : [link(e)]))))))));
   } catch (e) { out.innerHTML = ""; out.append(el("div", { class: "err" }, e.message)); }
 }
@@ -452,6 +465,15 @@ $("#fb-send").addEventListener("click", async () => {
 });
 
 (async function boot() {
+  if (window.NNFX_STATIC) {  // self-contained report written by `nnfx report`
+    $("#app").classList.remove("hidden");
+    document.querySelectorAll("#tabs button:not([data-tab=backtest]), #fb-open, #tab-backtest .grid > div:first-child").forEach(n => n.classList.add("hidden"));
+    $("#tab-backtest .grid").style.gridTemplateColumns = "minmax(0, 1fr)";
+    const meta = window.NNFX_STATIC.meta || {};
+    $("header h1").textContent = meta.title || "گزارش بک‌تست";
+    renderBacktest(window.NNFX_STATIC.result);
+    return;
+  }
   let me = { auth: false, user: "local" };
   try { me = await api("/api/me"); } catch {}
   if (me.auth && !me.user) { showLogin(); return; }

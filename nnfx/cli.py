@@ -90,6 +90,23 @@ def cmd_backtest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_report(args: argparse.Namespace) -> int:
+    from nnfx.ui.report import write_report
+
+    out = write_report(
+        [(s, Path(p)) for s, p in _pairs(args.csv)],
+        Path(args.out),
+        timeframe=args.timeframe,
+        config=Path(args.config),
+        instruments=Path(args.instruments),
+        venue=Path(args.venue),
+        zero_costs=args.zero_costs,
+        title=args.title,
+    )
+    print(f"wrote {out}")
+    return 0
+
+
 def cmd_gates(args: argparse.Namespace) -> int:
     cfg = load_system_config(args.config)
     reg = _registry(args)
@@ -313,6 +330,44 @@ def cmd_plateau(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_validate(args: argparse.Namespace) -> int:
+    from nnfx.research.evaluate import Evaluator
+    from nnfx.research.trials import ResearchState
+    from nnfx.research.validate import run_validation
+    from nnfx.research.verdict import evaluate
+
+    cfg = load_system_config(args.config)
+    reg = _registry(args)
+    frames = {s: _load(args, cfg, s, p, reg.spec(s)) for s, p in _pairs(args.csv)}
+    research = ResearchState(Path(args.research))
+    common = dict(
+        market=args.market,
+        costs=CostModel.from_venue(args.venue),
+        research=research,
+        gate_kwargs={"max_missing_sessions": args.max_missing_sessions},
+    )
+    inst = {s: reg.spec(s) for s in frames}
+    dev = Evaluator(inst, frames, segment="development", **common)
+    val = Evaluator(inst, frames, segment="validation", **common)
+    cross = {"yes": True, "no": False}.get(args.cross_market or "")
+    rep = run_validation(
+        cfg,
+        dev,
+        val,
+        checkpoint=Path(args.checkpoint) if args.checkpoint else None,
+        touch_holdout=args.touch_holdout,
+        raw_frames=frames,
+        cross_market_consistent=cross,
+    )
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.out).write_text(rep.evidence_json() + "\n")
+    print(json.dumps(rep.details, indent=1, default=float))
+    v = evaluate(rep.evidence, research.thresholds(), logged_trial_count=research.trial_count())
+    print(v.render())
+    print(f"\nevidence written to {args.out}")
+    return 0 if v.passed else 1
+
+
 def cmd_verdict(args: argparse.Namespace) -> int:
     from nnfx.research.trials import ResearchState
     from nnfx.research.verdict import Evidence, evaluate
@@ -432,6 +487,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--max-missing-sessions", type=int, default=0)
     p.set_defaults(fn=cmd_backtest)
 
+    p = sub.add_parser("report", help="backtest -> one self-contained HTML report")
+    _add_common(p)
+    p.add_argument("--out", default="reports/backtest.html")
+    p.add_argument("--title", default="")
+    p.add_argument("--zero-costs", action="store_true")
+    p.set_defaults(fn=cmd_report)
+
     p = sub.add_parser("gates", help="run the integrity gates on CSV bars")
     _add_common(p)
     p.add_argument("--max-missing-sessions", type=int, default=0)
@@ -470,6 +532,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--research", default="research")
     p.add_argument("--max-missing-sessions", type=int, default=0)
     p.set_defaults(fn=cmd_plateau)
+
+    p = sub.add_parser(
+        "validate", help="assemble the verdict evidence for a finalist (dev + validation)"
+    )
+    _add_common(p)
+    p.add_argument("--market", choices=("fx", "crypto"), default="fx")
+    p.add_argument("--research", default="research")
+    p.add_argument("--checkpoint", help="selection checkpoint (PBO candidates, random control)")
+    p.add_argument("--out", default="runs/validation/evidence.json")
+    p.add_argument(
+        "--touch-holdout",
+        metavar="REASON",
+        help="ALSO run the one-time holdout (criterion 12). Irreversible for this market.",
+    )
+    p.add_argument(
+        "--cross-market", choices=("yes", "no"), help="criterion 15, from the other market's run"
+    )
+    p.add_argument("--max-missing-sessions", type=int, default=0)
+    p.set_defaults(fn=cmd_validate)
 
     p = sub.add_parser("verdict", help="score an evidence JSON against the frozen thresholds")
     p.add_argument("--evidence", required=True)

@@ -144,15 +144,34 @@ class Evaluator:
         return res
 
     def evaluate(self, config: SystemConfig, *, stage: str, label: str = "") -> TrialResult:
-        frames = self.frames(config)
         seg = self.partition.get(self.segment_name)
+        return self.evaluate_window(config, seg.start, seg.end, stage=stage, label=label)
+
+    def evaluate_window(
+        self,
+        config: SystemConfig,
+        start: pd.Timestamp,
+        end: pd.Timestamp,
+        *,
+        stage: str,
+        label: str = "",
+    ) -> TrialResult:
+        """Trade only inside [start, end], which must end within this evaluator's segment.
+
+        Used by walk-forward, whose windows span development and validation. The run
+        is logged under this evaluator's segment, so it can never reach the holdout.
+        """
+        seg = self.partition.get(self.segment_name)
+        if end > seg.end:
+            raise ValueError(f"window ends {end} after the {self.segment_name} segment ({seg.end})")
+        frames = self.frames(config)
         harness = BacktestHarness(
             config,
             {s: self.instruments[s] for s in frames},
             frames,
             costs=self.costs,
-            start=seg.start,
-            end=seg.end,
+            start=start,
+            end=end,
             run_gates=False,
             outputs=self._outputs(config, frames),
         )

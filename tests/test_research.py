@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from nnfx.brokers.sim import Trade
-from nnfx.config import SlotSpec
+from nnfx.config import SlotSpec, SystemConfig
 from nnfx.data.synthetic import regime_walk
 from nnfx.instruments import fx_spec
 from nnfx.research.ablation import ABLATIONS, run_ablation
@@ -523,3 +523,93 @@ def test_cli_verdict_uses_frozen_thresholds_and_logged_count(tmp_path: Path, cap
     out = capsys.readouterr().out
     # 120 trials claimed, 0 logged: DSR fails, so the verdict fails.
     assert rc == 1 and "log has 0" in out and "VERDICT: FAIL" in out
+
+
+def test_validation_assembles_every_evidence_field(tmp_path: Path):
+    from nnfx.research.validate import run_validation
+    from nnfx.research.verdict import evaluate as verdict
+
+    frames = {
+        "EURUSD": regime_walk(2000, seed=31, symbol="EURUSD", start="2017-01-02"),
+        "GBPUSD": regime_walk(2000, seed=32, symbol="GBPUSD", start="2017-01-02", start_price=1.4),
+    }
+    rs = ResearchState(tmp_path / "research")
+    import shutil
+
+    (tmp_path / "research").mkdir(exist_ok=True)
+    shutil.copy(
+        Path("research/thresholds.frozen.json"), tmp_path / "research/thresholds.frozen.json"
+    )
+    kw = dict(market="crypto", research=rs, n_boot=200)
+    inst = {s: fx_spec(s) for s in frames}
+    dev = Evaluator(inst, frames, segment="development", **kw)
+    val = Evaluator(inst, frames, segment="validation", **kw)
+    ck = tmp_path / "ck.json"
+    SelectionPipeline(
+        CFG,
+        POOL,
+        dev,
+        screening_frames=list(frames.values()),
+        checkpoint=ck,
+        shortlist=2,
+        random_controls=5,
+        run_ablation_stage=False,
+    ).run()
+    finalist = SystemConfig.model_validate(
+        max(
+            (
+                r
+                for r in json.loads(ck.read_text())["evaluated"].values()
+                if not r["label"].startswith("random#")
+            ),
+            key=lambda r: r["score"] if r["score"] is not None else -1e9,
+        )["config"]
+    )
+    before = rs.trial_count()
+    rep = run_validation(
+        finalist, dev, val, checkpoint=ck, pbo_max_configs=6, wf_candidates=3, raw_frames=frames
+    )
+    e = rep.evidence
+    for name in (
+        "expectancy_ci_lower",
+        "n_eff",
+        "expectancy",
+        "dsr_probability",
+        "mar",
+        "bootstrap_p95_dd",
+        "random_percentile",
+        "stress_ci_lower",
+        "stress_expectancy",
+        "development_expectancy",
+    ):
+        assert getattr(e, name) is not None, name
+    assert e.dsr_trial_count == rs.trial_count() > before  # validation runs are counted
+    assert e.holdout_expectancy is None and not rs.holdout.distinct()  # never touched implicitly
+    assert set(e.regime_expectancy) <= {"bull", "bear", "chop", "unknown"}
+    rows = {r.criterion: r.status for r in verdict(e, rs.thresholds(), rs.trial_count()).rows}
+    assert rows["12_holdout_degradation"] == "MISSING" and rows["15_cross_market"] == "MISSING"
+    assert rows["14_instrument_breadth"] == "N/A"
+    # The holdout is touched only when asked, and only once.
+    rep2 = run_validation(
+        finalist,
+        dev,
+        val,
+        checkpoint=ck,
+        pbo_max_configs=2,
+        wf_candidates=1,
+        touch_holdout="test",
+        raw_frames=frames,
+        plateau_slots=(),
+    )
+    assert rep2.evidence.holdout_expectancy is not None
+    with pytest.raises(Exception, match="already touched"):
+        run_validation(
+            finalist,
+            dev,
+            val,
+            touch_holdout="again",
+            raw_frames=frames,
+            pbo_max_configs=2,
+            wf_candidates=1,
+            plateau_slots=(),
+        )
