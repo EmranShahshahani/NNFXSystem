@@ -1,0 +1,9 @@
+[Unit]
+Description=NNFX beta hourly market-data refresh
+
+[Service]
+Type=oneshot
+User=nnfx
+WorkingDirectory=/opt/nnfx
+Environment=NNFX=/opt/nnfx/.venv/bin/nnfx
+ExecStart=/opt/nnfx/deploy/refresh-data.sh

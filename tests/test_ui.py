@@ -43,7 +43,7 @@ def post(url: str, body: object) -> tuple[int, dict]:
 
 def test_index_and_read_endpoints(base: str):
     with urllib.request.urlopen(base + "/") as r:
-        assert b"NNFX Workbench" in r.read()
+        assert "میز کار NNFX".encode() in r.read()
     ds = get(base + "/api/datasets")
     assert {"path": "data/sample/EURUSD.D1.csv", "symbol": "EURUSD", "timeframe": "D1"} in ds
     cat = get(base + "/api/catalogue")

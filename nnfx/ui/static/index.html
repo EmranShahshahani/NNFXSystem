@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NNFX Workbench</title>
+<title>میز کار NNFX</title>
 <link rel="icon" href="data:,">
 <style>
 :root {
@@ -17,7 +17,21 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink);
-  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  font: 14px/1.6 Vazirmatn, "Vazir", Tahoma, system-ui, -apple-system, "Segoe UI", sans-serif; }
+svg, .ltr, pre, code, input[type=number] { direction: ltr; }
+.ltr { unicode-bidi: isolate; }
+header .spacer { flex: 1; }
+header .who { color: var(--muted); font-size: 12px; display: flex; gap: 8px; align-items: center; }
+.linkbtn { background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 6px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.banner { background: #fff7e0; color: #5b4300; border-bottom: 1px solid #f0d58a; padding: 8px 20px; font-size: 13px; display: flex; gap: 12px; align-items: center; }
+@media (prefers-color-scheme: dark) { .banner { background: #3a2f10; color: #f5dc9a; border-color: #5b4a1c; } }
+.banner button { margin-inline-start: auto; }
+.center { max-width: 380px; margin: 8vh auto; }
+.center input[type=text], .center input[type=password], textarea { width: 100%; padding: 8px 10px; margin: 4px 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; }
+textarea { min-height: 120px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); width: min(92vw, 480px); }
+dialog::backdrop { background: rgba(0,0,0,.35); }
+a { color: var(--accent); }
 header { display: flex; align-items: center; gap: 24px; padding: 12px 20px;
   border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
 header h1 { font-size: 16px; margin: 0; letter-spacing: .02em; }
@@ -50,9 +64,9 @@ button.primary:disabled { opacity: .5; cursor: wait; }
 .chart { width: 100%; height: 260px; display: block; }
 .tablewrap { overflow: auto; max-height: 420px; }
 table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th, td { text-align: start; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { color: var(--muted); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--panel); }
-td.num { text-align: right; }
+td.num { text-align: end; direction: ltr; }
 .pos { color: var(--up); } .neg { color: var(--down); }
 .muted { color: var(--muted); }
 .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
@@ -63,56 +77,77 @@ pre { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; margin: 
   cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
 .chip.on { color: var(--ink); border-color: var(--accent); }
 .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 4px 0 0; }
-.legend i { display: inline-block; width: 10px; height: 3px; vertical-align: middle; margin-right: 5px; }
+.legend i { display: inline-block; width: 10px; height: 3px; vertical-align: middle; margin-inline-end: 5px; }
 .hidden { display: none; }
 </style>
 </head>
 <body>
+<div id="login" class="hidden">
+  <div class="center panel">
+    <h2>میز کار NNFX · نسخهٔ آزمایشی</h2>
+    <div class="chips"><button class="chip on" data-mode="login">ورود</button><button class="chip" data-mode="signup">ثبت‌نام با کد دعوت</button></div>
+    <div id="invite-row" class="hidden"><label for="f-invite">کد دعوت</label><input type="text" id="f-invite" autocomplete="off" dir="ltr"></div>
+    <label for="f-user">نام کاربری (لاتین)</label><input type="text" id="f-user" autocomplete="username" dir="ltr">
+    <label for="f-pass">رمز عبور</label><input type="password" id="f-pass" autocomplete="current-password" dir="ltr">
+    <button class="primary" id="f-go">ورود</button>
+    <div id="f-err" class="err"></div>
+    <div class="note">این سرویس فقط برای پژوهش و معاملهٔ کاغذی است و توصیهٔ معاملاتی نیست.</div>
+  </div>
+</div>
+<div id="app" class="hidden">
+<div class="banner" id="disclaimer">⚠️ نسخهٔ آزمایشی. هیچ‌کدام از استراتژی‌ها هنوز اعتبارسنجی نشده‌اند؛ نتایج این‌جا پژوهشی و کاغذی‌اند و توصیهٔ خرید یا فروش نیستند. با پول واقعی بر اساس آن‌ها معامله نکنید.<button class="linkbtn" id="dismiss">متوجه شدم</button></div>
 <header>
-  <h1>NNFX Workbench</h1>
+  <h1>میز کار NNFX <span class="muted" style="font-weight:400">بتا</span></h1>
   <nav id="tabs">
-    <button data-tab="backtest" class="on">Backtest</button>
-    <button data-tab="indicators">Indicators</button>
-    <button data-tab="research">Research</button>
-    <button data-tab="live">Live</button>
+    <button data-tab="backtest" class="on">بک‌تست</button>
+    <button data-tab="indicators">اندیکاتورها</button>
+    <button data-tab="rules">قوانین ترید سیتی پرو</button>
+    <button data-tab="research">پژوهش</button>
+    <button data-tab="live">زنده</button>
+    <button data-tab="admin" class="hidden" id="admin-tab">مدیریت</button>
   </nav>
+  <span class="spacer"></span>
+  <span class="who"><button class="linkbtn" id="fb-open">ارسال بازخورد</button><span id="who"></span><button class="linkbtn hidden" id="logout">خروج</button></span>
 </header>
 <main>
-  <!-- ======================= backtest -->
   <section id="tab-backtest">
     <div class="grid">
       <div>
-        <div class="panel"><h2>Data</h2><div id="datasets" class="muted">loading…</div>
-          <label><input type="checkbox" id="zero_costs"> zero costs</label>
-          <div class="note">Files under data/sample and data/cache. Browser runs are exploration only: no trial is logged.</div>
+        <div class="panel"><h2>داده</h2><div id="datasets" class="muted">در حال بارگذاری…</div>
+          <label><input type="checkbox" id="zero_costs"> بدون هزینهٔ معامله</label>
+          <div class="note">بک‌تست‌های این صفحه فقط برای کاوش‌اند و در دفتر آزمون‌های پژوهشی ثبت نمی‌شوند.</div>
         </div>
-        <div class="panel"><h2>Slots</h2><div id="slots"></div></div>
-        <div class="panel"><h2>Rules</h2><div id="rules"></div></div>
-        <div class="panel"><h2>Money management</h2><div id="risk"></div>
-          <button class="primary" id="run">Run backtest</button>
+        <div class="panel"><h2>اسلات‌ها</h2><div id="slots"></div></div>
+        <div class="panel"><h2>قوانین</h2><div id="rules"></div></div>
+        <div class="panel"><h2>مدیریت سرمایه</h2><div id="risk"></div>
+          <button class="primary" id="run">اجرای بک‌تست</button>
           <div id="bt-error" class="err"></div>
         </div>
       </div>
       <div id="bt-out">
-        <div class="panel muted">Pick data and press <b>Run backtest</b>.</div>
+        <div class="panel muted">داده را انتخاب کنید و <b>اجرای بک‌تست</b> را بزنید.</div>
       </div>
     </div>
   </section>
-
-  <!-- ======================= indicators -->
   <section id="tab-indicators" class="hidden">
-    <div class="panel"><h2>Indicator pool</h2>
+    <div class="panel"><h2>مجموعهٔ اندیکاتورها</h2>
       <div class="chips" id="ind-filter"></div>
-      <div class="tablewrap" style="max-height:none"><table id="ind-table"></table></div>
+      <div class="tablewrap ltr" style="max-height:none" dir="ltr"><table id="ind-table"></table></div>
     </div>
   </section>
-
-  <!-- ======================= research -->
-  <section id="tab-research" class="hidden"><div id="research-out" class="muted">loading…</div></section>
-
-  <!-- ======================= live -->
-  <section id="tab-live" class="hidden"><div id="live-out" class="muted">loading…</div></section>
+  <section id="tab-rules" class="hidden"><div id="rules-out" class="muted">در حال بارگذاری…</div></section>
+  <section id="tab-research" class="hidden"><div id="research-out" class="muted">در حال بارگذاری…</div></section>
+  <section id="tab-live" class="hidden"><div id="live-out" class="muted">در حال بارگذاری…</div></section>
+  <section id="tab-admin" class="hidden"><div id="admin-out"></div></section>
 </main>
+</div>
+<dialog id="fb">
+  <h2 style="margin-top:0">بازخورد</h2>
+  <p class="muted">هر چیزی که خوب نبود، گیج‌کننده بود یا دوست دارید اضافه شود.</p>
+  <textarea id="fb-text"></textarea>
+  <div style="display:flex;gap:8px"><button class="primary" id="fb-send">ارسال</button><button class="linkbtn" id="fb-close" style="margin-top:12px">بستن</button></div>
+  <div id="fb-msg" class="note"></div>
+</dialog>
 
 <script>
 const $ = (s, r = document) => r.querySelector(s);
@@ -127,10 +162,15 @@ const el = (tag, attrs = {}, ...kids) => {
 };
 const api = async (path, body) => {
   const r = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
-  const j = await r.json();
+  const j = await r.json().catch(() => ({ error: r.statusText }));
+  if (r.status === 401 && j.login) showLogin();
   if (!r.ok) throw new Error(j.error || r.statusText);
   return j;
 };
+const JD = (() => { try { return new Intl.DateTimeFormat("fa-IR-u-ca-persian-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit" }); } catch { return null; } })();
+const jdate = iso => { try { return JD ? JD.format(new Date(iso)) : iso.slice(0, 10); } catch { return iso.slice(0, 10); } };
+const jyear = iso => jdate(iso).slice(0, 4);
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
 const fmt = (x, d = 2) => x == null ? "–" : Number(x).toFixed(d);
 const pct = (x, d = 1) => x == null ? "–" : (100 * x).toFixed(d) + "%";
 const signed = (x, d = 3) => x == null ? "–" : (x >= 0 ? "+" : "") + Number(x).toFixed(d);
@@ -141,7 +181,7 @@ const loaded = {};
 document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll("main > section").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + b.dataset.tab));
-  if (!loaded[b.dataset.tab]) { loaded[b.dataset.tab] = true; ({ indicators: loadIndicators, research: loadResearch, live: loadLive })[b.dataset.tab]?.(); }
+  if (!loaded[b.dataset.tab]) { loaded[b.dataset.tab] = true; ({ indicators: loadIndicators, rules: loadRules, research: loadResearch, live: loadLive, admin: loadAdmin })[b.dataset.tab]?.(); }
 }));
 
 // ---------------------------------------------------------------- svg charts
@@ -175,7 +215,7 @@ function lineChart(svg, { n, series, markers = [], labels = [], yfmt = v => v.to
     const tt = document.createElementNS(NS, "title"); tt.textContent = m.title; e.append(tt);
   }
 }
-const yearLabels = ts => { const out = []; let last = ""; ts.forEach((t, i) => { const yr = t.slice(0, 4); if (yr !== last) { out.push([i, yr]); last = yr; } }); return out.length > 12 ? out.filter((_, k) => k % Math.ceil(out.length / 12) === 0) : out; };
+const yearLabels = ts => { const out = []; let last = ""; ts.forEach((t, i) => { const yr = jyear(t); if (yr !== last) { out.push([i, yr]); last = yr; } }); return out.length > 12 ? out.filter((_, k) => k % Math.ceil(out.length / 12) === 0) : out; };
 
 // ---------------------------------------------------------------- backtest form
 let CAT = [], CFG = null;
@@ -187,13 +227,13 @@ async function initBacktest() {
     const [ds, cat, cfg] = await Promise.all([api("/api/datasets"), api("/api/catalogue"), api("/api/config")]);
     CAT = cat; CFG = cfg;
     const box = $("#datasets"); box.innerHTML = ""; box.classList.remove("muted");
-    if (!ds.length) box.append(el("div", { class: "muted" }, "No CSVs found. Use nnfx fetch or nnfx import-tv."));
+    if (!ds.length) box.append(el("div", { class: "muted" }, "هنوز دادهٔ قیمتی روی سرور نیست."));
     ds.forEach((d, i) => box.append(el("label", { class: "ds" }, el("input", { type: "checkbox", "data-i": i, checked: i < 2 }), el("span", {}, `${d.symbol} `, el("span", { class: "muted" }, d.timeframe)), el("small", {}, d.path))));
     box._ds = ds;
     const slots = $("#slots");
     for (const [slot, kind] of Object.entries(SLOT_KIND)) {
       const sel = el("select", { "data-slot": slot });
-      if (OPTIONAL.has(slot)) sel.append(el("option", { value: "" }, "none"));
+      if (OPTIONAL.has(slot)) sel.append(el("option", { value: "" }, "هیچ"));
       for (const e of CAT.filter(e => e.kind === kind && e.implemented)) sel.append(el("option", { value: e.name }, e.name));
       sel.value = cfg.slots[slot]?.name ?? "";
       slots.append(el("label", { class: "row" }, slot, sel));
@@ -228,10 +268,10 @@ function collect() {
 }
 
 $("#run").addEventListener("click", async () => {
-  const b = $("#run"); b.disabled = true; b.textContent = "Running…"; $("#bt-error").textContent = "";
+  const b = $("#run"); b.disabled = true; b.textContent = "در حال اجرا…"; $("#bt-error").textContent = "";
   try { renderBacktest(await api("/api/backtest", collect())); }
   catch (e) { $("#bt-error").textContent = e.message; }
-  finally { b.disabled = false; b.textContent = "Run backtest"; }
+  finally { b.disabled = false; b.textContent = "اجرای بک‌تست"; }
 });
 
 function renderBacktest(r) {
@@ -239,24 +279,24 @@ function renderBacktest(r) {
   const kpi = (k, v, cls = "") => el("div", { class: "kpi" }, el("div", { class: "v " + cls }, v), el("div", { class: "k" }, k));
   const lo = m.expectancy_ci[0], hi = m.expectancy_ci[1];
   out.append(el("div", { class: "kpis" },
-    kpi("entries", m.n_entries), kpi("E[R] per entry", signed(m.expectancy_r), m.expectancy_r >= 0 ? "pos" : "neg"),
-    kpi("95% BCa interval", `${signed(lo, 2)} to ${signed(hi, 2)}`, "small"), kpi("win rate", pct(m.win_rate)),
-    kpi("profit factor", fmt(m.profit_factor)), kpi("Sharpe", fmt(m.sharpe)), kpi("max drawdown", pct(m.max_drawdown), "neg"),
-    kpi("return", pct(m.total_return), m.total_return >= 0 ? "pos" : "neg")));
-  if (m.provisional) out.append(el("div", { class: "note" }, "Provisional: fewer than 500 entries. ", m.flags.map(f => `[${f}] `)));
+    kpi("تعداد ورود", m.n_entries), kpi("میانگین R هر ورود", signed(m.expectancy_r), m.expectancy_r >= 0 ? "pos" : "neg"),
+    kpi("بازهٔ اطمینان ۹۵٪", `${signed(lo, 2)} تا ${signed(hi, 2)}`, "small"), kpi("نرخ برد", pct(m.win_rate)),
+    kpi("فاکتور سود", fmt(m.profit_factor)), kpi("شارپ", fmt(m.sharpe)), kpi("بیشترین افت سرمایه", pct(m.max_drawdown), "neg"),
+    kpi("بازده کل", pct(m.total_return), m.total_return >= 0 ? "pos" : "neg")));
+  if (m.provisional) out.append(el("div", { class: "note" }, "موقت: کمتر از ۵۰۰ ورود؛ از نظر آماری قابل اتکا نیست. ", m.flags.map(f => `[${f}] `)));
 
-  const eq = el("div", { class: "panel" }, el("h2", {}, "Equity"));
+  const eq = el("div", { class: "panel" }, el("h2", {}, "منحنی سرمایه"));
   const svgE = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svgE.classList.add("chart"); eq.append(svgE); out.append(eq);
   lineChart(svgE, { n: r.equity.length, series: [{ ys: r.equity.map(p => p[1]), color: css("--accent"), width: 2 }], labels: yearLabels(r.equity.map(p => p[0])), yfmt: v => Math.round(v).toLocaleString() });
 
   const syms = Object.keys(r.charts);
-  const pricePanel = el("div", { class: "panel" }, el("h2", {}, "Price, baseline and trades"));
+  const pricePanel = el("div", { class: "panel" }, el("h2", {}, "قیمت، خط مبنا و معاملات"));
   const chips = el("div", { class: "chips" });
   const svgP = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svgP.classList.add("chart"); svgP.style.height = "320px";
   pricePanel.append(chips, svgP, el("div", { class: "legend" },
-    el("span", {}, el("i", { style: `background:${css("--ink")}` }), "close"),
-    el("span", {}, el("i", { style: `background:${css("--base")}` }), "baseline"),
-    el("span", {}, "▲▼ entry (green long, red short) · ○ exit")));
+    el("span", {}, el("i", { style: `background:${css("--ink")}` }), "قیمت بسته شدن"),
+    el("span", {}, el("i", { style: `background:${css("--base")}` }), "خط مبنا"),
+    el("span", {}, "▲▼ ورود (سبز خرید، قرمز فروش) · ○ خروج")));
   out.append(pricePanel);
   const draw = (sym) => {
     chips.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c.dataset.s === sym));
@@ -276,13 +316,13 @@ function renderBacktest(r) {
   const cols = ["symbol", "leg", "direction", "entry_type", "entry_time", "exit_time", "entry_price", "exit_price", "r_multiple", "exit_reason", "bars_held"];
   const tbl = el("table", {}, el("tr", {}, cols.map(c => el("th", {}, c.replace("_", " ")))),
     r.trades.map(t => el("tr", {}, cols.map(c => {
-      let v = t[c]; if (c.endsWith("_time")) v = v.slice(0, 10); if (c === "direction") v = v > 0 ? "long" : "short";
+      let v = t[c]; if (c.endsWith("_time")) v = jdate(v); if (c === "direction") v = v > 0 ? "long" : "short";
       if (c === "r_multiple") return el("td", { class: "num " + (v >= 0 ? "pos" : "neg") }, signed(v, 2));
       return el("td", { class: typeof v === "number" ? "num" : "" }, typeof v === "number" ? +v.toPrecision(6) : v);
     }))));
-  out.append(el("div", { class: "panel" }, el("h2", {}, `Trades (${r.trades.length} legs)`), el("div", { class: "tablewrap" }, tbl)));
+  out.append(el("div", { class: "panel" }, el("h2", {}, `معاملات (${r.trades.length} بخش)`), el("div", { class: "tablewrap", dir: "ltr" }, tbl)));
   const blk = Object.entries(r.blocked).concat(Object.entries(r.rejected).map(([k, v]) => ["rejected: " + k, v]));
-  out.append(el("div", { class: "panel" }, el("h2", {}, "Run"),
+  out.append(el("div", { class: "panel" }, el("h2", {}, "جزئیات اجرا"),
     el("pre", {}, `${r.summary}\nconfig ${r.config_digest.slice(0, 16)} · outputs ${r.digest}\n` + (blk.length ? "blocked/rejected: " + blk.map(([k, v]) => `${k} ${v}`).join(", ") : "nothing blocked"))));
 }
 
@@ -346,7 +386,81 @@ async function loadLive() {
   } catch (e) { out.innerHTML = ""; out.append(el("div", { class: "err" }, e.message)); }
 }
 
-initBacktest();
+// ---------------------------------------------------------------- rules (TCP ledger)
+async function loadRules() {
+  const out = $("#rules-out");
+  try {
+    const r = await api("/api/rules"); out.innerHTML = ""; out.classList.remove("muted");
+    const link = ev => { const edu = ev.startsWith("EDU#"); const id = ev.replace(/^EDU#|^#/, ""); return el("a", { href: `https://t.me/${edu ? "Tradecitypro_Education" : "tradecity_pro"}/${id}`, target: "_blank", rel: "noopener" }, ev); };
+    const typ = { mechanical: "مکانیکی", operationalisable: "نیازمند تعریف", discretionary: "اختیاری (کد نمی‌شود)" };
+    out.append(el("div", { class: "panel" }, el("h2", {}, "دفتر قوانین ترید سیتی پرو"),
+      el("p", { class: "muted" }, "قوانینی که از آرشیو تلگرام استخراج و پیش از دیدن هر دادهٔ قیمتی قفل شده‌اند. مقدارهای داخل [ ] پیش‌فرض قفل‌شده‌اند. هر قانون به پست‌های منبع لینک دارد."),
+      el("div", { class: "tablewrap", style: "max-height:none" }, el("table", {},
+        el("tr", {}, ["#", "قانون", "دوره", "نوع", "تعریف", "اولویت", "منبع"].map(h => el("th", {}, h))),
+        r.rules.map(x => el("tr", {}, el("td", {}, x.id), el("td", { style: "white-space:normal;min-width:180px" }, x.rule_fa), el("td", {}, x.era),
+          el("td", {}, typ[x.type] || x.type), el("td", { style: "white-space:normal;min-width:260px" }, x.definition_fa), el("td", {}, x.priority),
+          el("td", { style: "white-space:normal" }, ...(x.evidence || []).flatMap((e, i) => i ? [" ", link(e)] : [link(e)]))))))));
+  } catch (e) { out.innerHTML = ""; out.append(el("div", { class: "err" }, e.message)); }
+}
+
+// ---------------------------------------------------------------- admin
+async function loadAdmin() {
+  const out = $("#admin-out"); out.innerHTML = "";
+  const note = el("input", { type: "text", placeholder: "یادداشت (مثلاً نام دوست)" });
+  const codes = el("pre", {});
+  const inv = el("div", {}), fb = el("div", {});
+  const refresh = async () => {
+    const [iv, f] = await Promise.all([api("/api/admin/invites"), api("/api/admin/feedback")]);
+    inv.innerHTML = ""; inv.append(el("table", {}, el("tr", {}, el("th", {}, "کد"), el("th", {}, "یادداشت"), el("th", {}, "استفاده‌شده توسط")),
+      iv.map(x => el("tr", {}, el("td", { class: "ltr" }, x.code), el("td", {}, x.note), el("td", {}, x.used_by || "—")))));
+    fb.innerHTML = ""; fb.append(...(f.length ? f.map(x => el("div", { class: "panel" }, el("div", { class: "muted" }, `${x.user || "?"} · ${jdate(new Date(x.created * 1000).toISOString())} · ${x.page || ""}`), el("div", { style: "white-space:pre-wrap" }, x.text))) : [el("div", { class: "muted" }, "هنوز بازخوردی نیامده.")]));
+  };
+  const make = el("button", { class: "primary", onclick: async () => { const r = await api("/api/admin/invites", { n: 1, note: note.value }); codes.textContent = r.codes.join("\n"); note.value = ""; refresh(); } }, "ساخت کد دعوت");
+  out.append(el("div", { class: "grid" },
+    el("div", {}, el("div", { class: "panel" }, el("h2", {}, "کد دعوت تازه"), note, make, codes)),
+    el("div", {}, el("div", { class: "panel" }, el("h2", {}, "کدهای دعوت"), el("div", { class: "tablewrap" }, inv)), el("div", { class: "panel" }, el("h2", {}, "بازخوردها"), fb))));
+  refresh().catch(e => out.append(el("div", { class: "err" }, e.message)));
+}
+
+// ---------------------------------------------------------------- session
+let mode = "login";
+function showLogin() { $("#app").classList.add("hidden"); $("#login").classList.remove("hidden"); }
+document.querySelectorAll("#login .chip").forEach(c => c.addEventListener("click", () => {
+  mode = c.dataset.mode;
+  document.querySelectorAll("#login .chip").forEach(x => x.classList.toggle("on", x === c));
+  $("#invite-row").classList.toggle("hidden", mode !== "signup");
+  $("#f-go").textContent = mode === "signup" ? "ثبت‌نام و ورود" : "ورود";
+}));
+$("#f-go").addEventListener("click", async () => {
+  $("#f-err").textContent = "";
+  try {
+    await api(mode === "signup" ? "/api/signup" : "/api/login", { invite: $("#f-invite").value, username: $("#f-user").value, password: $("#f-pass").value });
+    location.reload();
+  } catch (e) { $("#f-err").textContent = e.message; }
+});
+$("#f-pass").addEventListener("keydown", e => { if (e.key === "Enter") $("#f-go").click(); });
+$("#logout").addEventListener("click", async () => { await api("/api/logout", {}); location.reload(); });
+$("#dismiss").addEventListener("click", () => { $("#disclaimer").classList.add("hidden"); store.set("nnfx-disclaimer", "1"); });
+$("#fb-open").addEventListener("click", () => { $("#fb-msg").textContent = ""; $("#fb").showModal(); });
+$("#fb-close").addEventListener("click", () => $("#fb").close());
+$("#fb-send").addEventListener("click", async () => {
+  try {
+    const page = document.querySelector("#tabs button.on")?.dataset.tab || "";
+    await api("/api/feedback", { text: $("#fb-text").value, page });
+    $("#fb-text").value = ""; $("#fb-msg").textContent = "ممنون! بازخورد ثبت شد.";
+  } catch (e) { $("#fb-msg").textContent = e.message; }
+});
+
+(async function boot() {
+  let me = { auth: false, user: "local" };
+  try { me = await api("/api/me"); } catch {}
+  if (me.auth && !me.user) { showLogin(); return; }
+  $("#app").classList.remove("hidden");
+  if (store.get("nnfx-disclaimer")) $("#disclaimer").classList.add("hidden");
+  if (me.auth) { $("#who").textContent = me.user; $("#logout").classList.remove("hidden"); } else { $("#fb-open").classList.add("hidden"); }
+  if (me.auth && me.admin) $("#admin-tab").classList.remove("hidden");
+  initBacktest();
+})();
 </script>
 </body>
 </html>

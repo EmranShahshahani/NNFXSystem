@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import json
 import math
+import threading
 import traceback
 from collections.abc import Mapping
 from dataclasses import asdict
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
@@ -29,6 +31,10 @@ from nnfx.data.bars import BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
+from nnfx.ui.auth import Auth, AuthError, User
+
+COOKIE = "nnfx_session"
+MAX_BODY = 64 * 1024
 
 
 def _clean(o: Any) -> Any:
@@ -66,7 +72,17 @@ class App:
         research: str = "research",
         live_state: str = "runs/live",
         reports: str = "reports/daily",
+        rules: str = "research/tcp_rules.yaml",
+        auth: Auth | None = None,
+        secure_cookies: bool = False,
+        max_concurrent_backtests: int = 2,
+        trust_proxy: bool = False,
     ) -> None:
+        self.auth = auth
+        self.trust_proxy = trust_proxy
+        self.secure_cookies = secure_cookies
+        self.rules_path = root.resolve() / rules
+        self._bt_slots = threading.BoundedSemaphore(max_concurrent_backtests)
         self.root = root.resolve()
         self.config_path = self.root / config
         self.instruments_path = self.root / instruments
@@ -182,6 +198,50 @@ class App:
             }
         )
 
+    def rules(self) -> dict[str, Any]:
+        import yaml
+
+        data: dict[str, Any] = yaml.safe_load(self.rules_path.read_text(encoding="utf-8"))
+        return data
+
+    def backtest_limited(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        if not self._bt_slots.acquire(timeout=30):
+            raise RuntimeError("سرور مشغول است؛ چند لحظه بعد دوباره امتحان کنید")
+        try:
+            return self.backtest(req)
+        finally:
+            self._bt_slots.release()
+
+    # ------------------------------------------------------------ beta accounts
+    def _accounts(self) -> Auth:
+        if self.auth is None:
+            raise KeyError("accounts are not enabled on this server")
+        return self.auth
+
+    def _require_admin(self, user: User | None) -> Auth:
+        auth = self._accounts()
+        if user is None or not user.is_admin:
+            raise PermissionError("فقط مدیر")
+        return auth
+
+    def add_feedback(self, user: User, body: Mapping[str, Any]) -> dict[str, bool]:
+        self._accounts().add_feedback(user, str(body.get("text", "")), str(body.get("page", "")))
+        return {"ok": True}
+
+    def admin_feedback(self, user: User | None) -> list[dict[str, object]]:
+        return self._require_admin(user).feedback()
+
+    def admin_invites(self, user: User | None) -> list[dict[str, str | None]]:
+        return [
+            {"code": c, "note": n, "used_by": u} for c, n, u in self._require_admin(user).invites()
+        ]
+
+    def create_invites(self, user: User | None, body: Mapping[str, Any]) -> dict[str, list[str]]:
+        n = min(max(int(body.get("n", 1)), 1), 50)
+        return {
+            "codes": self._require_admin(user).create_invites(n, str(body.get("note", ""))[:100])
+        }
+
     def research_state(self) -> dict[str, Any]:
         from nnfx.research.trials import ResearchState
 
@@ -228,46 +288,106 @@ def _index_html() -> bytes:
 
 
 def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
+    public_get = {"/", "/index.html", "/api/me"}
+    public_post = {"/api/login", "/api/signup", "/api/logout"}
+
     class Handler(BaseHTTPRequestHandler):
         server_version = "nnfx-ui"
 
         def log_message(self, fmt: str, *args: Any) -> None:  # quieter console
             pass
 
-        def _send(self, code: int, body: bytes, ctype: str = "application/json") -> None:
+        def _send(
+            self,
+            code: int,
+            body: bytes,
+            ctype: str = "application/json",
+            headers: Mapping[str, str] | None = None,
+        ) -> None:
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Frame-Options", "DENY")
+            self.send_header("Referrer-Policy", "same-origin")
+            for k, v in (headers or {}).items():
+                self.send_header(k, v)
             self.end_headers()
             self.wfile.write(body)
 
-        def _json(self, code: int, obj: Any) -> None:
-            self._send(code, json.dumps(obj, allow_nan=False).encode())
+        def _json(self, code: int, obj: Any, headers: Mapping[str, str] | None = None) -> None:
+            self._send(code, json.dumps(obj, allow_nan=False).encode(), headers=headers)
 
         def _dispatch(self, fn: Any, *a: Any) -> None:
             try:
                 self._json(200, fn(*a))
+            except AuthError as e:
+                self._json(400, {"error": str(e)})
             except PermissionError as e:
                 self._json(403, {"error": str(e)})
             except (ValueError, KeyError, FileNotFoundError) as e:
                 self._json(400, {"error": f"{type(e).__name__}: {e}"})
             except Exception as e:
-                self._json(
-                    500, {"error": f"{type(e).__name__}: {e}", "trace": traceback.format_exc()}
-                )
+                body: dict[str, str] = {"error": f"{type(e).__name__}: {e}"}
+                if app.auth is None:  # local single-user mode only: never leak traces to beta users
+                    body["trace"] = traceback.format_exc()
+                self._json(500, body)
+
+        # ------------------------------------------------------------ auth
+        def _token(self) -> str | None:
+            c = SimpleCookie(self.headers.get("Cookie") or "")
+            return c[COOKIE].value if COOKIE in c else None
+
+        def _user(self) -> User | None:
+            if app.auth is None:
+                return User(0, "local", True)
+            return app.auth.user_for(self._token())
+
+        def _client(self) -> str:
+            fwd = self.headers.get("X-Forwarded-For") if app.trust_proxy else None
+            return fwd.split(",")[0].strip() if fwd else self.client_address[0]
+
+        def _cookie(self, token: str, max_age: int) -> dict[str, str]:
+            secure = "; Secure" if app.secure_cookies else ""
+            return {
+                "Set-Cookie": f"{COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age={max_age}{secure}"
+            }
+
+        def _guard(self, path: str, public: set[str]) -> User | None:
+            user = self._user()
+            if user is None and path not in public:
+                self._json(401, {"error": "ابتدا وارد شوید", "login": True})
+            return user
 
         def do_GET(self) -> None:
             path = urlparse(self.path).path
+            user = self._guard(path, public_get)
+            if user is None and path not in public_get:
+                return
             routes = {
                 "/api/datasets": app.datasets,
                 "/api/catalogue": app.catalogue,
                 "/api/config": app.config,
                 "/api/research": app.research_state,
                 "/api/live": app.live,
+                "/api/rules": app.rules,
             }
             if path in ("/", "/index.html"):
                 self._send(200, _index_html(), "text/html; charset=utf-8")
+            elif path == "/api/me":
+                self._json(
+                    200,
+                    {
+                        "user": user.username if user else None,
+                        "admin": bool(user and user.is_admin),
+                        "auth": app.auth is not None,
+                    },
+                )
+            elif path == "/api/admin/feedback":
+                self._dispatch(app.admin_feedback, user)
+            elif path == "/api/admin/invites":
+                self._dispatch(app.admin_invites, user)
             elif path in routes:
                 self._dispatch(routes[path])
             else:
@@ -276,15 +396,51 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
         def do_POST(self) -> None:
             path = urlparse(self.path).path
             n = int(self.headers.get("Content-Length") or 0)
+            if n > MAX_BODY:
+                self._json(413, {"error": "request too large"})
+                return
             try:
                 body = json.loads(self.rfile.read(n) or b"{}")
             except json.JSONDecodeError as e:
                 self._json(400, {"error": f"bad JSON: {e}"})
                 return
+            if app.auth is not None and path in public_post:
+                self._auth_post(path, body)
+                return
+            user = self._guard(path, set())
+            if user is None:
+                return
             if path == "/api/backtest":
-                self._dispatch(app.backtest, body)
+                self._dispatch(app.backtest_limited, body)
+            elif path == "/api/feedback":
+                self._dispatch(app.add_feedback, user, body)
+            elif path == "/api/admin/invites":
+                self._dispatch(app.create_invites, user, body)
             else:
                 self._json(404, {"error": "not found"})
+
+        def _auth_post(self, path: str, body: Mapping[str, Any]) -> None:
+            auth = app.auth
+            assert auth is not None
+            try:
+                if path == "/api/logout":
+                    auth.logout(self._token())
+                    self._json(200, {"ok": True}, self._cookie("", 0))
+                    return
+                if path == "/api/signup":
+                    auth.signup(
+                        str(body.get("invite", "")).strip(),
+                        str(body.get("username", "")).strip(),
+                        str(body.get("password", "")),
+                    )
+                token = auth.login(
+                    str(body.get("username", "")).strip(),
+                    str(body.get("password", "")),
+                    self._client(),
+                )
+                self._json(200, {"ok": True}, self._cookie(token, 30 * 86400))
+            except AuthError as e:
+                self._json(400, {"error": str(e)})
 
     return Handler
 

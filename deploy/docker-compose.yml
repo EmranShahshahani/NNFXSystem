@@ -1,0 +1,38 @@
+# Beta stack: the NNFX web app behind Caddy (automatic HTTPS), plus an hourly data refresh.
+#   cp deploy/.env.example deploy/.env   # set NNFX_DOMAIN
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+services:
+  app:
+    build: { context: .., dockerfile: deploy/Dockerfile }
+    image: nnfx-beta
+    restart: unless-stopped
+    volumes:
+      - beta-db:/app/runs/beta
+      - market-data:/app/data/cache
+    expose: ["8765"]
+
+  refresh:
+    image: nnfx-beta
+    restart: unless-stopped
+    environment:
+      NNFX_SYMBOLS: ${NNFX_SYMBOLS:-BTC/USDT ETH/USDT}
+    volumes:
+      - market-data:/app/data/cache
+      - ./refresh-data.sh:/app/deploy-refresh.sh:ro
+    entrypoint: ["/bin/sh", "-c", "while true; do /bin/sh /app/deploy-refresh.sh; sleep 3600; done"]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      NNFX_DOMAIN: ${NNFX_DOMAIN:?set NNFX_DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [app]
+
+volumes:
+  beta-db:
+  market-data:
+  caddy-data:

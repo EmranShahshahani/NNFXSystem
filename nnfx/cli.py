@@ -200,7 +200,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
         Path(args.cache) / feed_name / (args.symbol.replace("/", "_").replace(":", "_") + ".H1.csv")
     )
     write_bars_csv(frame, out)
-    status = record_or_verify(feed_name, frame)
+    status = "skipped (--no-manifest)" if args.no_manifest else record_or_verify(feed_name, frame)
     print(f"{frame}: cached at {out}; manifest {status}")
     return 0
 
@@ -325,9 +325,19 @@ def cmd_verdict(args: argparse.Namespace) -> int:
 
 
 def cmd_ui(args: argparse.Namespace) -> int:
+    from nnfx.ui.auth import Auth
     from nnfx.ui.server import App, serve
 
-    httpd = serve(App(Path(args.root)), args.host, args.port)
+    auth = Auth(Path(args.auth_db)) if args.auth_db else None
+    if auth is None and args.host not in ("127.0.0.1", "localhost", "::1"):
+        raise SystemExit("refusing to serve beyond localhost without --auth-db (beta accounts)")
+    app = App(
+        Path(args.root),
+        auth=auth,
+        secure_cookies=args.secure_cookies,
+        trust_proxy=args.trust_proxy,
+    )
+    httpd = serve(app, args.host, args.port)
     print(f"NNFX workbench on http://{args.host}:{httpd.server_address[1]}  (Ctrl+C to stop)")
     with contextlib.suppress(KeyboardInterrupt):
         httpd.serve_forever()
@@ -344,6 +354,33 @@ def cmd_prereg(args: argparse.Namespace) -> int:
     for g, budget in p.data["trial_budget"].items():
         if g in p.data["hypotheses"]:
             print(f"  {g}: budget {budget}, remaining {p.remaining(rs, g)}")
+    return 0
+
+
+def cmd_beta(args: argparse.Namespace) -> int:
+    from nnfx.ui.auth import Auth, AuthError
+
+    auth = Auth(Path(args.db))
+    if args.bcmd == "invite":
+        for code in auth.create_invites(args.n, args.note):
+            print(code)
+    elif args.bcmd == "create-admin":
+        import getpass
+
+        pw = args.password or getpass.getpass("password: ")
+        try:
+            u = auth.signup(auth.create_invites(1, "admin")[0], args.username, pw, admin=True)
+        except AuthError as e:
+            raise SystemExit(str(e)) from None
+        print(f"admin {u.username} created")
+    elif args.bcmd == "users":
+        for u in auth.users():
+            print(f"{u.id}\t{u.username}\t{'admin' if u.is_admin else ''}")
+        for code, note, used in auth.invites():
+            print(f"invite {code}\t{note}\t{'used by ' + used if used else 'unused'}")
+    elif args.bcmd == "feedback":
+        for f in auth.feedback():
+            print(f"[{f['user']}] ({f['page']}) {f['text']}")
     return 0
 
 
@@ -443,7 +480,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--root", default=".", help="repository root holding config/ data/ research/")
+    p.add_argument(
+        "--auth-db", help="SQLite file for beta accounts; required to bind beyond localhost"
+    )
+    p.add_argument("--secure-cookies", action="store_true", help="set when served over HTTPS")
+    p.add_argument("--trust-proxy", action="store_true", help="read client IP from X-Forwarded-For")
     p.set_defaults(fn=cmd_ui)
+
+    b = sub.add_parser("beta", help="beta accounts: invites, admin, users, feedback")
+    b.add_argument("--db", default="runs/beta/beta.db")
+    bsub = b.add_subparsers(dest="bcmd", required=True)
+    p = bsub.add_parser("invite", help="create single-use invite codes")
+    p.add_argument("n", type=int, nargs="?", default=1)
+    p.add_argument("--note", default="")
+    p = bsub.add_parser("create-admin", help="create an admin account")
+    p.add_argument("username")
+    p.add_argument("--password", help="omit to be prompted")
+    bsub.add_parser("users", help="list users and invites")
+    bsub.add_parser("feedback", help="list feedback")
+    b.set_defaults(fn=cmd_beta)
 
     p = sub.add_parser("prereg", help="verify a frozen pre-registration and show trial budgets")
     p.add_argument("file", nargs="?", default="research/tcp_prereg.frozen.json")
@@ -463,6 +518,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--exchange", default="binance")
     p.add_argument("--base-url", help="UDF datafeed root for --feed udf")
     p.add_argument("--venue-name", default="udf", help="venue label for --feed udf")
+    p.add_argument(
+        "--no-manifest",
+        action="store_true",
+        help="rolling refresh for the beta scanner: do not write/verify the research manifest",
+    )
     p.add_argument("--symbol", required=True)
     p.add_argument("--start", required=True)
     p.add_argument("--end", required=True)

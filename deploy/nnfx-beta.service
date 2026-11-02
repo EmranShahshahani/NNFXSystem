@@ -1,0 +1,17 @@
+# systemd unit for a plain (non-Docker) install in /opt/nnfx, behind Caddy or nginx on the same host.
+#   sudo cp deploy/nnfx-beta.service /etc/systemd/system/ && sudo systemctl enable --now nnfx-beta
+[Unit]
+Description=NNFX beta web app
+After=network-online.target
+
+[Service]
+User=nnfx
+WorkingDirectory=/opt/nnfx
+ExecStart=/opt/nnfx/.venv/bin/nnfx ui --host 127.0.0.1 --port 8765 --auth-db /opt/nnfx/runs/beta/beta.db --secure-cookies --trust-proxy
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/nnfx/runs /opt/nnfx/data/cache
+
+[Install]
+WantedBy=multi-user.target
