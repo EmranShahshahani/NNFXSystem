@@ -23,6 +23,7 @@ from nnfx.config import SystemConfig
 from nnfx.data.bars import BarFrame, ns
 from nnfx.data.gates import ensure_clean
 from nnfx.data.universe import UniverseSchedule
+from nnfx.engine.core import Engine
 from nnfx.engine.history import SymbolHistory
 from nnfx.env import fingerprint
 from nnfx.harness.conversion import Conversion
@@ -106,8 +107,10 @@ class BacktestHarness:
         run_gates: bool = True,
         gate_kwargs: Mapping[str, object] | None = None,
         outputs: Mapping[str, SlotOutputs] | None = None,
+        engine: Engine | None = None,
     ) -> None:
         self.config = config
+        self.engine = engine
         self.instruments = dict(instruments)
         self.frames = {s: frames[s] for s in sorted(frames)}
         self.costs = costs.with_toggles(config.costs) if costs is not None else CostModel.zero()
@@ -135,7 +138,7 @@ class BacktestHarness:
             cfg.account.currency,
             Conversion(cfg.account.currency, self.frames),
         )
-        loop = TradingLoop(cfg, self.instruments, broker, self.journal)
+        loop = TradingLoop(cfg, self.instruments, broker, self.journal, engine=self.engine)
         if self.journal is not None:
             self.journal.start_run(kind="backtest", config=cfg.digest())
         hist = {

@@ -14,6 +14,7 @@
 - [ ] Daily loss limit (default -1.5%) halts for 24h; weekly limit parameter
 - [ ] Performance governor: rolling 50-trade win rate < 40% or drawdown > 6% -> 0.25% until equity recovers
 - [ ] Risk recalculated only at +/-10% equity milestones (parameter)
+- [ ] Resting pending orders count against the open-risk and exposure caps (ADR 09 §4 amendment (e); found in ticket 02 review)
 - [ ] Harness-level tests for each rule
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

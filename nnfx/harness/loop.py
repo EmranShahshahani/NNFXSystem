@@ -8,43 +8,28 @@ harness data bug - which is exactly what the parity harness tests for.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
-from typing import Any, Protocol
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from nnfx.brokers.sim import Order, SimBroker
+from nnfx.brokers.sim import Order, PendingSpec, SimBroker
 from nnfx.config import SystemConfig
-from nnfx.engine.core import Decision, Evaluation, StrategyEngine
+from nnfx.engine.core import Decision, Engine, Evaluation, StrategyEngine
 from nnfx.engine.history import SymbolHistory
 from nnfx.engine.types import (
-    AccountState,
     CancelIntent,
     CloseIntent,
     EngineState,
     ModifyIntent,
     OpenIntent,
     PendingOrderIntent,
-    PositionView,
 )
 from nnfx.instruments import InstrumentSpec
 from nnfx.journal.journal import Journal
 from nnfx.risk.manager import RiskManager, SizedOrder
-
-
-class Engine(Protocol):
-    """The pure decision contract every engine family implements (ADR 09 §2)."""
-
-    def decide(
-        self,
-        history: Mapping[str, SymbolHistory],
-        open_positions: Sequence[PositionView],
-        account_state: AccountState,
-        config: SystemConfig,
-        state: EngineState | None = None,
-    ) -> Decision: ...
 
 
 @dataclass
@@ -98,8 +83,11 @@ class TradingLoop:
         self.engine: Engine = engine or StrategyEngine()
         self.risk = RiskManager(config.risk)
         self.state = state or EngineState()
-        # Broker events up to here belong to earlier cycles.
-        self._event_mark = len(broker.s.events)
+        # Broker events the journal already holds. Read from the journal, not kept
+        # in memory, so a crash between a bar and its cycle record loses nothing.
+        last = journal.last("cycle") if journal is not None else None
+        seen = int(last["broker_event_seq"]) if last else 0
+        self._event_mark = seen if seen <= len(broker.s.events) else len(broker.s.events)
 
     def feed_bar(self, h: SymbolHistory, extras: Mapping[str, np.ndarray]) -> None:
         i = h.end
@@ -136,7 +124,7 @@ class TradingLoop:
             elif isinstance(intent, CancelIntent):
                 self.broker.cancel(intent.order_key, intent.reason)
                 report.cancels.append(intent.model_dump(mode="json"))
-            elif isinstance(intent, OpenIntent):  # market entries and pending orders
+            elif isinstance(intent, (OpenIntent, PendingOrderIntent)):
                 self._open(
                     intent,
                     ts,
@@ -171,7 +159,7 @@ class TradingLoop:
 
     def _open(
         self,
-        intent: OpenIntent,
+        intent: OpenIntent | PendingOrderIntent,
         ts: pd.Timestamp,
         h: SymbolHistory,
         account: Any,
@@ -219,16 +207,16 @@ class TradingLoop:
             risk_cash=o.realized_risk,
         )
         if isinstance(intent, PendingOrderIntent):
-            order = replace(
-                order,
-                trigger=intent.trigger,
+            spec = PendingSpec(
+                level=intent.level,
                 buffer=intent.buffer,
-                stop_price=intent.stop,
-                target_price=intent.target,
+                stop=intent.stop,
+                target=intent.target,
                 invalidation=intent.invalidation,
                 expires_after_bars=intent.expires_after_bars,
                 oco_group=intent.oco_group,
             )
+            order = replace(order, pending=spec)
         res = self.broker.submit(order, intent.idempotency_key)
         report.submitted.append(
             {**rec, "status": res.status, "order_id": res.order_id, "units": o.units}

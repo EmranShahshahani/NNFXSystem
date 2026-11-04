@@ -101,3 +101,12 @@ tests. Tickets 00-09 had full acceptance criteria in the ticket file; tickets
 * Beta service plan (Persian): `docs/beta-service-plan.md`. B0/B1 do not depend
   on research results; B2's live scanner reuses T32/T33 and doubles as the
   H2026 forward test (T45).
+
+## Strategy Builder track
+
+Tickets live in `.scratch/tcp-strategy-builder/issues/`; spec in `../spec.md`.
+
+| # | Ticket | Code | Tests |
+|---|---|---|---|
+| 01 | Intraday base bars + timeframe views | `data/timeframes.py`, `data/session.py` (M15 input), feeds (`udf.py`, `ccxt_feed.py`, `tradingview.py`), `intraday_gaps` gate, `fetch --timeframe M15` | `test_timeframes.py` |
+| 02 | Pending stop-market orders | `engine/types.py` (`PendingOrderIntent`, `CancelIntent`, `PendingOrderView`), `brokers/sim.py` (`PendingSpec`, fills/cancels/OCO), `harness/loop.py` (`Engine` protocol, `orders` in each cycle record) | `test_pending_orders.py` (incl. paper restarted every bar, crash before journal) |

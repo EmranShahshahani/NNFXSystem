@@ -32,10 +32,33 @@ from typing import Any, Literal, Protocol
 import pandas as pd
 
 from nnfx.brokers.costs import CostModel
-from nnfx.engine.types import AccountState, EntryType, Leg, PendingOrderView, PositionView
+from nnfx.engine.types import (
+    AccountState,
+    EntryType,
+    Leg,
+    PendingOrderView,
+    PositionView,
+    trigger_price,
+)
 from nnfx.instruments import InstrumentSpec
 
 ConversionFn = Callable[[str, pd.Timestamp], float]
+
+
+@dataclass(frozen=True)
+class PendingSpec:
+    """The resting part of a stop-market order; stop and target are absolute prices."""
+
+    level: float
+    buffer: float
+    stop: float
+    target: float | None
+    invalidation: float | None
+    expires_after_bars: int
+    oco_group: str | None
+
+    def trigger(self, direction: int) -> float:
+        return trigger_price(self.level, direction, self.buffer)
 
 
 @dataclass(frozen=True)
@@ -51,19 +74,13 @@ class Order:
     target_distance: float | None
     target_fraction: float
     risk_cash: float
-    # Pending stop-market orders only; a market order leaves these unset.
-    trigger: float | None = None
-    buffer: float = 0.0
-    stop_price: float | None = None
-    target_price: float | None = None
-    invalidation: float | None = None
-    expires_after_bars: int = 0
-    oco_group: str | None = None
+    # Set for a pending stop-market order (a Trigger); None for a market order.
+    pending: PendingSpec | None = None
 
-    @property
-    def level(self) -> float:
-        assert self.trigger is not None
-        return self.trigger + self.direction * self.buffer
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> Order:
+        spec = d.get("pending")
+        return cls(**{**d, "pending": None if spec is None else PendingSpec(**spec)})
 
 
 @dataclass(frozen=True)
@@ -174,22 +191,34 @@ class _Pending:
     placed_time: str
     bars_active: int = 0
 
+    @property
+    def spec(self) -> PendingSpec:
+        assert self.order.pending is not None
+        return self.order.pending
+
+    @property
+    def symbol(self) -> str:
+        return self.order.symbol
+
+    @property
+    def trigger(self) -> float:
+        return self.spec.trigger(self.order.direction)
+
     def view(self) -> PendingOrderView:
-        o = self.order
-        assert o.trigger is not None and o.stop_price is not None
+        sp = self.spec
         return PendingOrderView(
             order_id=self.order_id,
             key=self.key,
-            symbol=o.symbol,
-            direction=o.direction,
-            trigger=o.trigger,
-            level=o.level,
-            stop=o.stop_price,
-            target=o.target_price,
-            invalidation=o.invalidation,
-            expires_after_bars=o.expires_after_bars,
+            symbol=self.order.symbol,
+            direction=self.order.direction,
+            level=sp.level,
+            trigger=self.trigger,
+            stop=sp.stop,
+            target=sp.target,
+            invalidation=sp.invalidation,
+            expires_after_bars=sp.expires_after_bars,
             bars_active=self.bars_active,
-            oco_group=o.oco_group,
+            oco_group=sp.oco_group,
             placed_time=self.placed_time,
         )
 
@@ -273,19 +302,20 @@ class SimBroker:
         self.s.seq += 1
         oid = f"{order.symbol}#{self.s.seq}"
         self.s.keys[idempotency_key] = oid
-        if order.trigger is None:
+        if order.pending is None:
             self.s.queued.append(_Queued(idempotency_key, oid, order))
             return OrderResult("accepted", oid, idempotency_key)
         placed = self.s.last_bar.get(order.symbol, "")
-        self.s.pending.append(_Pending(idempotency_key, oid, order, placed))
-        self._event("place", key=idempotency_key, order_id=oid, level=order.level, time=placed)
+        rest = _Pending(idempotency_key, oid, order, placed)
+        self.s.pending.append(rest)
+        self._event("place", key=idempotency_key, order_id=oid, trigger=rest.trigger, time=placed)
         return OrderResult("accepted", oid, idempotency_key)
 
     def cancel(self, order_key: str, reason: str) -> None:
         """Cancel a resting pending order; unknown or already-filled keys are a no-op."""
-        for q in self.s.pending:
-            if q.key == order_key:
-                self._drop_pending(q, reason, self.s.last_bar.get(q.order.symbol, ""))
+        for r in self.s.pending:
+            if r.key == order_key:
+                self._drop_pending(r, reason, self.s.last_bar.get(r.symbol, ""))
                 return
 
     def modify_stop(
@@ -306,9 +336,9 @@ class SimBroker:
     def _event(self, kind: str, **fields: Any) -> None:
         self.s.events.append({"n": len(self.s.events) + 1, "e": kind, **fields})
 
-    def _drop_pending(self, q: _Pending, reason: str, time: str) -> None:
-        self.s.pending.remove(q)
-        self._event("cancel", key=q.key, order_id=q.order_id, reason=reason, time=time)
+    def _drop_pending(self, r: _Pending, reason: str, time: str) -> None:
+        self.s.pending.remove(r)
+        self._event("cancel", key=r.key, order_id=r.order_id, reason=reason, time=time)
 
     def _open_position(
         self,
@@ -323,8 +353,8 @@ class SimBroker:
     ) -> SimPosition:
         inst = self.instruments[od.symbol]
         vp = self._vppu(od.symbol) * conv
-        if od.stop_price is not None:
-            stop, target = od.stop_price, od.target_price
+        if od.pending is not None:
+            stop, target = od.pending.stop, od.pending.target
         else:
             stop = px - od.direction * od.stop_distance
             target = None if od.target_distance is None else px + od.direction * od.target_distance
@@ -356,36 +386,46 @@ class SimBroker:
     def _fill_pending(
         self, symbol: str, ts: pd.Timestamp, o: float, h: float, lo: float, conv: float
     ) -> None:
-        inst = self.instruments[symbol]
-        for q in [q for q in self.s.pending if q.order.symbol == symbol]:
-            if q not in self.s.pending:
-                continue  # cancelled by an OCO sibling's fill earlier in this bar
-            od = q.order
-            lvl, d = od.level, od.direction
-            if (o - lvl) * d >= 0:
-                ref = o  # gapped through the level: fills at the open
-            elif (h >= lvl) if d > 0 else (lo <= lvl):
-                ref = lvl
-            else:
-                continue
-            hs = self.costs.half_spread(inst, ref, ref == o)
-            sl = self.costs.slippage(inst, ref, True)
-            px = ref + d * (hs + sl)
-            p = self._open_position(q.key, q.order_id, od, px, ts, conv, hs, sl)
-            self.s.pending.remove(q)
-            self._event("fill", pid=p.id, key=q.key, units=p.units, price=px, time=ts.isoformat())
-            if od.oco_group is not None:
-                for other in [x for x in self.s.pending if x.order.oco_group == od.oco_group]:
-                    self._drop_pending(other, "oco", ts.isoformat())
+        """Fill resting orders this bar reached: gaps at the open first, then intrabar.
+
+        A bar does not say in which order it reached two intrabar levels, so
+        within each group the earlier-placed order is taken to fill first.
+        """
+        resting = [r for r in self.s.pending if r.symbol == symbol]
+        gapped = [r for r in resting if (o - r.trigger) * r.order.direction >= 0]
+        touched = [
+            r
+            for r in resting
+            if r not in gapped
+            and ((h >= r.trigger) if r.order.direction > 0 else (lo <= r.trigger))
+        ]
+        for r, ref in [(r, o) for r in gapped] + [(r, r.trigger) for r in touched]:
+            if r in self.s.pending:  # an OCO sibling may have cancelled it this bar
+                self._fill_one(r, ref, ref == o and r in gapped, ts, conv)
+
+    def _fill_one(
+        self, r: _Pending, ref: float, at_open: bool, ts: pd.Timestamp, conv: float
+    ) -> None:
+        od, inst = r.order, self.instruments[r.symbol]
+        hs = self.costs.half_spread(inst, ref, at_open)
+        sl = self.costs.slippage(inst, ref, True)
+        px = ref + od.direction * (hs + sl)
+        p = self._open_position(r.key, r.order_id, od, px, ts, conv, hs, sl)
+        self.s.pending.remove(r)
+        self._event("fill", pid=p.id, key=r.key, units=p.units, price=px, time=ts.isoformat())
+        group = r.spec.oco_group
+        if group is not None:
+            for other in [x for x in self.s.pending if x.spec.oco_group == group]:
+                self._drop_pending(other, "oco", ts.isoformat())
 
     def _age_pending(self, symbol: str, ts: pd.Timestamp, c: float) -> None:
-        for q in [q for q in self.s.pending if q.order.symbol == symbol]:
-            od = q.order
-            q.bars_active += 1
-            if od.invalidation is not None and (c - od.invalidation) * od.direction < 0:
-                self._drop_pending(q, "invalidated", ts.isoformat())
-            elif q.bars_active >= od.expires_after_bars:
-                self._drop_pending(q, "expired", ts.isoformat())
+        for r in [r for r in self.s.pending if r.symbol == symbol]:
+            sp = r.spec
+            r.bars_active += 1
+            if sp.invalidation is not None and (c - sp.invalidation) * r.order.direction < 0:
+                self._drop_pending(r, "invalidated", ts.isoformat())
+            elif r.bars_active >= sp.expires_after_bars:
+                self._drop_pending(r, "expired", ts.isoformat())
 
     def _vppu(self, symbol: str) -> float:
         return float(self.instruments[symbol].value_per_price_unit)
@@ -446,16 +486,7 @@ class SimBroker:
         )
         self.s.balance += gross - comm + carry
         self.s.exit_bar[p.symbol] = ts.isoformat()
-        self.s.events.append(
-            {
-                "n": len(self.s.events) + 1,
-                "e": "close",
-                "pid": p.id,
-                "fraction": fraction,
-                "units": units,
-                "reason": reason,
-            }
-        )
+        self._event("close", pid=p.id, fraction=fraction, units=units, reason=reason)
         if fraction >= 1.0 - 1e-12:
             del self.s.positions[p.id]
         else:
@@ -598,8 +629,8 @@ class SimBroker:
         ):
             self._close_leg(p, price, ts, reason, conv)
         self.s.queued = [q for q in self.s.queued if q.order.symbol != symbol]
-        for q in [q for q in self.s.pending if q.order.symbol == symbol]:
-            self._drop_pending(q, reason, ts.isoformat())
+        for r in [r for r in self.s.pending if r.symbol == symbol]:
+            self._drop_pending(r, reason, ts.isoformat())
 
     # ------------------------------------------------------------ persistence
     def dump_state(self) -> str:
@@ -615,12 +646,18 @@ class SimBroker:
             peak_equity=d["peak_equity"],
             seq=d["seq"],
             positions={k: SimPosition(**v) for k, v in d["positions"].items()},
-            queued=[_Queued(q["key"], q["order_id"], Order(**q["order"])) for q in d["queued"]],
+            queued=[
+                _Queued(q["key"], q["order_id"], Order.from_dict(q["order"])) for q in d["queued"]
+            ],
             pending=[
                 _Pending(
-                    q["key"], q["order_id"], Order(**q["order"]), q["placed_time"], q["bars_active"]
+                    r["key"],
+                    r["order_id"],
+                    Order.from_dict(r["order"]),
+                    r["placed_time"],
+                    r["bars_active"],
                 )
-                for q in d.get("pending", [])
+                for r in d.get("pending", [])
             ],
             queued_closes=[(str(a), float(b), str(c)) for a, b, c in d["queued_closes"]],
             keys=d["keys"],

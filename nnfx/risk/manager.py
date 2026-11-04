@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from decimal import ROUND_FLOOR, Decimal
 
 from nnfx.config import RiskConfig
-from nnfx.engine.types import AccountState, OpenIntent, PositionView
+from nnfx.engine.types import AccountState, OpenIntent, PendingOrderIntent, PositionView
 from nnfx.instruments import InstrumentSpec
 
 # Stablecoin legs are not a directional currency bet for the per-currency cap.
@@ -26,7 +26,7 @@ EXPOSURE_EXEMPT = frozenset({"USDT", "USDC", "BUSD", "FDUSD", "DAI"})
 
 @dataclass(frozen=True)
 class SizedOrder:
-    intent: OpenIntent
+    intent: OpenIntent | PendingOrderIntent
     units: float
     risk_cash: float
     realized_risk: float
@@ -54,7 +54,7 @@ class RiskManager:
     # ----------------------------------------------------------------- sizing
     def size(
         self,
-        intent: OpenIntent,
+        intent: OpenIntent | PendingOrderIntent,
         account: AccountState,
         inst: InstrumentSpec,
         value_per_price_unit: float,

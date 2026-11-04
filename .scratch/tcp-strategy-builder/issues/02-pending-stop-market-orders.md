@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved (2f37fda + review fixes)
 
-- [ ] Engines can emit a pending-order intent and a cancel intent; existing market-entry engines are unaffected
-- [ ] A long stop fills at max(trigger, open) when the bar trades through it; a gap through the trigger fills at the open
-- [ ] If a stop-loss and a target are both inside one bar, the stop is assumed hit first
-- [ ] A pending order is cancelled when a bar closes beyond its invalidation price before it fills, and when it expires
-- [ ] In an OCO pair, the first fill cancels the other
-- [ ] Every placement, fill, cancellation and expiry is journaled; the parity test shows backtest and paper produce identical events
+- [x] Engines can emit a pending-order intent and a cancel intent; existing market-entry engines are unaffected
+- [x] A long stop fills at max(trigger, open) when the bar trades through it; a gap through the trigger fills at the open
+- [x] If a stop-loss and a target are both inside one bar, the stop is assumed hit first
+- [x] A pending order is cancelled when a bar closes beyond its invalidation price before it fills, and when it expires
+- [x] In an OCO pair, the first fill cancels the other
+- [x] Every placement, fill, cancellation and expiry is journaled; the parity test shows backtest and paper produce identical events
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

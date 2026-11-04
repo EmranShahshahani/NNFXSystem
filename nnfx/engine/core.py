@@ -15,7 +15,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 from nnfx.config import SystemConfig
 from nnfx.engine.history import SymbolHistory
@@ -61,6 +61,19 @@ class Decision:
     intents: list[Intent]
     state: EngineState
     evaluations: list[Evaluation]
+
+
+class Engine(Protocol):
+    """The pure decision contract every engine family implements (ADR 09 §2)."""
+
+    def decide(
+        self,
+        history: Mapping[str, SymbolHistory],
+        open_positions: Sequence[PositionView],
+        account_state: AccountState,
+        config: SystemConfig,
+        state: EngineState | None = None,
+    ) -> Decision: ...
 
 
 class StrategyEngine:

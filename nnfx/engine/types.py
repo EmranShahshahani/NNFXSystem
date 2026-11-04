@@ -83,15 +83,15 @@ class PositionView(Model):
 
 
 class PendingOrderView(Model):
-    """A resting stop-market order as reported by a broker."""
+    """A resting stop-market order (a Trigger) as reported by a broker."""
 
     order_id: str
     key: str
     symbol: str
     direction: int
-    trigger: float
-    # trigger + direction * buffer: the price the order is actually resting at.
     level: float
+    # level + direction * buffer: the price the order is resting at.
+    trigger: float
     stop: float
     target: float | None
     invalidation: float | None
@@ -112,8 +112,14 @@ class AccountState(Model):
     pending_orders: tuple[PendingOrderView, ...] = ()
 
 
-class OpenIntent(Model):
-    kind: Literal["open"] = "open"
+def trigger_price(level: float, direction: int, buffer: float) -> float:
+    """Where a stop-market entry rests: just beyond its level, by ``buffer``."""
+    return level + direction * buffer
+
+
+class EntryIntent(Model):
+    """What every entry intent carries, market or pending."""
+
     symbol: str
     direction: int
     leg: Leg
@@ -121,63 +127,64 @@ class OpenIntent(Model):
     entry_type: EntryType
     signal_time: str
     atr: float
-    stop_distance: float
-    target_distance: float | None
     target_fraction: float = 1.0
     risk_fraction: float
     idempotency_key: str
 
 
-class PendingOrderIntent(OpenIntent):
-    """A stop-market entry that rests until price trades through it (ADR 09 §4).
+class OpenIntent(EntryIntent):
+    """A market entry at the next bar's open, with stop and target as distances."""
 
-    The order rests at ``trigger + direction * buffer`` from the bar after it is
-    placed. Stop and target are absolute prices: a gap fill beyond the level
-    keeps them where the setup put them. ``stop_distance`` and
-    ``target_distance`` are derived from the level, so the risk manager sizes
-    the order on the planned entry. Before it fills it is cancelled when a bar
+    kind: Literal["open"] = "open"
+    stop_distance: float
+    target_distance: float | None
+
+
+class PendingOrderIntent(EntryIntent):
+    """A stop-market entry (a Trigger) resting just beyond a level (ADR 09 §4).
+
+    The order rests at ``trigger = level + direction * buffer`` from the bar
+    after it is placed. Stop and target are absolute prices: a gap fill beyond
+    the trigger keeps them where the setup put them. Sizing uses the distance
+    from the trigger to the stop. Before it fills it is cancelled when a bar
     closes beyond ``invalidation`` or after ``expires_after_bars`` bars.
     Orders sharing an ``oco_group`` cancel each other on the first fill.
     """
 
-    kind: Literal["pending"] = "pending"  # type: ignore[assignment]
-    trigger: float
+    kind: Literal["pending"] = "pending"
+    level: float
     buffer: float = 0.0
     stop: float
     target: float | None = None
     invalidation: float | None = None
     expires_after_bars: int
     oco_group: str | None = None
-    stop_distance: float = 0.0
-    target_distance: float | None = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def _distances(cls, data: object) -> object:
-        if not isinstance(data, dict):
-            return data
-        d = dict(data)
-        direction, trigger = d.get("direction"), d.get("trigger")
-        if direction not in (1, -1) or trigger is None:
-            return d
-        level = float(trigger) + direction * float(d.get("buffer", 0.0))
-        stop = d.get("stop")
-        if stop is not None:
-            if (level - float(stop)) * direction <= 0:
-                raise ValueError(f"stop {stop} must be on the losing side of the entry {level}")
-            d["stop_distance"] = abs(level - float(stop))
-        target = d.get("target")
-        if target is not None:
-            if (float(target) - level) * direction <= 0:
-                raise ValueError(f"target {target} must be beyond the entry {level}")
-            d["target_distance"] = abs(float(target) - level)
-        if int(d.get("expires_after_bars", 1)) < 1:
+    @model_validator(mode="after")
+    def _check(self) -> PendingOrderIntent:
+        if self.direction not in (1, -1):
+            raise ValueError("direction must be 1 or -1")
+        if (self.trigger - self.stop) * self.direction <= 0:
+            raise ValueError(
+                f"stop {self.stop} must be on the losing side of the entry {self.trigger}"
+            )
+        if self.target is not None and (self.target - self.trigger) * self.direction <= 0:
+            raise ValueError(f"target {self.target} must be beyond the entry {self.trigger}")
+        if self.expires_after_bars < 1:
             raise ValueError("expires_after_bars must be at least 1")
-        return d
+        return self
 
     @property
-    def level(self) -> float:
-        return self.trigger + self.direction * self.buffer
+    def trigger(self) -> float:
+        return trigger_price(self.level, self.direction, self.buffer)
+
+    @property
+    def stop_distance(self) -> float:
+        return abs(self.trigger - self.stop)
+
+    @property
+    def target_distance(self) -> float | None:
+        return None if self.target is None else abs(self.target - self.trigger)
 
 
 class CancelIntent(Model):

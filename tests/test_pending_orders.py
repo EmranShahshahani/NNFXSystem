@@ -49,7 +49,7 @@ def pending(
     key: str,
     *,
     direction: int = 1,
-    trigger: float = 105.0,
+    level: float = 105.0,
     buffer: float = 0.0,
     stop: float = 95.0,
     target: float | None = None,
@@ -67,7 +67,7 @@ def pending(
         atr=1.0,
         risk_fraction=0.01,
         idempotency_key=key,
-        trigger=trigger,
+        level=level,
         buffer=buffer,
         stop=stop,
         target=target,
@@ -119,7 +119,7 @@ def kinds(b: SimBroker) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------- fills
 def test_long_stop_fills_at_trigger_plus_buffer_when_the_bar_trades_through():
     h = bars([(100, 101, 99, 100), (100, 103, 99, 102), (102, 107, 101, 106)])
-    b, eng, _ = drive(h, {0: [pending("k", trigger=105.0, buffer=0.5, stop=95.0)]})
+    b, eng, _ = drive(h, {0: [pending("k", level=105.0, buffer=0.5, stop=95.0)]})
     assert kinds(b) == [("place", ""), ("fill", "")]
     (p,) = b.s.positions.values()
     assert p.entry_price == 105.5 and p.stop == 95.0 and p.entry_time == h.index[2].isoformat()
@@ -127,12 +127,13 @@ def test_long_stop_fills_at_trigger_plus_buffer_when_the_bar_trades_through():
     assert p.units * (105.5 - 95.0) == pytest.approx(100.0, rel=0.02)
     # The engine saw the order resting after placement, and not after the fill.
     assert [len(a.pending_orders) for a in eng.seen] == [0, 1, 0]
-    assert eng.seen[1].pending_orders[0].level == 105.5
+    resting = eng.seen[1].pending_orders[0]
+    assert (resting.level, resting.trigger) == (105.0, 105.5)
 
 
 def test_a_gap_through_the_trigger_fills_at_the_open():
     h = bars([(100, 101, 99, 100), (108, 110, 107, 109)])
-    b, _, _ = drive(h, {0: [pending("k", trigger=105.0)]})
+    b, _, _ = drive(h, {0: [pending("k", level=105.0)]})
     (p,) = b.s.positions.values()
     assert p.entry_price == 108.0
 
@@ -142,8 +143,8 @@ def test_short_stop_fills_at_min_of_trigger_and_open():
     b, _, _ = drive(
         h,
         {
-            0: [pending("a", direction=-1, trigger=96.0, stop=104.0)],
-            1: [pending("b", direction=-1, trigger=94.0, stop=104.0)],
+            0: [pending("a", direction=-1, level=96.0, stop=104.0)],
+            1: [pending("b", direction=-1, level=94.0, stop=104.0)],
         },
     )
     assert sorted(p.entry_price for p in b.s.positions.values()) == [92.0, 96.0]
@@ -151,14 +152,14 @@ def test_short_stop_fills_at_min_of_trigger_and_open():
 
 def test_stop_and_target_inside_one_bar_assume_the_stop_first():
     h = bars([(100, 101, 99, 100), (101, 106, 100, 105), (105, 112, 94, 100)])
-    b, _, _ = drive(h, {0: [pending("k", trigger=105.0, stop=95.0, target=110.0)]})
+    b, _, _ = drive(h, {0: [pending("k", level=105.0, stop=95.0, target=110.0)]})
     (t,) = b.trades
     assert t.exit_reason == "stop" and t.exit_price == 95.0
 
 
 def test_a_fill_bar_that_also_reaches_the_stop_closes_at_the_stop():
     h = bars([(100, 101, 99, 100), (100, 106, 94, 98)])
-    b, _, _ = drive(h, {0: [pending("k", trigger=105.0, stop=95.0)]})
+    b, _, _ = drive(h, {0: [pending("k", level=105.0, stop=95.0)]})
     (t,) = b.trades
     assert t.entry_price == 105.0 and t.exit_reason == "stop"
 
@@ -166,14 +167,14 @@ def test_a_fill_bar_that_also_reaches_the_stop_closes_at_the_stop():
 # --------------------------------------------------------- cancellations
 def test_a_close_beyond_invalidation_cancels_before_any_fill():
     h = bars([(100, 101, 99, 100), (100, 101, 96, 97), (97, 110, 96, 109)])
-    b, _, _ = drive(h, {0: [pending("k", trigger=105.0, stop=95.0, invalidation=98.0)]})
+    b, _, _ = drive(h, {0: [pending("k", level=105.0, stop=95.0, invalidation=98.0)]})
     assert kinds(b) == [("place", ""), ("cancel", "invalidated")]
     assert not b.s.positions
 
 
 def test_a_wick_through_invalidation_without_a_close_keeps_the_order():
     h = bars([(100, 101, 99, 100), (100, 101, 96, 99), (99, 106, 98, 105)])
-    b, _, _ = drive(h, {0: [pending("k", trigger=105.0, stop=95.0, invalidation=98.0)]})
+    b, _, _ = drive(h, {0: [pending("k", level=105.0, stop=95.0, invalidation=98.0)]})
     assert kinds(b) == [("place", ""), ("fill", "")]
 
 
@@ -201,8 +202,8 @@ def test_oco_first_fill_cancels_the_other():
         h,
         {
             0: [
-                pending("up", trigger=105.0, stop=95.0, oco="box"),
-                pending("down", direction=-1, trigger=95.0, stop=105.0, oco="box"),
+                pending("up", level=105.0, stop=95.0, oco="box"),
+                pending("down", direction=-1, level=95.0, stop=105.0, oco="box"),
             ]
         },
     )
@@ -218,6 +219,23 @@ def test_oco_first_fill_cancels_the_other():
     assert all(t.direction == 1 for t in b.trades)
 
 
+def test_oco_a_gap_at_the_open_beats_a_leg_reached_later_in_the_bar():
+    # The short is placed second but gaps through at the open: it was certainly first.
+    h = bars([(100, 101, 99, 100), (94, 106, 93, 100)])
+    b, _, _ = drive(
+        h,
+        {
+            0: [
+                pending("up", level=105.0, stop=95.0, oco="box"),
+                pending("down", direction=-1, level=95.0, stop=105.0, oco="box"),
+            ]
+        },
+    )
+    fill, cancel = b.s.events[2], b.s.events[3]
+    assert (fill["e"], fill["key"], fill["price"]) == ("fill", "down", 94.0)
+    assert (cancel["e"], cancel["key"], cancel["reason"]) == ("cancel", "up", "oco")
+
+
 def test_resubmitting_a_pending_key_is_a_duplicate_not_a_second_order():
     h = bars([(100, 101, 99, 100)] * 3)
     b, _, journal = drive(h, {0: [pending("k")], 1: [pending("k")]})
@@ -228,7 +246,7 @@ def test_resubmitting_a_pending_key_is_a_duplicate_not_a_second_order():
 
 def test_invalid_pending_orders_are_refused_at_construction():
     with pytest.raises(ValueError, match="stop"):
-        pending("k", trigger=105.0, stop=110.0)  # long stop above the entry
+        pending("k", level=105.0, stop=110.0)  # long stop above the entry
     with pytest.raises(ValueError, match="expires"):
         pending("k", expires=0)
 
@@ -236,11 +254,11 @@ def test_invalid_pending_orders_are_refused_at_construction():
 # ------------------------------------------------------- journal, parity
 SCRIPT = {
     0: [
-        pending("up", trigger=105.0, buffer=0.5, stop=95.0, target=115.0, oco="box"),
-        pending("down", direction=-1, trigger=95.0, stop=105.0, oco="box"),
+        pending("up", level=105.0, buffer=0.5, stop=95.0, target=115.0, oco="box"),
+        pending("down", direction=-1, level=95.0, stop=105.0, oco="box"),
     ],
-    3: [pending("late", trigger=130.0, expires=2)],
-    6: [pending("inv", trigger=140.0, stop=100.0, invalidation=110.0)],
+    3: [pending("late", level=130.0, expires=2)],
+    6: [pending("inv", level=140.0, stop=100.0, invalidation=110.0)],
 }
 ROWS = [
     (100, 101, 99, 100),
@@ -290,6 +308,37 @@ def test_paper_broker_restarted_every_bar_matches_the_backtest(tmp_path: Path):
     assert [{k: r[k] for k in strip} for r in journal.records("cycle")] == [
         {k: r[k] for k in strip} for r in bt_journal.records("cycle")
     ]
+
+
+def test_a_crash_between_bar_and_journal_loses_no_order_events(tmp_path: Path):
+    h = bars(ROWS)
+    state, jpath = tmp_path / "paper.json", tmp_path / "journal.jsonl"
+    eng = Scripted(SCRIPT)
+    for i in range(h.end + 1):
+        paper = PaperBroker({SYM: BTC}, CostModel.zero(), 10_000.0, state_path=state)
+        loop = TradingLoop(CFG, {SYM: BTC}, paper, Journal(jpath), engine=eng)
+        loop.feed_bar(h.at(i), {})
+        if i == 2:
+            continue  # crash: the bar (and its fill) persisted, the cycle was never journaled
+        loop.decide(h.index[i], {SYM: h.at(i)})
+    logged = [e for r in Journal(jpath).records("cycle") for e in r["orders"]]
+    assert logged == paper.s.events
+
+
+def test_paper_matches_backtest_with_real_costs(tmp_path: Path):
+    costs = CostModel.from_venue("config/venues/backtest.yaml")
+    h = bars(ROWS)
+    bt, _, _ = drive(h, SCRIPT, BacktestBroker({SYM: BTC}, costs, 10_000.0))
+    state = tmp_path / "paper.json"
+    eng = Scripted(SCRIPT)
+    for i in range(h.end + 1):
+        paper = PaperBroker({SYM: BTC}, costs, 10_000.0, state_path=state)
+        loop = TradingLoop(CFG, {SYM: BTC}, paper, Journal(), engine=eng)
+        loop.feed_bar(h.at(i), {})
+        loop.decide(h.index[i], {SYM: h.at(i)})
+    assert paper.s.events == bt.s.events
+    assert bt.trades and [t.__dict__ for t in paper.trades] == [t.__dict__ for t in bt.trades]
+    assert any(t.commission > 0 for t in bt.trades)
 
 
 def test_market_open_intents_still_fill_at_the_next_open():

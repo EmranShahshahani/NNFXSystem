@@ -20,6 +20,7 @@ from nnfx.brokers.paper import PaperBroker
 from nnfx.config import SystemConfig
 from nnfx.data.bars import BarFrame, BarFrameError
 from nnfx.data.gates import ensure_clean
+from nnfx.engine.core import Engine
 from nnfx.engine.history import SymbolHistory
 from nnfx.engine.types import EngineState
 from nnfx.harness.loop import StepReport, TradingLoop
@@ -92,8 +93,10 @@ class LiveHarness:
         expected_equity: pd.Series | None = None,
         report_dir: Path | None = None,
         run_gates: bool = True,
+        engine: Engine | None = None,
     ) -> None:
         self.config = config
+        self.engine = engine
         self.instruments = dict(instruments)
         self.symbols = sorted(symbols)
         self.bars = bars
@@ -170,7 +173,14 @@ class LiveHarness:
             report.halted = str(exc)
             return self._finish(report)
 
-        loop = TradingLoop(self.config, self.instruments, self.broker, self.journal, state=state)
+        loop = TradingLoop(
+            self.config,
+            self.instruments,
+            self.broker,
+            self.journal,
+            engine=self.engine,
+            state=state,
+        )
         last_time = pd.Timestamp(last["time"]) if last else None
         new_times = sorted(
             {t for f in frames.values() for t in f.index if last_time is None or t > last_time}

@@ -33,6 +33,21 @@ must not change behaviour while this is added.
    expiry in bars, optional OCO group) and `CancelIntent`. Fills: stop orders
    fill at max(trigger, open) for longs (gaps at the open); within a bar, if a
    stop-loss and a target are both touched, the stop is assumed first.
+   *Amendment (Strategy Builder ticket 02).* Built: stop-market orders only
+   (`PendingOrderIntent`, `CancelIntent`); limit orders are deferred until a
+   Block needs one. Naming follows the glossary: the order rests at the
+   **Trigger** = level + direction x buffer. Further rules fixed here:
+   (a) entries trigger on last price, stops keep `stop_trigger_price`;
+   (b) stop and target are absolute, so a gap fill beyond the Trigger takes
+   more than the approved risk; R is still measured against the approved
+   (planned) risk, which charges the gap to the strategy as a real loss;
+   (c) in one bar, orders that gapped through at the open fill before
+   orders reached intrabar, and within each group the earlier-placed order
+   fills first (a bar cannot tell which intrabar level came first);
+   (d) a close strictly beyond the invalidation price, or `expires_after_bars`
+   rested bars, cancels at that bar's close, after the fill attempt;
+   (e) resting orders are not yet counted by the risk manager's exposure
+   caps; ticket 06 adds them to the open-risk budget.
 5. **Legs generalise to fractions.** A position is a list of exit fractions
    (e.g. 0.30 at 2R with breakeven, 0.40 at 5R, 0.10 runner, remainder at the
    runner rule). Fractions must sum to 1; total initial risk equals the
