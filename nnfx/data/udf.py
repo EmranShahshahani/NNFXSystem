@@ -11,7 +11,8 @@ Nobitex (https://apidocs.nobitex.ir, "OHLC" under market data) serves it at
 ``https://apiv2.nobitex.ir/market/udf/history`` with symbols such as ``BTCIRT``
 and ``BTCUSDT``; IRT prices are in rials. Its daily candles are cut at Tehran
 midnight, so we always fetch hourly bars and let the data layer apply our own
-session close (doc 03 §2b). Price and traded volume come from the same venue.
+session close (doc 03 §2b). The Strategy Builder's 15-minute base
+(``timeframe="M15"``) uses resolution 15 and the same paging. Price and traded volume come from the same venue.
 
 HTTP and the sleep between requests are injected, so the feed is testable offline.
 """
@@ -31,6 +32,7 @@ from nnfx.data.feeds import HttpGet
 
 NOBITEX_URL = "https://apiv2.nobitex.ir/market/udf"
 HOUR = 3600
+RESOLUTIONS = {"M15": ("15", 900), "H1": ("60", HOUR)}
 
 
 class UdfError(RuntimeError):
@@ -66,13 +68,14 @@ def parse_history(payload: dict[str, object]) -> pd.DataFrame:
 
 
 class UdfFeed:
-    """Hourly bars from a UDF datafeed, paged by time window."""
+    """Hourly (or 15-minute) bars from a UDF datafeed, paged by time window."""
 
     def __init__(
         self,
         base_url: str,
         *,
         name: str = "udf",
+        timeframe: str = "H1",
         http_get: HttpGet | None = None,
         bars_per_request: int = 500,
         min_interval_s: float = 1.0,
@@ -81,6 +84,10 @@ class UdfFeed:
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.name = name
+        if timeframe not in RESOLUTIONS:
+            raise ValueError(f"UDF feed timeframe must be one of {tuple(RESOLUTIONS)}")
+        self.timeframe = timeframe
+        self.resolution, self.bar_seconds = RESOLUTIONS[timeframe]
         self.http_get = http_get or default_http_get
         self.bars_per_request = bars_per_request
         self.min_interval_s = min_interval_s
@@ -89,7 +96,12 @@ class UdfFeed:
 
     def url(self, symbol: str, start_s: int, end_s: int) -> str:
         q = urlencode(
-            {"symbol": udf_symbol(symbol), "resolution": "60", "from": start_s, "to": end_s}
+            {
+                "symbol": udf_symbol(symbol),
+                "resolution": self.resolution,
+                "from": start_s,
+                "to": end_s,
+            }
         )
         return f"{self.base_url}/history?{q}"
 
@@ -98,7 +110,7 @@ class UdfFeed:
         end = min(pd.Timestamp(end), now)
         lo = int(pd.Timestamp(start).timestamp())
         hi = int(end.timestamp())
-        step = self.bars_per_request * HOUR
+        step = self.bars_per_request * self.bar_seconds
         parts = []
         first = True
         for a in range(lo, hi + 1, step):
@@ -110,9 +122,11 @@ class UdfFeed:
         df = pd.concat(parts) if parts else parse_history({"s": "no_data"})
         df = df[~df.index.duplicated(keep="last")].sort_index()
         # UDF stamps bar open; our contract labels by close. Drop the forming bar.
-        df.index = pd.DatetimeIndex(df.index + pd.Timedelta(hours=1))
+        df.index = pd.DatetimeIndex(df.index + pd.Timedelta(seconds=self.bar_seconds))
         df = df[df.index <= now]
-        return BarFrame(df, symbol, timeframe="H1", volume_kind="traded", price_venue=self.name)
+        return BarFrame(
+            df, symbol, timeframe=self.timeframe, volume_kind="traded", price_venue=self.name
+        )
 
 
 def nobitex(**kwargs: object) -> UdfFeed:

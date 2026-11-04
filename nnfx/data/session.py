@@ -1,7 +1,7 @@
 """Session-close resampling: the one place a bar is ever re-timed (doc 01 §3).
 
-H1 bars (labelled by close time, UTC) are assigned to the D1 session whose
-close is the first configured session close at or after the H1 close. For
+Intraday bars (H1 or M15, labelled by close time, UTC) are assigned to the D1 session whose
+close is the first configured session close at or after the bar's close. For
 instruments with ``has_sessions=True`` any session falling on a Saturday or
 Sunday (the Sunday partial bar) is merged into the following Monday.
 Instruments with ``has_sessions=False`` close at the continuous convention
@@ -28,6 +28,7 @@ _AGG = {
     "funding": "sum",
     "spliced": "max",
 }
+_INTRADAY = {"H1": pd.Timedelta(hours=1), "M15": pd.Timedelta(minutes=15)}
 
 
 def session_close_times(close_utc: pd.DatetimeIndex, tz: str, hour: int) -> pd.DatetimeIndex:
@@ -46,8 +47,9 @@ def session_close_times(close_utc: pd.DatetimeIndex, tz: str, hour: int) -> pd.D
 
 
 def resample_to_daily(h1: BarFrame, instrument: InstrumentSpec, session: SessionConfig) -> BarFrame:
-    if h1.timeframe != "H1":
-        raise ValueError(f"resample_to_daily expects H1 input, got {h1.timeframe}")
+    bar = _INTRADAY.get(h1.timeframe)
+    if bar is None:
+        raise ValueError(f"resample_to_daily expects H1 or M15 input, got {h1.timeframe}")
     if instrument.has_sessions:
         tz, hour = session.close_tz, session.close_hour
     else:
@@ -69,11 +71,11 @@ def resample_to_daily(h1: BarFrame, instrument: InstrumentSpec, session: Session
     agg = {c: _AGG[c] for c in df.columns}
     daily = df.groupby(key).agg(agg)
     daily.index = pd.DatetimeIndex(daily.index, tz="UTC")
-    # Drop a partial final session: the last H1 bar must reach the session close.
+    # Drop a partial final session: the last intraday bar must reach the session close.
     if len(daily) and h1.index[-1] < daily.index[-1]:
         daily = daily.iloc[:-1]
     # ...and a partial first session: data must start by the previous close.
-    if len(daily) and h1.index[0] - pd.Timedelta(hours=1) > daily.index[0] - pd.Timedelta(days=1):
+    if len(daily) and h1.index[0] - bar > daily.index[0] - pd.Timedelta(days=1):
         daily = daily.iloc[1:]
     return BarFrame(
         daily,

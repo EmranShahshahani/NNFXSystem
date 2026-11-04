@@ -136,6 +136,31 @@ def gate_calendar(
     )
 
 
+_INTRADAY = {"M15": "15min", "H1": "h", "H4": "4h"}
+
+
+def gate_intraday_gaps(bars: BarFrame, instrument: InstrumentSpec) -> GateResult:
+    """Flag missing bars on an intraday grid (an exchange outage or a feed hole).
+
+    Only for continuous instruments: a session market's weekend and holiday
+    closures are not gaps, and the daily calendar gate covers them. Flag, not
+    error: venues do go down, and the resampled views aggregate what is there.
+    """
+    freq = _INTRADAY.get(bars.timeframe)
+    if freq is None or instrument.has_sessions or len(bars) < 2:
+        return GateResult("intraday_gaps", bars.symbol, True, "flag", detail="not applicable")
+    grid = pd.date_range(bars.index[0], bars.index[-1], freq=freq)
+    missing = grid.difference(bars.index)
+    return GateResult(
+        "intraday_gaps",
+        bars.symbol,
+        passed=not len(missing),
+        severity="flag",
+        timestamps=tuple(missing),
+        detail=f"{len(missing)} {bars.timeframe} bar(s) missing",
+    )
+
+
 def gate_return_outliers(bars: BarFrame, z: float = 8.0, window: int = 60) -> GateResult:
     """Flag daily returns more than ``z`` robust deviations from the trailing median."""
     c = pd.Series(bars.close, index=bars.index)
@@ -183,6 +208,7 @@ def run_gates(
         gate_positive_prices(bars),
         gate_high_low(bars),
         gate_calendar(bars, instrument, close_tz, max_missing_sessions),
+        gate_intraday_gaps(bars, instrument),
         gate_return_outliers(bars, z=outlier_z),
         *gate_volume(bars),
     ]

@@ -8,6 +8,7 @@ either unix seconds or ISO-8601 with an offset, depending on the export option.
 Export hourly bars (``1h``) and let ``resample_to_daily`` cut them at our
 session close: TradingView's own daily bar is cut wherever the data vendor
 cuts it, which is exactly the convention mismatch doc 03 §2 warns about.
+The Strategy Builder's 15-minute base imports the same way (``timeframe="M15"``).
 Indicator plot columns are dropped; every indicator is recomputed here.
 Volume on an FX chart is the vendor's tick volume, so ``volume_kind`` follows
 the instrument, never the file.
@@ -21,7 +22,7 @@ import pandas as pd
 
 from nnfx.data.bars import BarFrame, VolumeKind
 
-_TIMEFRAMES = {"H1": pd.Timedelta(hours=1)}
+_TIMEFRAMES = {"H1": pd.Timedelta(hours=1), "M15": pd.Timedelta(minutes=15)}
 
 
 def read_tradingview_csv(
@@ -34,7 +35,7 @@ def read_tradingview_csv(
 ) -> BarFrame:
     if timeframe not in _TIMEFRAMES:
         raise ValueError(
-            "export 1h bars; a TradingView daily bar is cut at the vendor's close, not ours"
+            "export 1h (or 15m) bars; a TradingView daily bar is cut at the vendor's close, not ours"
         )
     df = pd.read_csv(path)
     cols = {c.lower().strip(): c for c in df.columns}

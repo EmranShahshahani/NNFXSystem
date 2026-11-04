@@ -30,10 +30,18 @@ def make_exchange(exchange_id: str, **kwargs: Any) -> OhlcvExchange:
     return ex
 
 
+# Our timeframe name -> (ccxt timeframe, bar length in ms).
+TIMEFRAMES = {"M15": ("15m", 900_000), "H1": ("1h", 3_600_000)}
+
+
 class CcxtFeed:
-    def __init__(self, exchange: OhlcvExchange, page: int = 1000) -> None:
+    def __init__(self, exchange: OhlcvExchange, page: int = 1000, timeframe: str = "H1") -> None:
+        if timeframe not in TIMEFRAMES:
+            raise ValueError(f"ccxt feed timeframe must be one of {tuple(TIMEFRAMES)}")
         self.exchange = exchange
         self.page = page
+        self.timeframe = timeframe
+        self.ccxt_timeframe, self.bar_ms = TIMEFRAMES[timeframe]
 
     @property
     def name(self) -> str:
@@ -44,11 +52,11 @@ class CcxtFeed:
         end_ms = int(pd.Timestamp(end).timestamp() * 1000)
         rows: list[list[float]] = []
         while since <= end_ms:
-            batch = self.exchange.fetch_ohlcv(symbol, "1h", since, self.page)
+            batch = self.exchange.fetch_ohlcv(symbol, self.ccxt_timeframe, since, self.page)
             if not batch:
                 break
             rows += [r for r in batch if r[0] <= end_ms]
-            nxt = int(batch[-1][0]) + 3_600_000
+            nxt = int(batch[-1][0]) + self.bar_ms
             if nxt <= since:
                 break
             since = nxt
@@ -56,8 +64,10 @@ class CcxtFeed:
             rows, columns=["ts", "open", "high", "low", "close", "volume"]
         ).drop_duplicates("ts")
         # ccxt timestamps are bar *open*; our contract labels by close.
-        idx = pd.to_datetime(df.pop("ts"), unit="ms", utc=True) + pd.Timedelta(hours=1)
+        idx = pd.to_datetime(df.pop("ts"), unit="ms", utc=True) + pd.Timedelta(
+            milliseconds=self.bar_ms
+        )
         df.index = pd.DatetimeIndex(idx)
         return BarFrame(
-            df, symbol, timeframe="H1", volume_kind="traded", price_venue=self.exchange.id
+            df, symbol, timeframe=self.timeframe, volume_kind="traded", price_venue=self.exchange.id
         )

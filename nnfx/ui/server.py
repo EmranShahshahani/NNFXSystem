@@ -149,7 +149,7 @@ class App:
             f = read_bars_csv(
                 self._safe_path(ds["path"]), sym, timeframe=tf, volume_kind=spec.volume_kind
             )
-            if tf == "H1":
+            if tf in ("H1", "M15"):
                 f = resample_to_daily(f, spec, cfg.session)
             frames[sym], inst[sym] = f, spec
         if not frames:

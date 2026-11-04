@@ -28,7 +28,7 @@ def _load(
     args: argparse.Namespace, cfg: SystemConfig, symbol: str, path: str, inst: InstrumentSpec
 ) -> BarFrame:
     f = read_bars_csv(path, symbol, timeframe=args.timeframe, volume_kind=inst.volume_kind)
-    if args.timeframe == "H1":
+    if args.timeframe in ("H1", "M15"):
         f = resample_to_daily(f, inst, cfg.session)
     return f
 
@@ -39,9 +39,9 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--venue", default="config/venues/backtest.yaml")
     p.add_argument(
         "--timeframe",
-        choices=("D1", "H1"),
+        choices=("D1", "H1", "M15"),
         default="D1",
-        help="H1 input is resampled under the configured session close",
+        help="H1/M15 input is resampled under the configured session close",
     )
     p.add_argument("--csv", action="append", required=True, metavar="SYMBOL=PATH")
 
@@ -197,6 +197,9 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     if args.feed == "dukascopy":
         from nnfx.data.dukascopy import DukascopyFeed
 
+        if args.timeframe != "H1":
+            raise SystemExit("--feed dukascopy serves H1 only")
+
         feed_name = "dukascopy"
         frame = DukascopyFeed(Path(args.cache) / "dukascopy").bars(args.symbol, start, end)
     elif args.feed in ("nobitex", "udf"):
@@ -204,18 +207,22 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
         if args.feed == "udf" and not args.base_url:
             raise SystemExit("--feed udf needs --base-url (the datafeed root serving /history)")
-        uf = nobitex() if args.feed == "nobitex" else UdfFeed(args.base_url, name=args.venue_name)
+        tf = args.timeframe
+        uf = (
+            nobitex(timeframe=tf)
+            if args.feed == "nobitex"
+            else UdfFeed(args.base_url, name=args.venue_name, timeframe=tf)
+        )
         feed_name = uf.name
         frame = uf.bars(args.symbol, start, end)
     else:
         from nnfx.data.ccxt_feed import CcxtFeed, make_exchange
 
-        cf = CcxtFeed(make_exchange(args.exchange))
+        cf = CcxtFeed(make_exchange(args.exchange), timeframe=args.timeframe)
         feed_name = cf.name
         frame = cf.bars(args.symbol, start, end)
-    out = (
-        Path(args.cache) / feed_name / (args.symbol.replace("/", "_").replace(":", "_") + ".H1.csv")
-    )
+    safe = args.symbol.replace("/", "_").replace(":", "_")
+    out = Path(args.cache) / feed_name / f"{safe}.{frame.timeframe}.csv"
     write_bars_csv(frame, out)
     status = "skipped (--no-manifest)" if args.no_manifest else record_or_verify(feed_name, frame)
     print(f"{frame}: cached at {out}; manifest {status}")
@@ -593,7 +600,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.set_defaults(fn=cmd_live)
 
     p = sub.add_parser(
-        "fetch", help="fetch H1 history into the cache and write/verify its manifest"
+        "fetch", help="fetch H1 (or M15) history into the cache and write/verify its manifest"
+    )
+    p.add_argument(
+        "--timeframe",
+        choices=("H1", "M15"),
+        default="H1",
+        help="M15 is the Strategy Builder's intraday base; higher timeframes are resampled",
     )
     p.add_argument("--feed", choices=("dukascopy", "ccxt", "nobitex", "udf"), required=True)
     p.add_argument("--exchange", default="binance")
