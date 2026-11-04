@@ -44,6 +44,10 @@ class PaperBroker(SimBroker):
         super().close(position_id, fraction, reason)
         self._persist()
 
+    def cancel(self, order_key: str, reason: str) -> None:
+        super().cancel(order_key, reason)
+        self._persist()
+
     def process_bar(
         self, symbol: str, ts: pd.Timestamp, o: float, h: float, lo: float, c: float, **kw: Any
     ) -> None:

@@ -8,9 +8,9 @@ harness data bug - which is exactly what the parity harness tests for.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
-from typing import Any
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field, replace
+from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
@@ -19,10 +19,32 @@ from nnfx.brokers.sim import Order, SimBroker
 from nnfx.config import SystemConfig
 from nnfx.engine.core import Decision, Evaluation, StrategyEngine
 from nnfx.engine.history import SymbolHistory
-from nnfx.engine.types import CloseIntent, EngineState, ModifyIntent, OpenIntent
+from nnfx.engine.types import (
+    AccountState,
+    CancelIntent,
+    CloseIntent,
+    EngineState,
+    ModifyIntent,
+    OpenIntent,
+    PendingOrderIntent,
+    PositionView,
+)
 from nnfx.instruments import InstrumentSpec
 from nnfx.journal.journal import Journal
 from nnfx.risk.manager import RiskManager, SizedOrder
+
+
+class Engine(Protocol):
+    """The pure decision contract every engine family implements (ADR 09 §2)."""
+
+    def decide(
+        self,
+        history: Mapping[str, SymbolHistory],
+        open_positions: Sequence[PositionView],
+        account_state: AccountState,
+        config: SystemConfig,
+        state: EngineState | None = None,
+    ) -> Decision: ...
 
 
 @dataclass
@@ -33,6 +55,7 @@ class StepReport:
     rejected: list[dict[str, Any]] = field(default_factory=list)
     closes: list[dict[str, Any]] = field(default_factory=list)
     modifies: list[dict[str, Any]] = field(default_factory=list)
+    cancels: list[dict[str, Any]] = field(default_factory=list)
 
 
 def bar_kwargs(h: SymbolHistory, frame_cols: Mapping[str, np.ndarray], i: int) -> dict[str, Any]:
@@ -65,16 +88,18 @@ class TradingLoop:
         instruments: dict[str, InstrumentSpec],
         broker: SimBroker,
         journal: Journal | None = None,
-        engine: StrategyEngine | None = None,
+        engine: Engine | None = None,
         state: EngineState | None = None,
     ) -> None:
         self.config = config
         self.instruments = instruments
         self.broker = broker
         self.journal = journal
-        self.engine = engine or StrategyEngine()
+        self.engine: Engine = engine or StrategyEngine()
         self.risk = RiskManager(config.risk)
         self.state = state or EngineState()
+        # Broker events up to here belong to earlier cycles.
+        self._event_mark = len(broker.s.events)
 
     def feed_bar(self, h: SymbolHistory, extras: Mapping[str, np.ndarray]) -> None:
         i = h.end
@@ -108,7 +133,10 @@ class TradingLoop:
             elif isinstance(intent, ModifyIntent):
                 self.broker.modify_stop(intent.position_id, intent.stop, intent.target)
                 report.modifies.append(intent.model_dump(mode="json"))
-            elif isinstance(intent, OpenIntent):
+            elif isinstance(intent, CancelIntent):
+                self.broker.cancel(intent.order_key, intent.reason)
+                report.cancels.append(intent.model_dump(mode="json"))
+            elif isinstance(intent, OpenIntent):  # market entries and pending orders
                 self._open(
                     intent,
                     ts,
@@ -120,6 +148,8 @@ class TradingLoop:
                     report,
                 )
         self.state = decision.state
+        orders = self.broker.s.events[self._event_mark :]
+        self._event_mark = len(self.broker.s.events)
         if self.journal is not None:
             # One atomic line per step: a crash can never leave half a step journaled.
             self.journal.append(
@@ -131,6 +161,8 @@ class TradingLoop:
                     "positions": self.broker.positions(),
                     "submitted": report.submitted,
                     "rejected": report.rejected,
+                    # Placements, fills, cancellations, expiries and closes since the last cycle.
+                    "orders": orders,
                     "broker_event_seq": len(self.broker.s.events),
                     "equity": round(self.broker.equity(), 10),
                 }
@@ -173,22 +205,31 @@ class TradingLoop:
             return
         approved.append(sized.order)
         o = sized.order
-        res = self.broker.submit(
-            Order(
-                symbol=intent.symbol,
-                direction=intent.direction,
-                units=o.units,
-                leg=intent.leg,
-                entry_type=intent.entry_type,
-                signal_time=intent.signal_time,
-                atr=intent.atr,
-                stop_distance=intent.stop_distance,
-                target_distance=intent.target_distance,
-                target_fraction=intent.target_fraction,
-                risk_cash=o.realized_risk,
-            ),
-            intent.idempotency_key,
+        order = Order(
+            symbol=intent.symbol,
+            direction=intent.direction,
+            units=o.units,
+            leg=intent.leg,
+            entry_type=intent.entry_type,
+            signal_time=intent.signal_time,
+            atr=intent.atr,
+            stop_distance=intent.stop_distance,
+            target_distance=intent.target_distance,
+            target_fraction=intent.target_fraction,
+            risk_cash=o.realized_risk,
         )
+        if isinstance(intent, PendingOrderIntent):
+            order = replace(
+                order,
+                trigger=intent.trigger,
+                buffer=intent.buffer,
+                stop_price=intent.stop,
+                target_price=intent.target,
+                invalidation=intent.invalidation,
+                expires_after_bars=intent.expires_after_bars,
+                oco_group=intent.oco_group,
+            )
+        res = self.broker.submit(order, intent.idempotency_key)
         report.submitted.append(
             {**rec, "status": res.status, "order_id": res.order_id, "units": o.units}
         )

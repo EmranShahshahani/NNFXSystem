@@ -8,7 +8,14 @@ Per bar, for one symbol:
 2. **intrabar** - stops trigger on last or mark price per
    ``InstrumentSpec.stop_trigger_price``; targets on last price. If both are
    touched in one bar the stop is assumed first (conservative).
-3. **close** - carry accrues (swap or funding, by capability) and positions are
+   Pending stop-market orders (ADR 09 §4) placed at an earlier decision fill
+   here: a long at max(level, open), a short at min(level, open), as stop
+   orders with stop slippage. A position opened this way is checked against
+   its stop and target in the same bar, stop first. Orders in one OCO group
+   are tried in placement order; the first fill cancels the rest.
+3. **close** - an unfilled pending order is cancelled when the bar closes
+   beyond its invalidation price, or when it has rested its
+   ``expires_after_bars`` bars. Carry accrues (swap or funding, by capability) and positions are
    marked to market.
 
 Every order carries an idempotency key; resubmitting a key returns the original
@@ -25,7 +32,7 @@ from typing import Any, Literal, Protocol
 import pandas as pd
 
 from nnfx.brokers.costs import CostModel
-from nnfx.engine.types import AccountState, EntryType, Leg, PositionView
+from nnfx.engine.types import AccountState, EntryType, Leg, PendingOrderView, PositionView
 from nnfx.instruments import InstrumentSpec
 
 ConversionFn = Callable[[str, pd.Timestamp], float]
@@ -44,6 +51,19 @@ class Order:
     target_distance: float | None
     target_fraction: float
     risk_cash: float
+    # Pending stop-market orders only; a market order leaves these unset.
+    trigger: float | None = None
+    buffer: float = 0.0
+    stop_price: float | None = None
+    target_price: float | None = None
+    invalidation: float | None = None
+    expires_after_bars: int = 0
+    oco_group: str | None = None
+
+    @property
+    def level(self) -> float:
+        assert self.trigger is not None
+        return self.trigger + self.direction * self.buffer
 
 
 @dataclass(frozen=True)
@@ -63,6 +83,7 @@ class Broker(Protocol):
         self, position_id: str, new_stop: float, new_target: float | None = None
     ) -> None: ...
     def close(self, position_id: str, fraction: float = 1.0, reason: str = "") -> None: ...
+    def cancel(self, order_key: str, reason: str) -> None: ...
 
 
 @dataclass
@@ -146,12 +167,41 @@ class _Queued:
 
 
 @dataclass
+class _Pending:
+    key: str
+    order_id: str
+    order: Order
+    placed_time: str
+    bars_active: int = 0
+
+    def view(self) -> PendingOrderView:
+        o = self.order
+        assert o.trigger is not None and o.stop_price is not None
+        return PendingOrderView(
+            order_id=self.order_id,
+            key=self.key,
+            symbol=o.symbol,
+            direction=o.direction,
+            trigger=o.trigger,
+            level=o.level,
+            stop=o.stop_price,
+            target=o.target_price,
+            invalidation=o.invalidation,
+            expires_after_bars=o.expires_after_bars,
+            bars_active=self.bars_active,
+            oco_group=o.oco_group,
+            placed_time=self.placed_time,
+        )
+
+
+@dataclass
 class SimState:
     balance: float
     peak_equity: float
     seq: int = 0
     positions: dict[str, SimPosition] = field(default_factory=dict)
     queued: list[_Queued] = field(default_factory=list)
+    pending: list[_Pending] = field(default_factory=list)
     queued_closes: list[tuple[str, float, str]] = field(default_factory=list)
     keys: dict[str, str] = field(default_factory=dict)
     last_close: dict[str, float] = field(default_factory=dict)
@@ -206,6 +256,7 @@ class SimBroker:
             recent_exits=frozenset(
                 sym for sym, t in self.s.exit_bar.items() if t == self.s.last_bar.get(sym)
             ),
+            pending_orders=tuple(q.view() for q in self.s.pending),
         )
 
     def value_per_price_unit(self, symbol: str, ts: pd.Timestamp) -> float:
@@ -222,8 +273,20 @@ class SimBroker:
         self.s.seq += 1
         oid = f"{order.symbol}#{self.s.seq}"
         self.s.keys[idempotency_key] = oid
-        self.s.queued.append(_Queued(idempotency_key, oid, order))
+        if order.trigger is None:
+            self.s.queued.append(_Queued(idempotency_key, oid, order))
+            return OrderResult("accepted", oid, idempotency_key)
+        placed = self.s.last_bar.get(order.symbol, "")
+        self.s.pending.append(_Pending(idempotency_key, oid, order, placed))
+        self._event("place", key=idempotency_key, order_id=oid, level=order.level, time=placed)
         return OrderResult("accepted", oid, idempotency_key)
+
+    def cancel(self, order_key: str, reason: str) -> None:
+        """Cancel a resting pending order; unknown or already-filled keys are a no-op."""
+        for q in self.s.pending:
+            if q.key == order_key:
+                self._drop_pending(q, reason, self.s.last_bar.get(q.order.symbol, ""))
+                return
 
     def modify_stop(
         self, position_id: str, new_stop: float, new_target: float | None = None
@@ -240,6 +303,90 @@ class SimBroker:
             self.s.queued_closes.append((position_id, fraction, reason))
 
     # -------------------------------------------------------------- internals
+    def _event(self, kind: str, **fields: Any) -> None:
+        self.s.events.append({"n": len(self.s.events) + 1, "e": kind, **fields})
+
+    def _drop_pending(self, q: _Pending, reason: str, time: str) -> None:
+        self.s.pending.remove(q)
+        self._event("cancel", key=q.key, order_id=q.order_id, reason=reason, time=time)
+
+    def _open_position(
+        self,
+        key: str,
+        oid: str,
+        od: Order,
+        px: float,
+        ts: pd.Timestamp,
+        conv: float,
+        hs: float,
+        sl: float,
+    ) -> SimPosition:
+        inst = self.instruments[od.symbol]
+        vp = self._vppu(od.symbol) * conv
+        if od.stop_price is not None:
+            stop, target = od.stop_price, od.target_price
+        else:
+            stop = px - od.direction * od.stop_distance
+            target = None if od.target_distance is None else px + od.direction * od.target_distance
+        p = SimPosition(
+            id=oid,
+            symbol=od.symbol,
+            direction=od.direction,
+            units=od.units,
+            entry_price=px,
+            entry_time=ts.isoformat(),
+            stop=stop,
+            initial_stop=stop,
+            target=target,
+            target_fraction=od.target_fraction,
+            leg=od.leg,
+            entry_atr=od.atr,
+            signal_time=od.signal_time,
+            entry_type=od.entry_type,
+            risk_cash=od.risk_cash,
+            order_key=key,
+            commission=self.costs.commission(inst, od.units, px, conv),
+            spread_cost=hs * od.units * vp,
+            slippage_cost=sl * od.units * vp,
+        )
+        self.s.balance -= p.commission
+        self.s.positions[p.id] = p
+        return p
+
+    def _fill_pending(
+        self, symbol: str, ts: pd.Timestamp, o: float, h: float, lo: float, conv: float
+    ) -> None:
+        inst = self.instruments[symbol]
+        for q in [q for q in self.s.pending if q.order.symbol == symbol]:
+            if q not in self.s.pending:
+                continue  # cancelled by an OCO sibling's fill earlier in this bar
+            od = q.order
+            lvl, d = od.level, od.direction
+            if (o - lvl) * d >= 0:
+                ref = o  # gapped through the level: fills at the open
+            elif (h >= lvl) if d > 0 else (lo <= lvl):
+                ref = lvl
+            else:
+                continue
+            hs = self.costs.half_spread(inst, ref, ref == o)
+            sl = self.costs.slippage(inst, ref, True)
+            px = ref + d * (hs + sl)
+            p = self._open_position(q.key, q.order_id, od, px, ts, conv, hs, sl)
+            self.s.pending.remove(q)
+            self._event("fill", pid=p.id, key=q.key, units=p.units, price=px, time=ts.isoformat())
+            if od.oco_group is not None:
+                for other in [x for x in self.s.pending if x.order.oco_group == od.oco_group]:
+                    self._drop_pending(other, "oco", ts.isoformat())
+
+    def _age_pending(self, symbol: str, ts: pd.Timestamp, c: float) -> None:
+        for q in [q for q in self.s.pending if q.order.symbol == symbol]:
+            od = q.order
+            q.bars_active += 1
+            if od.invalidation is not None and (c - od.invalidation) * od.direction < 0:
+                self._drop_pending(q, "invalidated", ts.isoformat())
+            elif q.bars_active >= od.expires_after_bars:
+                self._drop_pending(q, "expired", ts.isoformat())
+
     def _vppu(self, symbol: str) -> float:
         return float(self.instruments[symbol].value_per_price_unit)
 
@@ -385,42 +532,12 @@ class SimBroker:
             hs = self.costs.half_spread(inst, o, True)
             sl = self.costs.slippage(inst, o, False)
             px = o + od.direction * (hs + sl)
-            vp = self._vppu(symbol) * conv
-            p = SimPosition(
-                id=q.order_id,
-                symbol=symbol,
-                direction=od.direction,
-                units=od.units,
-                entry_price=px,
-                entry_time=ts.isoformat(),
-                stop=px - od.direction * od.stop_distance,
-                initial_stop=px - od.direction * od.stop_distance,
-                target=None
-                if od.target_distance is None
-                else px + od.direction * od.target_distance,
-                target_fraction=od.target_fraction,
-                leg=od.leg,
-                entry_atr=od.atr,
-                signal_time=od.signal_time,
-                entry_type=od.entry_type,
-                risk_cash=od.risk_cash,
-                order_key=q.key,
-                commission=self.costs.commission(inst, od.units, px, conv),
-                spread_cost=hs * od.units * vp,
-                slippage_cost=sl * od.units * vp,
-            )
-            self.s.balance -= p.commission
-            self.s.positions[p.id] = p
-            self.s.events.append(
-                {
-                    "n": len(self.s.events) + 1,
-                    "e": "fill",
-                    "pid": p.id,
-                    "key": q.key,
-                    "units": p.units,
-                }
-            )
+            p = self._open_position(q.key, q.order_id, od, px, ts, conv, hs, sl)
+            self._event("fill", pid=p.id, key=q.key, units=p.units)
         self.s.queued = keepq
+
+        # 1d. pending stop-market orders: gap at the open, else through the level
+        self._fill_pending(symbol, ts, o, h, lo, conv)
 
         # 2. intrabar stops (last or mark) and targets (last)
         use_mark = inst.stop_trigger_price == "mark"
@@ -445,7 +562,10 @@ class SimBroker:
                 px, hs, sl = self._exit_fill(p, p.target, stop=False, at_open=False)
                 self._target(p, px, ts, conv, hs, sl)
 
-        # 3. carry and mark-to-market at the close
+        # 3. pending orders still resting: invalidation and expiry at the close
+        self._age_pending(symbol, ts, c)
+
+        # carry and mark-to-market at the close
         weekday = int(ts.weekday())
         for p in mine():
             notional = p.units * c * self._vppu(symbol) * conv
@@ -478,6 +598,8 @@ class SimBroker:
         ):
             self._close_leg(p, price, ts, reason, conv)
         self.s.queued = [q for q in self.s.queued if q.order.symbol != symbol]
+        for q in [q for q in self.s.pending if q.order.symbol == symbol]:
+            self._drop_pending(q, reason, ts.isoformat())
 
     # ------------------------------------------------------------ persistence
     def dump_state(self) -> str:
@@ -494,6 +616,12 @@ class SimBroker:
             seq=d["seq"],
             positions={k: SimPosition(**v) for k, v in d["positions"].items()},
             queued=[_Queued(q["key"], q["order_id"], Order(**q["order"])) for q in d["queued"]],
+            pending=[
+                _Pending(
+                    q["key"], q["order_id"], Order(**q["order"]), q["placed_time"], q["bars_active"]
+                )
+                for q in d.get("pending", [])
+            ],
             queued_closes=[(str(a), float(b), str(c)) for a, b, c in d["queued_closes"]],
             keys=d["keys"],
             last_close=d["last_close"],

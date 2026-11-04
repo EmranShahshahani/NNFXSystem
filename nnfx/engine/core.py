@@ -22,12 +22,14 @@ from nnfx.engine.history import SymbolHistory
 from nnfx.engine.types import (
     TRADE_PHASES,
     AccountState,
+    CancelIntent,
     CloseIntent,
     EngineState,
     EntryType,
     Leg,
     ModifyIntent,
     OpenIntent,
+    PendingOrderIntent,
     PendingSetup,
     Phase,
     PositionView,
@@ -35,7 +37,7 @@ from nnfx.engine.types import (
     idempotency_key,
 )
 
-Intent = OpenIntent | CloseIntent | ModifyIntent
+Intent = OpenIntent | PendingOrderIntent | CancelIntent | CloseIntent | ModifyIntent
 EPS = 1e-12
 
 
