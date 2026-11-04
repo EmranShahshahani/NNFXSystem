@@ -1,4 +1,7 @@
-"""Session-close resampling: the one place a bar is ever re-timed (doc 01 §3).
+"""Session-close resampling (doc 01 §3).
+
+This module and ``timeframes`` (which builds H1/H4/W1 views on top of it) are
+the only places a bar is ever re-timed (ADR 02 §3.1).
 
 Intraday bars (H1 or M15, labelled by close time, UTC) are assigned to the D1 session whose
 close is the first configured session close at or after the bar's close. For
@@ -13,7 +16,7 @@ from __future__ import annotations
 import pandas as pd
 
 from nnfx.config import SessionConfig
-from nnfx.data.bars import BarFrame
+from nnfx.data.bars import AGGREGATION, BASE_TIMEFRAMES, TIMEFRAMES, BarFrame
 from nnfx.instruments import InstrumentSpec
 
 _AGG = {
@@ -46,16 +49,32 @@ def session_close_times(close_utc: pd.DatetimeIndex, tz: str, hour: int) -> pd.D
     return pd.DatetimeIndex(out).tz_convert("UTC")
 
 
-def resample_to_daily(h1: BarFrame, instrument: InstrumentSpec, session: SessionConfig) -> BarFrame:
-    bar = _INTRADAY.get(h1.timeframe)
-    if bar is None:
-        raise ValueError(f"resample_to_daily expects H1 or M15 input, got {h1.timeframe}")
+def trim_partial_ends(out: pd.DataFrame, base: BarFrame, bucket: pd.Timedelta) -> pd.DataFrame:
+    """Drop the first and last buckets unless ``base`` covers them in full.
+
+    ``out`` is indexed by bucket close; a bucket of length ``bucket`` is whole at
+    the end when the last base bar reaches its close, and at the start when the
+    first base bar opens by the bucket's open.
+    """
+    if len(out) and base.index[-1] < out.index[-1]:
+        out = out.iloc[:-1]
+    bar_len = TIMEFRAMES[base.timeframe]
+    if len(out) and base.index[0] - bar_len > out.index[0] - bucket:
+        out = out.iloc[1:]
+    return out
+
+
+def resample_to_daily(
+    base: BarFrame, instrument: InstrumentSpec, session: SessionConfig
+) -> BarFrame:
+    if base.timeframe not in BASE_TIMEFRAMES:
+        raise ValueError(f"resample_to_daily expects H1 or M15 input, got {base.timeframe}")
     if instrument.has_sessions:
         tz, hour = session.close_tz, session.close_hour
     else:
         tz, hour = session.continuous_close_tz, session.continuous_close_hour
-    df = h1.df
-    key = session_close_times(h1.index, tz, hour)
+    df = base.df
+    key = session_close_times(base.index, tz, hour)
     if instrument.has_sessions:
         # Session date = local date just before the close instant.
         sess_date = (key.tz_convert(tz) - pd.Timedelta(seconds=1)).weekday
@@ -68,20 +87,16 @@ def resample_to_daily(h1: BarFrame, instrument: InstrumentSpec, session: Session
                 tz, ambiguous=True, nonexistent="shift_forward"
             )
             key = pd.DatetimeIndex(rolled).tz_convert("UTC")
-    agg = {c: _AGG[c] for c in df.columns}
+    agg = {c: AGGREGATION[c] for c in df.columns}
     daily = df.groupby(key).agg(agg)
     daily.index = pd.DatetimeIndex(daily.index, tz="UTC")
-    # Drop a partial final session: the last intraday bar must reach the session close.
-    if len(daily) and h1.index[-1] < daily.index[-1]:
-        daily = daily.iloc[:-1]
-    # ...and a partial first session: data must start by the previous close.
-    if len(daily) and h1.index[0] - bar > daily.index[0] - pd.Timedelta(days=1):
-        daily = daily.iloc[1:]
+    # Drop partial first and last sessions.
+    daily = trim_partial_ends(daily, base, pd.Timedelta(days=1))
     return BarFrame(
         daily,
-        h1.symbol,
+        base.symbol,
         timeframe="D1",
-        volume_kind=h1.volume_kind,
-        price_venue=h1.price_venue,
-        volume_venue=h1.volume_venue,
+        volume_kind=base.volume_kind,
+        price_venue=base.price_venue,
+        volume_venue=base.volume_venue,
     )

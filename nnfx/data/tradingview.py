@@ -20,9 +20,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from nnfx.data.bars import BarFrame, VolumeKind
+from nnfx.data.bars import BASE_TIMEFRAMES, TIMEFRAMES, BarFrame, VolumeKind
 
-_TIMEFRAMES = {"H1": pd.Timedelta(hours=1), "M15": pd.Timedelta(minutes=15)}
+_TIMEFRAMES = {tf: TIMEFRAMES[tf] for tf in BASE_TIMEFRAMES}
 
 
 def read_tradingview_csv(

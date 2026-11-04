@@ -13,7 +13,7 @@ import pandas as pd
 
 from nnfx.brokers.costs import CostModel
 from nnfx.config import SlotSpec, SystemConfig, load_system_config
-from nnfx.data.bars import BarFrame
+from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.gates import run_gates
 from nnfx.data.session import resample_to_daily
@@ -28,7 +28,7 @@ def _load(
     args: argparse.Namespace, cfg: SystemConfig, symbol: str, path: str, inst: InstrumentSpec
 ) -> BarFrame:
     f = read_bars_csv(path, symbol, timeframe=args.timeframe, volume_kind=inst.volume_kind)
-    if args.timeframe in ("H1", "M15"):
+    if args.timeframe in BASE_TIMEFRAMES:
         f = resample_to_daily(f, inst, cfg.session)
     return f
 
@@ -39,7 +39,7 @@ def _add_common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--venue", default="config/venues/backtest.yaml")
     p.add_argument(
         "--timeframe",
-        choices=("D1", "H1", "M15"),
+        choices=("D1", *BASE_TIMEFRAMES),
         default="D1",
         help="H1/M15 input is resampled under the configured session close",
     )
@@ -604,7 +604,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     p.add_argument(
         "--timeframe",
-        choices=("H1", "M15"),
+        choices=BASE_TIMEFRAMES,
         default="H1",
         help="M15 is the Strategy Builder's intraday base; higher timeframes are resampled",
     )

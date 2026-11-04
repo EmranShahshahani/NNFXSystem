@@ -11,6 +11,8 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Broker**: executes intents. BacktestBroker (simulated), PaperBroker (simulated, persistent), live adapters (not built).
 - **Trial**: one evaluated configuration on one data segment; counted in the research log.
 - **Holdout**: the data segment opened once, ever, per market.
+- **Base Timeframe**: the one intraday timeframe a feed delivers (M15 or H1); every higher timeframe is resampled from it.
+- **Timeframe View**: a higher-timeframe frame (H1, H4, D1, W1) built from the Base Timeframe. A bar reads a view only "as of" its own close, so it sees only higher bars already closed.
 - **Pre-registration**: a frozen file fixing a hypothesis and its trial budget before results are seen.
 
 ## Strategy Builder

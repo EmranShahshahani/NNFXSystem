@@ -12,7 +12,7 @@ from typing import Any, Protocol
 
 import pandas as pd
 
-from nnfx.data.bars import BarFrame
+from nnfx.data.bars import TIMEFRAMES, BarFrame
 
 
 class OhlcvExchange(Protocol):
@@ -30,18 +30,19 @@ def make_exchange(exchange_id: str, **kwargs: Any) -> OhlcvExchange:
     return ex
 
 
-# Our timeframe name -> (ccxt timeframe, bar length in ms).
-TIMEFRAMES = {"M15": ("15m", 900_000), "H1": ("1h", 3_600_000)}
+# Our base timeframes -> ccxt timeframe names.
+CCXT_TIMEFRAMES = {"M15": "15m", "H1": "1h"}
 
 
 class CcxtFeed:
     def __init__(self, exchange: OhlcvExchange, page: int = 1000, timeframe: str = "H1") -> None:
-        if timeframe not in TIMEFRAMES:
-            raise ValueError(f"ccxt feed timeframe must be one of {tuple(TIMEFRAMES)}")
+        if timeframe not in CCXT_TIMEFRAMES:
+            raise ValueError(f"ccxt feed timeframe must be one of {tuple(CCXT_TIMEFRAMES)}")
         self.exchange = exchange
         self.page = page
         self.timeframe = timeframe
-        self.ccxt_timeframe, self.bar_ms = TIMEFRAMES[timeframe]
+        self.ccxt_timeframe = CCXT_TIMEFRAMES[timeframe]
+        self.bar_ms = int(TIMEFRAMES[timeframe].total_seconds() * 1000)
 
     @property
     def name(self) -> str:

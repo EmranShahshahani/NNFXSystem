@@ -15,7 +15,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from nnfx.data.bars import BarFrame
+from nnfx.data.bars import TIMEFRAMES, BarFrame
 from nnfx.instruments import InstrumentSpec
 
 Severity = Literal["error", "flag"]
@@ -136,18 +136,15 @@ def gate_calendar(
     )
 
 
-_INTRADAY = {"M15": "15min", "H1": "h", "H4": "4h"}
-
-
 def gate_intraday_gaps(bars: BarFrame, instrument: InstrumentSpec) -> GateResult:
     """Flag missing bars on an intraday grid (an exchange outage or a feed hole).
 
     Only for continuous instruments: a session market's weekend and holiday
-    closures are not gaps, and the daily calendar gate covers them. Flag, not
+    closures are not gaps; for those only the daily calendar gate (on D1) runs. Flag, not
     error: venues do go down, and the resampled views aggregate what is there.
     """
-    freq = _INTRADAY.get(bars.timeframe)
-    if freq is None or instrument.has_sessions or len(bars) < 2:
+    freq = TIMEFRAMES.get(bars.timeframe)
+    if freq is None or freq >= pd.Timedelta(days=1) or instrument.has_sessions or len(bars) < 2:
         return GateResult("intraday_gaps", bars.symbol, True, "flag", detail="not applicable")
     grid = pd.date_range(bars.index[0], bars.index[-1], freq=freq)
     missing = grid.difference(bars.index)

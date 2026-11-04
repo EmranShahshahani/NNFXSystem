@@ -26,13 +26,14 @@ from urllib.parse import urlencode
 
 import pandas as pd
 
-from nnfx.data.bars import BarFrame
+from nnfx.data.bars import TIMEFRAMES, BarFrame
 from nnfx.data.dukascopy import default_http_get
 from nnfx.data.feeds import HttpGet
 
 NOBITEX_URL = "https://apiv2.nobitex.ir/market/udf"
 HOUR = 3600
-RESOLUTIONS = {"M15": ("15", 900), "H1": ("60", HOUR)}
+# Our base timeframes -> UDF resolution (minutes).
+RESOLUTIONS = {"M15": "15", "H1": "60"}
 
 
 class UdfError(RuntimeError):
@@ -87,7 +88,8 @@ class UdfFeed:
         if timeframe not in RESOLUTIONS:
             raise ValueError(f"UDF feed timeframe must be one of {tuple(RESOLUTIONS)}")
         self.timeframe = timeframe
-        self.resolution, self.bar_seconds = RESOLUTIONS[timeframe]
+        self.resolution = RESOLUTIONS[timeframe]
+        self.bar_seconds = int(TIMEFRAMES[timeframe].total_seconds())
         self.http_get = http_get or default_http_get
         self.bars_per_request = bars_per_request
         self.min_interval_s = min_interval_s

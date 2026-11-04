@@ -27,7 +27,7 @@ import pandas as pd
 
 from nnfx.brokers.costs import CostModel
 from nnfx.config import SystemConfig, load_system_config
-from nnfx.data.bars import BarFrame
+from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
@@ -149,7 +149,7 @@ class App:
             f = read_bars_csv(
                 self._safe_path(ds["path"]), sym, timeframe=tf, volume_kind=spec.volume_kind
             )
-            if tf in ("H1", "M15"):
+            if tf in BASE_TIMEFRAMES:
                 f = resample_to_daily(f, spec, cfg.session)
             frames[sym], inst[sym] = f, spec
         if not frames:

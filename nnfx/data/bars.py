@@ -21,6 +21,29 @@ VolumeKind = Literal["traded", "tick", "none"]
 OHLCV = ("open", "high", "low", "close", "volume")
 # Optional columns that travel with the bars when a feed supplies them.
 OPTIONAL = ("mark_high", "mark_low", "mark_close", "funding", "spliced")
+# How each column combines when bars are resampled to a coarser timeframe.
+AGGREGATION = {
+    "open": "first",
+    "high": "max",
+    "low": "min",
+    "close": "last",
+    "volume": "sum",
+    "mark_high": "max",
+    "mark_low": "min",
+    "mark_close": "last",
+    "funding": "sum",
+    "spliced": "max",
+}
+# The one timeframe table: name -> bar length. Feeds and gates derive from it.
+TIMEFRAMES: dict[str, pd.Timedelta] = {
+    "M15": pd.Timedelta(minutes=15),
+    "H1": pd.Timedelta(hours=1),
+    "H4": pd.Timedelta(hours=4),
+    "D1": pd.Timedelta(days=1),
+    "W1": pd.Timedelta(days=7),
+}
+# Timeframes a feed delivers and higher views are built from.
+BASE_TIMEFRAMES = ("M15", "H1")
 
 
 def ns(index: pd.Index) -> np.ndarray:

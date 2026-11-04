@@ -212,3 +212,17 @@ def test_cli_fetches_quarter_hours_and_backtest_loading_resamples_them(tmp_path,
 
     d1 = _load(Args(), load_system_config("config/system.yaml"), "BTC/USDT", str(cached), BTC)
     assert d1.timeframe == "D1" and len(d1) == 4
+
+
+def test_weekly_bars_keep_the_week_close_label_across_a_data_gap():
+    df = m15(96 * 28).df  # Mon 1 Jan .. Sun 28 Jan
+    hole = (df.index > pd.Timestamp("2024-01-10", tz="UTC")) & (
+        df.index <= pd.Timestamp("2024-01-20", tz="UTC")
+    )
+    base = BarFrame(df[~hole], "BTC/USDT", timeframe="M15", price_venue="x")
+    w1 = resample(base, "W1", instrument=BTC, session=SessionConfig())
+    # The week of 8 January is labelled at its close (Monday 15th), never mid-week.
+    assert list(w1.index) == [
+        pd.Timestamp(d, tz="UTC") for d in ("2024-01-08", "2024-01-15", "2024-01-22", "2024-01-29")
+    ]
+    assert w1.volume[1] == 96 * 2  # only the two days that exist
