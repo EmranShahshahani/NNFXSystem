@@ -4,14 +4,14 @@
 
 **Blocked by:** 05 (Strategy Document tracer bullet)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Ladder steps and Runner fraction are parameters; the 10R step offers 15% (default) or 20%
-- [ ] No exit rule may close the whole position below 2R
-- [ ] Conditional breakeven moves the stop only when a new confirmed pivot exists after entry
-- [ ] The Runner trails behind confirmed swing points of the management timeframe
-- [ ] Counter-trend mode disables the Runner and closes 100% at 2R or the first structural boundary
-- [ ] Optional recycling record moves realised profit to a spot ledger on +5R..10R closes
-- [ ] Harness-level tests reproduce a full ladder-out and a trailing exit
+- [x] Ladder steps and Runner fraction are parameters; the 10R step offers 15% (default) or 20%
+- [x] No exit rule may close the whole position below 2R
+- [x] Conditional breakeven moves the stop only when a new confirmed pivot exists after entry
+- [x] The Runner trails behind confirmed swing points of the management timeframe
+- [x] Counter-trend mode disables the Runner and closes 100% at 2R or the first structural boundary
+- [x] Optional recycling record moves realised profit to a spot ledger on +5R..10R closes
+- [x] Harness-level tests reproduce a full ladder-out and a trailing exit
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

@@ -289,7 +289,12 @@ class App:
                     {**asdict(t), "stop_label": run.stop_labels.get(t.position_id)}
                     for t in r.trades
                 ],
-                "candidates": run.candidates,  # each with its Pre-Trade Checklist
+                # The latest candidates, each with its Pre-Trade Checklist, and the total.
+                "candidates": run.candidates[max(0, len(run.candidates) - MAX_CANDIDATES) :],
+                "candidate_count": len(run.candidates),
+                # Futures-to-spot recycling record (Profit Chain option); empty when off.
+                "spot_transfers": [asdict(t) for t in run.spot_transfers],
+                "spot_balance": run.spot_balance(),
                 "blocked": dict(r.blocked),
                 "rejected": dict(r.rejected),
                 "equity": [

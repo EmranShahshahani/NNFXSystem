@@ -14,6 +14,7 @@ import pytest
 
 from nnfx.config import SessionConfig
 from nnfx.data.synthetic import intraday_walk
+from nnfx.engine.types import ExitStepView, PositionView
 from nnfx.instruments import crypto_spec
 from nnfx.strategy import REGISTRY, StrategyData
 from nnfx.strategy.blocks import (
@@ -27,7 +28,7 @@ from nnfx.strategy.blocks import (
     SetupOutput,
     StopBlock,
 )
-from nnfx.strategy.library import CandleSetup
+from nnfx.strategy.library import CandleSetup, ProfitChain, ProfitChainParams
 
 ROLES = {"hwc": "D1", "mwc": "H4", "lwc": "M15"}
 SCALE = 1000.0
@@ -160,7 +161,7 @@ def per_candidate(btype: str, c: SetupCandidate, d: StrategyData) -> tuple[list[
         res = b.check(c, d)  # verdicts are scale-free: the outcome, never the wording
         return [], res.outcome
     assert isinstance(b, ExitBlock)
-    return [], b.plan(c, d)  # exits are in R: scale-free by construction
+    return [], b.plan(c, d, c.stop)  # exits are in R: scale-free by construction
 
 
 def scaled(c: SetupCandidate) -> SetupCandidate:
@@ -185,3 +186,84 @@ def test_candidate_blocks_are_price_scale_invariant(btype: str):
     for c in candidates()[:15]:
         (pa, ra), (pb, rb) = per_candidate(btype, c, d), per_candidate(btype, scaled(c), ds)
         assert np.allclose(np.array(pa) * SCALE, np.array(pb), rtol=1e-9) and ra == rb
+
+
+# ------------------------------------------------------ position management
+EXITS = sorted(t for t, c in REGISTRY.items() if issubclass(c, ExitBlock))
+
+
+def exit_variants() -> list[ExitBlock]:
+    """Every Exit Block with defaults, plus the Profit Chain's data-reading modes."""
+    out: list[ExitBlock] = [block(t) for t in EXITS]
+    out.append(
+        ProfitChain(ProfitChainParams(counter_trend="always", counter_trend_exit="boundary"))
+    )
+    out.append(ProfitChain(ProfitChainParams(pivot_bars=1)))
+    return out
+
+
+def position(b: ExitBlock, c: SetupCandidate, d: StrategyData, filled: int):
+    """A position entered on the bar after ``c`` at its trigger, ``filled`` steps done."""
+    plan = b.plan(c, d, c.stop)
+    risk = c.trigger - c.stop
+    return PositionView(
+        id="p",
+        symbol=c.symbol,
+        direction=c.direction,
+        units=1.0,
+        entry_price=c.trigger,
+        entry_time=d.base.index[c.bar + 1].isoformat(),
+        stop=c.stop,
+        leg="single",
+        entry_atr=0.0,
+        signal_time=c.time,
+        entry_type="setup",
+        exit_steps=tuple(
+            ExitStepView(price=c.trigger + s.r * risk, fraction=s.fraction, done=n < filled)
+            for n, s in enumerate(plan.steps)
+        ),
+        steps_filled=filled,
+    )
+
+
+def spread() -> list[SetupCandidate]:
+    """Five candidates spread over the fixture, so swings exist before most of them."""
+    cs = candidates()
+    return cs[len(cs) // 6 :: max(1, len(cs) // 6)][:5]
+
+
+def management_closes(d: StrategyData, after: int, n: int = 3) -> list[int]:
+    pos = d.positions["management"]
+    return [j for j in range(after + 20, len(d)) if pos[j] != pos[j - 1]][:n]
+
+
+def managed(b: ExitBlock, c: SetupCandidate, d: StrategyData, j: int, filled: int):
+    mv = b.manage(position(b, c, d, filled), d, j)
+    return None if mv is None else (mv.stop, mv.reason)
+
+
+@pytest.mark.parametrize("b", exit_variants(), ids=lambda b: repr(b.p))
+def test_exit_blocks_manage_without_lookahead(b: ExitBlock):
+    d, seen = data(), 0
+    for c in spread():
+        assert b.plan(c, d.head(c.bar + 1), c.stop) == b.plan(c, d, c.stop)
+        for j in management_closes(d, c.bar):
+            for filled in (1, 3):
+                now = managed(b, c, d.head(j + 1), j, filled)
+                assert now == managed(b, c, d, j, filled), (c.bar, j, filled)
+                seen += now is not None
+    if isinstance(b, ProfitChain) and b.p.counter_trend == "off":
+        assert seen  # the fixture really produces stop moves to gate
+
+
+@pytest.mark.parametrize("b", exit_variants(), ids=lambda b: repr(b.p))
+def test_exit_blocks_manage_scale_free(b: ExitBlock):
+    d, ds = data(), data().scaled(SCALE)
+    for c in spread():
+        assert b.plan(c, d, c.stop) == b.plan(scaled(c), ds, c.stop * SCALE)
+        for j in management_closes(d, c.bar):
+            for filled in (1, 3):
+                a, z = managed(b, c, d, j, filled), managed(b, scaled(c), ds, j, filled)
+                assert (a is None) == (z is None)
+                if a is not None and z is not None:
+                    assert z[0] == pytest.approx(a[0] * SCALE, rel=1e-9) and z[1] == a[1]

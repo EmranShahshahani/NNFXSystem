@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from nnfx.brokers.costs import CostModel
+from nnfx.brokers.sim import Trade
 from nnfx.config import Slots, SlotSpec, SystemConfig
 from nnfx.data.bars import BarFrame
 from nnfx.data.feeds import read_bars_csv
@@ -23,6 +24,7 @@ from nnfx.research.partition import HoldoutAccessError, Market, Partition, Segme
 from nnfx.research.trials import ResearchState
 from nnfx.strategy.document import StrategyDocument
 from nnfx.strategy.engine import DocumentEngine, compile_document
+from nnfx.strategy.library import ProfitChain
 
 # The harness wants an NNFX config for the account, costs and portfolio caps it
 # shares with every engine; its indicator slots are unused by the document engine.
@@ -38,6 +40,36 @@ def document_config(doc: StrategyDocument, base: SystemConfig | None = None) -> 
 
 
 @dataclass(frozen=True)
+class SpotTransfer:
+    """Realised profit recorded as moved from futures to spot when a position closed."""
+
+    position_id: str
+    symbol: str
+    time: str  # the position's last exit
+    r: float  # the whole position's result in R
+    amount: float  # its net profit
+
+
+def spot_transfers(trades: Sequence[Trade], min_r: float) -> list[SpotTransfer]:
+    """One transfer per closed position whose whole result reached ``min_r`` R.
+
+    The blueprint's Capital Recycling Engine (video 61-70): on a +5R-10R close,
+    the realised net profit goes to the asset's spot balance.
+    """
+    by_pos: dict[str, list[Trade]] = {}
+    for t in trades:
+        by_pos.setdefault(t.position_id, []).append(t)
+    out = []
+    for pid, ts in by_pos.items():
+        net, risk = sum(t.net_pnl for t in ts), sum(t.risk_cash for t in ts)
+        r = net / risk if risk > 0 else 0.0
+        if r >= min_r and net > 0:
+            last = max(ts, key=lambda t: t.exit_time)
+            out.append(SpotTransfer(pid, last.symbol, last.exit_time, r, net))
+    return sorted(out, key=lambda t: (t.time, t.position_id))
+
+
+@dataclass(frozen=True)
 class DocumentRun:
     fingerprint: str
     result: BacktestResult
@@ -45,6 +77,23 @@ class DocumentRun:
     candidates: list[dict[str, Any]] = field(default_factory=list)  # one per Setup Candidate
     # Position with a losing exit -> "justified" / "unjustified" / "unknown" (untraceable).
     stop_labels: dict[str, str] = field(default_factory=dict)
+    # Futures-to-spot recycling record (Profit Chain option), oldest first.
+    spot_transfers: list[SpotTransfer] = field(default_factory=list)
+
+    def spot_balance(self) -> float:
+        return sum(t.amount for t in self.spot_transfers)
+
+    def split_equity(self) -> pd.DataFrame:
+        """The equity curve split into the trading account and the spot ledger.
+
+        A record, not a cash flow the backtest sized on: sizing used the whole
+        equity, as the broker reported it.
+        """
+        eq = self.result.equity
+        spot = pd.Series(0.0, index=eq.index)
+        for t in self.spot_transfers:
+            spot[eq.index >= pd.Timestamp(t.time)] += t.amount
+        return pd.DataFrame({"trading": eq - spot, "spot": spot})
 
     def metrics(self) -> Metrics:
         """Performance in R, where one entry risks its whole 1R (ADR 10 §8)."""
@@ -148,7 +197,13 @@ def backtest_document(
                 "net_pnl": float(sum(t.net_pnl for t in result.trades)),
             },
         )
-    return DocumentRun(fp, result, trial, candidates, labels)
+    ex = compiled.exit
+    transfers = (
+        spot_transfers(result.trades, ex.p.recycle_min_r)
+        if isinstance(ex, ProfitChain) and ex.p.recycle_to_spot
+        else []
+    )
+    return DocumentRun(fp, result, trial, candidates, labels, transfers)
 
 
 def _candidates_and_labels(
@@ -162,6 +217,8 @@ def _candidates_and_labels(
     candidates, justified_by_key, position_key = [], {}, {}
     for rec in journal.records("cycle"):
         for ev in rec["evaluations"]:
+            if "checklist" not in ev["values"]:
+                continue  # a position-management event, not a Setup Candidate
             candidates.append({"symbol": ev["symbol"], "time": ev["time"], **ev["values"]})
             for intent in ev["intents"]:
                 justified_by_key[intent["idempotency_key"]] = ev["values"].get("justified") is True

@@ -41,7 +41,8 @@ and honest trial counting.
      proposed stop, tags).
    - Execution: candidate → stop-market orders.
    - Stop: candidate → initial stop.
-   - Exit: candidate (with the data) → an Exit Plan in R.
+   - Exit: candidate (with the data and the stop) → an Exit Plan in R; then,
+     on every bar a position is open, position → an optional stop move (§12).
 
    Confirmation: candidate → pass / fail / n/a with a reason, a weight toward
    the Confluence Score and a hard flag (ticket 08). Market Filter gets its
@@ -180,6 +181,51 @@ and honest trial counting.
     is labelled justified, unjustified, or unknown when the journal cannot
     trace it (order key → fill → position). The API returns the latest 500
     candidates with the total count and the labels, and the UI shows them.
+
+12. **The Profit Chain and position management (ticket 07).** The
+    `profit_chain` Exit Block is the blueprint's ladder: 35% at 2R, 40% at 5R,
+    15% at 10R (20% is the blueprint's other value) and a 10% Runner. Every
+    step and the Runner fraction is a parameter; they sum to 1 and R rises.
+
+    **The 2R floor.** No exit rule closes a whole position below 2R. The first
+    step and `fixed_r` cannot be set below 2R, and the engine refuses any
+    Exit Plan whose steps below 2R add up to the whole position
+    (`exit_below_2r`), whatever Block made it.
+
+    **Management.** Exit Blocks gain `manage(position, data, bar)`, which may
+    return a stop move. The engine applies a move only when it tightens the
+    stop and leaves it on the right side of the close. It sends the move as a
+    `ModifyIntent` and journals it as a `stop_move` evaluation (from, to,
+    reason). Step fills stay the broker's (ADR 09 §5).
+
+    The Profit Chain manages on the management timeframe
+    (`timeframes.management`, the MWC unless set, so 4H by default) and acts
+    only on its closes:
+    - **Conditional breakeven.** Once the first step has filled, the stop
+      goes to entry only if a swing low (shorts: high) has been confirmed
+      since the entry. `breakeven: always` puts the move on the step itself;
+      `off` never moves it.
+    - **Runner trail.** Once every step has filled, the stop trails just
+      behind the latest confirmed swing.
+
+    A swing at bar *k* has `pivot_bars` strictly higher lows (lower highs) on
+    each side. It is readable only from bar *k* + `pivot_bars`. The exit gates
+    check `manage()` for lookahead and price scale the way §5 checks every
+    other Block.
+
+    **Counter-trend mode.** `always`, or `tagged` for candidates tagged
+    `counter_trend`, drops the Runner and closes everything at 2R. With
+    `counter_trend_exit: boundary` it closes at the first structural boundary
+    instead: the nearest confirmed management swing beyond the trigger,
+    clamped to [2R, `counter_trend_max_r` = 3R], since secondary-wave trades
+    target 1:2 or 1:3. No Block sets the tag yet; market structure (ticket 09)
+    will.
+
+    **Spot recycling.** With `recycle_to_spot`, a whole position closing at
+    `recycle_min_r` (5R) or more records its net profit as moved from futures
+    to spot. It is a record, not a cash flow: sizing still uses the broker's
+    equity. The run splits the equity curve into trading and spot, and the
+    API returns the transfers and the spot balance.
 
 ## Consequences
 

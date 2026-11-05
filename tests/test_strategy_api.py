@@ -169,3 +169,36 @@ def test_the_backtest_returns_each_candidates_checklist(base: str, dirs: tuple[P
     assert cand["decision"] == "placed" and cand["score"] == 1.0
     assert [p["stage"] for p in cand["decision_path"]][-3:] == ["risk", "stop", "order"]
     assert res["trades"][0]["stop_label"] is None  # a winner carries no stop label
+
+
+def test_the_backtest_returns_the_latest_candidates_with_the_total(
+    base: str, dirs: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+):
+    import nnfx.ui.server as server
+
+    monkeypatch.setattr(server, "MAX_CANDIDATES", 0)
+    code, res = post(
+        base + "/api/strategy/backtest",
+        {"document": DOC, "datasets": [dataset(dirs)], "zero_costs": True},
+    )
+    assert code == 200 and res["ok"], res
+    assert res["candidates"] == []
+    assert res["candidate_count"] == 1
+    assert res["spot_transfers"] == [] and res["spot_balance"] == 0
+
+
+def test_the_backtest_reports_the_spot_recycling_record(base: str, dirs: tuple[Path, Path]):
+    raw = copy.deepcopy(DOC)
+    raw["blocks"][-1] = {
+        "kind": "exit",
+        "type": "profit_chain",
+        "params": {"recycle_to_spot": True, "recycle_min_r": 2.0},
+    }
+    raw["blocks"][-1]["params"].update(f1=1.0, f2=0, f3=0, runner=0)
+    code, res = post(
+        base + "/api/strategy/backtest",
+        {"document": raw, "datasets": [dataset(dirs)], "zero_costs": True},
+    )
+    assert code == 200 and res["ok"], res
+    (t,) = res["spot_transfers"]
+    assert t["r"] == pytest.approx(2.0) and res["spot_balance"] == pytest.approx(t["amount"])

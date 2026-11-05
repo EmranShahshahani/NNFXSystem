@@ -10,7 +10,13 @@ what was known at that bar's close. Per LWC bar the engine:
 3. if nothing blocks it, asks the Stop Block for the stop, the Exit Block for
    the exit plan and each Execution Block for its stop-market orders, and
    emits them as ``PendingOrderIntent``s sized at the Risk section's risk;
-4. journals one evaluation per candidate with every check's outcome.
+4. journals one evaluation per candidate with every check's outcome;
+5. asks the Exit Block to manage each open position (conditional breakeven,
+   Runner trail) and emits a ``ModifyIntent`` for every move that tightens
+   the stop, journaled as a ``stop_move`` evaluation.
+
+No exit plan may close the whole position below 2R: such a candidate is
+refused (``exit_below_2r``).
 
 Pending orders, fills, cancellations and exits are the shared broker's
 (ADR 09 §4, §5); nothing here duplicates them.
@@ -34,12 +40,14 @@ from nnfx.engine.types import (
     AccountState,
     EngineState,
     GovernorState,
+    ModifyIntent,
     PendingOrderIntent,
     PositionView,
     SymbolState,
 )
 from nnfx.instruments import InstrumentSpec
 from nnfx.strategy.blocks import (
+    MIN_FULL_CLOSE_R,
     BlockKind,
     ChecklistItem,
     ConfirmationBlock,
@@ -53,6 +61,7 @@ from nnfx.strategy.blocks import (
     StageStatus,
     StopBlock,
     StrategyData,
+    closes_all_below,
 )
 from nnfx.strategy.document import StrategyDocument
 from nnfx.strategy.risk import govern, leverage_problem, margin, update_state
@@ -158,6 +167,12 @@ class DocumentEngine:
                 raise ValueError(
                     f"{sym}: engine and harness bars disagree at {history[sym].index[i]}"
                 )
+            for pv in sorted(open_positions, key=lambda x: x.id):
+                if pv.symbol == sym:
+                    ev = self._manage(pv, comp, i)
+                    if ev is not None:
+                        intents += ev.intents
+                        evaluations.append(ev)
             busy = sum(p.symbol == sym for p in open_positions) + sum(
                 o.symbol == sym for o in account_state.pending_orders
             )
@@ -174,6 +189,36 @@ class DocumentEngine:
                 intents += ev.intents
                 evaluations.append(ev)
         return Decision(intents, state, evaluations)
+
+    def _manage(self, pv: PositionView, comp: CompiledSymbol, i: int) -> Evaluation | None:
+        """The Exit Block's stop move for an open position, if it tightens the stop."""
+        move = self.compiled.exit.manage(pv, comp.data, i)
+        if move is None or not np.isfinite(move.stop):
+            return None
+        d, close = pv.direction, float(comp.data.base.close[i])
+        if (move.stop - pv.stop) * d <= 1e-12 or (close - move.stop) * d <= 0:
+            return None  # never looser, and never through the price
+        intent = ModifyIntent(
+            symbol=pv.symbol, position_id=pv.id, stop=move.stop, reason=move.reason
+        )
+        return Evaluation(
+            symbol=pv.symbol,
+            time=comp.data.base.index[i].isoformat(),
+            inputs={"bar": i},
+            values={
+                "event": "stop_move",
+                "position_id": pv.id,
+                "from": pv.stop,
+                "to": move.stop,
+                "reason": move.reason,
+                "steps_filled": pv.steps_filled,
+            },
+            state_before=SymbolState(),
+            state_after=SymbolState(),
+            intents=[intent],
+            conditions={},
+            blocked=[],
+        )
 
     def _checklist(
         self, cand: SetupCandidate, comp: CompiledSymbol
@@ -310,7 +355,9 @@ class DocumentEngine:
         self, cand: SetupCandidate, comp: CompiledSymbol, stop: float, risk_fraction: float
     ) -> tuple[list[Intent], list[str]]:
         data = comp.data
-        plan = self.compiled.exit.plan(cand, data)
+        plan = self.compiled.exit.plan(cand, data, stop)
+        if closes_all_below(plan, MIN_FULL_CLOSE_R):
+            return [], ["exit_below_2r"]  # Profit Chain rule 1, whatever the Exit Block
         a = float(comp.atr[cand.bar])
         out: list[Intent] = []
         problems: list[str] = []

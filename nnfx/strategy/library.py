@@ -6,11 +6,15 @@ number is a parameter with the blueprint's default (docs/sources/tcp-blueprint).
 
 from __future__ import annotations
 
+from itertools import pairwise
+from typing import Literal
+
 import numpy as np
 from pydantic import Field, model_validator
 
-from nnfx.engine.types import ExitPlan, ExitStep
+from nnfx.engine.types import ExitPlan, ExitStep, PositionView
 from nnfx.strategy.blocks import (
+    MIN_FULL_CLOSE_R,
     BlockKind,
     BlockParams,
     CheckResult,
@@ -26,6 +30,7 @@ from nnfx.strategy.blocks import (
     SetupCandidate,
     SetupOutput,
     StopBlock,
+    StopMove,
     StrategyData,
     register,
 )
@@ -272,12 +277,12 @@ class StructuralStop(StopBlock[StructuralStopParams]):
 
 # ------------------------------------------------------------------- exit
 class FixedRParams(BlockParams):
-    r: float = Field(2.0, gt=0, description="خروج کامل در این ضریب R")
+    r: float = Field(2.0, ge=MIN_FULL_CLOSE_R, description="خروج کامل در این ضریب R (هرگز زیر ۲R)")
 
 
 @register
 class FixedR(ExitBlock[FixedRParams]):
-    """Close the whole position at ``r`` R."""
+    """Close the whole position at ``r`` R (never below 2R)."""
 
     kind = BlockKind.EXIT
     type = "fixed_r"
@@ -285,5 +290,154 @@ class FixedR(ExitBlock[FixedRParams]):
     sources = ("tcp-blueprint: no exit below 2R",)
     Params = FixedRParams
 
-    def plan(self, candidate: SetupCandidate, data: StrategyData) -> ExitPlan:
+    def plan(self, candidate: SetupCandidate, data: StrategyData, stop: float) -> ExitPlan:
         return ExitPlan(steps=(ExitStep(r=self.p.r, fraction=1.0),))
+
+
+class ProfitChainParams(BlockParams):
+    r1: float = Field(2.0, ge=MIN_FULL_CLOSE_R, description="پلهٔ اول: R (هرگز زیر ۲R)")
+    f1: float = Field(0.35, gt=0, le=1, description="پلهٔ اول: سهم از حجم اولیه")
+    r2: float = Field(5.0, gt=0, description="پلهٔ دوم: R")
+    f2: float = Field(0.40, ge=0, le=1, description="پلهٔ دوم: سهم از حجم اولیه (۰: بدون این پله)")
+    r3: float = Field(10.0, gt=0, description="پلهٔ سوم: R")
+    f3: float = Field(
+        0.15, ge=0, le=1, description="پلهٔ سوم: سهم از حجم اولیه (۰٫۱۵ پیش‌فرض یا ۰٫۲۰)"
+    )
+    runner: float = Field(
+        0.10, ge=0, le=1, description="رانر: سهمی که با حد ضرر متحرک می‌ماند (۰: بدون رانر)"
+    )
+    breakeven: Literal["pivot", "always", "off"] = Field(
+        "pivot",
+        description="ریسک‌فری پس از پلهٔ اول: فقط با پیوت ساختاری تازه، همیشه، یا هرگز",
+    )
+    pivot_bars: int = Field(2, ge=1, description="پیوت: تعداد کندل‌های دو طرف روی تایم‌فریم مدیریت")
+    trail_buffer_pct: float = Field(
+        0.05, ge=0, description="فاصلهٔ حد ضرر رانر پشت سوئینگ، درصد قیمت"
+    )
+    counter_trend: Literal["off", "always", "tagged"] = Field(
+        "off",
+        description="حالت خلاف روند: خاموش، همیشه، یا فقط ستاپ‌های برچسب counter_trend",
+    )
+    counter_trend_exit: Literal["2r", "boundary"] = Field(
+        "2r", description="خروج کامل خلاف روند: در ۲R یا در اولین مرز ساختاری"
+    )
+    counter_trend_max_r: float = Field(
+        3.0, ge=MIN_FULL_CLOSE_R, description="سقف R خروج خلاف روند (مرز ساختاری دورتر از این)"
+    )
+    recycle_to_spot: bool = Field(
+        False, description="ثبت انتقال سود خالص به دفتر اسپات پس از بسته‌شدن با سود زیاد"
+    )
+    recycle_min_r: float = Field(
+        5.0, ge=MIN_FULL_CLOSE_R, description="انتقال به اسپات از این R به بالا (۵R تا ۱۰R)"
+    )
+
+    @model_validator(mode="after")
+    def _ladder(self) -> ProfitChainParams:
+        total = self.f1 + self.f2 + self.f3 + self.runner
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"جمع سهم پله‌ها و رانر باید ۱ شود، اکنون {total:.4g} است")
+        rs = [r for r, f in ((self.r1, self.f1), (self.r2, self.f2), (self.r3, self.f3)) if f > 0]
+        if any(b <= a for a, b in pairwise(rs)):
+            raise ValueError("R پله‌ها باید صعودی باشد (r1 < r2 < r3)")
+        return self
+
+
+@register
+class ProfitChain(ExitBlock[ProfitChainParams]):
+    """The Profit Chain (Zanjire-ye Sood): a ladder out in R plus a trailing Runner.
+
+    Blueprint 01 (B) and video 19: 35% at 2R, 40% at 5R, 15% at 10R (the
+    blueprint also gives 20%), the last 10% trailed behind 4H/daily swings;
+    never a whole close below 2R. Management runs on the document's management
+    timeframe (``timeframes.management``, the MWC unless set) and acts on its
+    closes:
+
+    - **Conditional breakeven.** Once the first step has filled, the stop goes
+      to entry only when a new swing low (shorts: high) has been confirmed
+      after the entry. ``"always"`` moves it when the first step fills.
+    - **Runner trail.** Once every step has filled, the stop trails just
+      behind the latest confirmed swing.
+    - **Counter-trend mode.** No Runner: everything closes at 2R, or at the
+      first structural boundary (the nearest confirmed swing beyond the
+      trigger), never below 2R and at most ``counter_trend_max_r``
+      (secondary-wave targets are 1:2 or 1:3, video 23).
+
+    The futures-to-spot recycling record (video 61-70) is read by the run:
+    ``recycle_to_spot`` / ``recycle_min_r``.
+    """
+
+    kind = BlockKind.EXIT
+    type = "profit_chain"
+    title_fa = "زنجیرهٔ سود"
+    sources = (
+        "tcp-blueprint 01 (B): Systematic Trade Management & Profit Harvesting",
+        "tcp-blueprint 02: video 19 (Profit Chain, counter-trend deviation)",
+        "tcp-blueprint 03: secondary waves use 1:2 or 1:3 targets",
+        "tcp-blueprint 07: Capital Recycling Engine (futures to spot)",
+    )
+    Params = ProfitChainParams
+
+    ROLE = "management"
+
+    def counter_trend(self, candidate: SetupCandidate) -> bool:
+        mode = self.p.counter_trend
+        return mode == "always" or (mode == "tagged" and "counter_trend" in candidate.tags)
+
+    def plan(self, candidate: SetupCandidate, data: StrategyData, stop: float) -> ExitPlan:
+        p = self.p
+        if self.counter_trend(candidate):
+            r = MIN_FULL_CLOSE_R
+            if p.counter_trend_exit == "boundary":
+                b = self._boundary(candidate, data)
+                if b is not None:
+                    risk = abs(candidate.trigger - stop)
+                    r = (b - candidate.trigger) * candidate.direction / risk
+                r = round(min(max(r, MIN_FULL_CLOSE_R), p.counter_trend_max_r), 6)
+            return ExitPlan(steps=(ExitStep(r=r, fraction=1.0),))
+        steps = [
+            ExitStep(r=r, fraction=f, stop_to_r=0.0 if k == 0 and p.breakeven == "always" else None)
+            for k, (r, f) in enumerate(((p.r1, p.f1), (p.r2, p.f2), (p.r3, p.f3)))
+            if f > 0
+        ]
+        return ExitPlan(steps=tuple(steps), runner=p.runner)
+
+    def _swings(self, data: StrategyData, bar: int, direction: int) -> tuple[np.ndarray, int]:
+        """Management swing indices confirmed by LWC ``bar``'s close: lows for longs,
+        highs for shorts; and the management bar that close stands on."""
+        n = self.p.pivot_bars
+        m = int(data.positions[self.ROLE][bar])
+        lows, highs = data.pivots(self.ROLE, n, n)
+        idx = lows if direction > 0 else highs
+        return idx[idx + n <= m], m
+
+    def _boundary(self, candidate: SetupCandidate, data: StrategyData) -> float | None:
+        """The nearest confirmed management swing beyond the trigger, as of the candidate:
+        for a long the lowest swing high above it, for a short the highest swing low below."""
+        d = candidate.direction
+        idx, _ = self._swings(data, candidate.bar, -d)
+        f = data.frames[self.ROLE]
+        levels = f.high[idx] if d > 0 else f.low[idx]
+        beyond = levels[(levels - candidate.trigger) * d > 0]
+        if not len(beyond):
+            return None
+        return float(beyond.min() if d > 0 else beyond.max())
+
+    def manage(self, position: PositionView, data: StrategyData, bar: int) -> StopMove | None:
+        p, d = self.p, position.direction
+        pos = data.positions[self.ROLE]
+        m = int(pos[bar])
+        if m < 0 or (bar > 0 and int(pos[bar - 1]) == m):
+            return None  # management acts on its own timeframe's closes only
+        swings, _ = self._swings(data, bar, d)
+        moves: list[StopMove] = []
+        if p.breakeven == "pivot" and position.steps_filled >= 1 and position.at_risk:
+            entered = int(pos[data.bar_at(position.entry_time)])
+            if np.any(swings > entered):  # a new swing since the entry
+                moves.append(StopMove(position.entry_price, "breakeven_after_pivot"))
+        steps = position.exit_steps
+        has_runner = sum(s.fraction for s in steps) < 1.0 - 1e-9
+        if steps and has_runner and position.steps_filled >= len(steps) and len(swings):
+            f = data.frames[self.ROLE]
+            level = float(f.low[swings[-1]] if d > 0 else f.high[swings[-1]])
+            moves.append(StopMove(level - d * level * p.trail_buffer_pct / 100.0, "runner_trail"))
+        return max(moves, key=lambda mv: mv.stop * d, default=None)

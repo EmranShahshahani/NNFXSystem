@@ -13,7 +13,10 @@ Contracts by kind:
   with a ``weight`` toward the Confluence Score and a ``hard`` flag.
 - Execution: ``orders(candidate, data) -> [OrderSpec]``.
 - Stop: ``initial_stop(candidate, data) -> price``.
-- Exit: ``plan(candidate, data) -> ExitPlan``.
+- Exit: ``plan(candidate, data, stop) -> ExitPlan`` when the order is placed,
+  then ``manage(position, data, bar) -> StopMove | None`` on every bar the
+  position is open (conditional breakeven, trailing; ticket 07). No exit
+  rule may close the whole position below ``MIN_FULL_CLOSE_R``.
 
 (Market Filter gets its contract with ticket 20; account-wide risk is the
 document's Risk section, ADR 10 §10.)
@@ -28,15 +31,25 @@ from enum import StrEnum
 from typing import Any, ClassVar, Literal
 
 import numpy as np
+import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field
 
 from nnfx.config import SessionConfig
 from nnfx.data.bars import BarFrame, ns
 from nnfx.data.timeframes import TimeframeViews
-from nnfx.engine.types import ExitPlan
+from nnfx.engine.types import ExitPlan, PositionView
 from nnfx.instruments import InstrumentSpec
+from nnfx.strategy.series import pivots
 
 Role = Literal["hwc", "mwc", "lwc"]
+
+# The blueprint's floor: never close a whole position below 2R (Profit Chain rule 1).
+MIN_FULL_CLOSE_R = 2.0
+
+
+def closes_all_below(plan: ExitPlan, r: float = MIN_FULL_CLOSE_R) -> bool:
+    """Whether ``plan``'s steps below ``r`` R close the whole position."""
+    return sum(s.fraction for s in plan.steps if s.r < r) >= 1.0 - 1e-9
 
 
 class BlockKind(StrEnum):
@@ -74,7 +87,11 @@ class BlockParams(BaseModel):
 # ------------------------------------------------------------------- data
 @dataclass(frozen=True)
 class StrategyData:
-    """One symbol's bars on every timeframe role, aligned to the LWC bars."""
+    """One symbol's bars on every timeframe role, aligned to the LWC bars.
+
+    Besides HWC, MWC and LWC there is always a ``management`` role, where open
+    positions are managed; it is the MWC unless the document sets it.
+    """
 
     symbol: str
     roles: dict[str, str]  # role -> timeframe, e.g. {"lwc": "M15", "mwc": "H4", ...}
@@ -82,6 +99,7 @@ class StrategyData:
     positions: dict[str, np.ndarray]  # role -> index of its latest closed bar per LWC bar
     instrument: InstrumentSpec
     session: SessionConfig
+    _cache: dict[Any, Any] = field(default_factory=dict, compare=False, repr=False)
 
     @classmethod
     def build(
@@ -93,6 +111,7 @@ class StrategyData:
     ) -> StrategyData:
         if base.timeframe != roles["lwc"]:
             raise ValueError(f"LWC is {roles['lwc']} but the bars are {base.timeframe}")
+        roles = {**roles, "management": roles.get("management") or roles["mwc"]}
         higher = sorted({tf for tf in roles.values() if tf != base.timeframe})
         views = TimeframeViews(base, instrument=instrument, session=session, timeframes=higher)
         frames = {role: views.frame(tf) for role, tf in roles.items()}
@@ -117,6 +136,25 @@ class StrategyData:
         ok = pos >= 0
         out[ok] = values[pos[ok]]
         return out
+
+    def pivots(self, role: str, left: int, right: int) -> tuple[np.ndarray, np.ndarray]:
+        """Swing-low and swing-high bar indices on ``role`` (see ``series.pivots``).
+
+        A pivot at ``k`` is confirmed at role bar ``k + right``; callers read
+        only those confirmed by the role bar they stand on.
+        """
+        key = ("pivots", role, left, right)
+        if key not in self._cache:
+            f = self.frames[role]
+            self._cache[key] = pivots(f.low, f.high, left, right)
+        out: tuple[np.ndarray, np.ndarray] = self._cache[key]
+        return out
+
+    def bar_at(self, time: str) -> int:
+        """The LWC bar labelled ``time`` (or the latest before it)."""
+        return (
+            int(np.searchsorted(ns(self.base.index), ns(pd.DatetimeIndex([time]))[0], "right")) - 1
+        )
 
     def head(self, n: int) -> StrategyData:
         """The data as it stood at the close of LWC bar ``n - 1``."""
@@ -235,6 +273,14 @@ class ChecklistItem:
 
 
 @dataclass(frozen=True)
+class StopMove:
+    """An Exit Block's request to move an open position's stop (only ever tighter)."""
+
+    stop: float
+    reason: str  # e.g. "breakeven_after_pivot", "runner_trail"
+
+
+@dataclass(frozen=True)
 class OrderSpec:
     """A stop-market entry an Execution Block asks for (sized and stopped later)."""
 
@@ -291,8 +337,18 @@ class StopBlock[P: BlockParams](Block[P]):
 
 
 class ExitBlock[P: BlockParams](Block[P]):
-    def plan(self, candidate: SetupCandidate, data: StrategyData) -> ExitPlan:
+    def plan(self, candidate: SetupCandidate, data: StrategyData, stop: float) -> ExitPlan:
+        """The exit steps in R, R being the distance from the trigger to ``stop``."""
         raise NotImplementedError
+
+    def manage(self, position: PositionView, data: StrategyData, bar: int) -> StopMove | None:
+        """At the close of LWC ``bar``: a stop move for an open position, if any.
+
+        Causal like every Block: it reads only what was known at that close.
+        The engine applies a move only when it tightens the stop and leaves it
+        on the right side of the close.
+        """
+        return None
 
 
 BASES: dict[BlockKind, type[Block[Any]]] = {

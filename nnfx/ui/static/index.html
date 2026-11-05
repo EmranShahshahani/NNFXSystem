@@ -498,10 +498,11 @@ const SAMPLE_DOC = {
     { kind: "setup", type: "candle_setup" },
     { kind: "execution", type: "stop_market", params: { expiry_bars: 4 } },
     { kind: "stop", type: "structural_stop" },
-    { kind: "exit", type: "fixed_r", params: { r: 2 } },
+    { kind: "exit", type: "profit_chain" },
   ],
   risk: { risk_per_trade: 0.005 },
 };
+const EXIT_FA = { target_partial: "پلهٔ سود", target: "تارگت", stop: "حد ضرر", trailing_stop: "حد ضرر متحرک" };
 const STOP_FA = { justified: "موجه", unjustified: "ناموجه (قانون‌شکنی)", unknown: "نامشخص" };
 const OUTCOME_FA = { pass: "✓ قبول", fail: "✗ رد", na: "— نامربوط", skipped: "· انجام نشد" };
 const STAGE_FA = { context: "زمینه", risk: "ریسک", stop: "حد ضرر", order: "سفارش" };
@@ -513,7 +514,7 @@ function stCandidates(cands, total) {
       el("summary", {},
         el("span", { dir: "ltr" }, c.time.slice(0, 16).replace("T", " ")), " · ", el("bdi", {}, c.symbol), " · ",
         c.direction > 0 ? "خرید" : "فروش", " · ", el("span", { dir: "ltr" }, c.setup), " · امتیاز ", fmt(c.score, 1),
-        " · ریسک ", pct(c.tier, 2), " · ",
+        " · ریسک ", pct(c.risk_tier, 2), " · ",
         el("b", { class: c.decision === "placed" ? "pos" : "neg" }, c.decision === "placed" ? "سفارش ثبت شد" : "رد شد")),
       el("div", { class: "path" }, c.decision_path.flatMap((p, k) => [k ? el("span", { class: "muted" }, " ← ") : null,
         el("span", { class: "chip st-" + p.status, title: OUTCOME_FA[p.status] || p.status }, el("bdi", {}, STAGE_FA[p.stage] || p.stage), " ", OUTCOME_FA[p.status]?.slice(0, 1) || "")])),
@@ -566,12 +567,15 @@ $("#st-run").addEventListener("click", async () => {
       el("div", { class: "panel" }, el("h2", {}, "نتیجه"),
         el("div", {}, "اثر انگشت سند: ", el("code", { dir: "ltr" }, r.fingerprint), " · آزمون: ", el("code", { dir: "ltr" }, r.trial_id || "—")),
         el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidate_count} · معاملات: ${r.trades.length}`),
+        r.spot_transfers.length ? el("div", {}, `انتقال سود به اسپات: ${r.spot_transfers.length} بار، جمعاً `,
+          el("bdi", { dir: "ltr" }, fmt(r.spot_balance, 2))) : null,
         el("pre", { dir: "ltr", class: "ltr" }, r.summary)),
       stCandidates(r.candidates, r.candidate_count),
       el("div", { class: "panel" }, el("h2", {}, "معاملات"), el("div", { class: "tablewrap", dir: "ltr" },
-        el("table", {}, el("tr", {}, ["ورود", "جهت", "قیمت ورود", "قیمت خروج", "دلیل", "R", "حد ضرر"].map(h => el("th", {}, h))),
-          r.trades.map(t => el("tr", {}, el("td", {}, t.entry_time.slice(0, 16).replace("T", " ")), el("td", {}, t.direction > 0 ? "خرید" : "فروش"),
-            el("td", {}, fmt(t.entry_price, 4)), el("td", {}, fmt(t.exit_price, 4)), el("td", {}, t.exit_reason), el("td", {}, signed(t.r_multiple, 2)),
+        el("table", {}, el("tr", {}, ["ورود", "خروج", "جهت", "قیمت ورود", "قیمت خروج", "حجم", "دلیل", "R", "حد ضرر"].map(h => el("th", {}, h))),
+          r.trades.map(t => el("tr", {}, el("td", {}, t.entry_time.slice(0, 16).replace("T", " ")), el("td", {}, t.exit_time.slice(0, 16).replace("T", " ")),
+            el("td", {}, t.direction > 0 ? "خرید" : "فروش"),
+            el("td", {}, fmt(t.entry_price, 4)), el("td", {}, fmt(t.exit_price, 4)), el("td", {}, fmt(t.units, 4)), el("td", {}, EXIT_FA[t.exit_reason] || t.exit_reason), el("td", {}, signed(t.r_multiple, 2)),
             el("td", { class: t.stop_label === "unjustified" ? "neg" : "" }, STOP_FA[t.stop_label] || "—")))))));
   } catch (e) { $("#st-error").textContent = e.message; } finally { $("#st-run").disabled = false; }
 });

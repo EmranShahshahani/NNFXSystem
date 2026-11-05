@@ -46,7 +46,7 @@ class TimeframeRoles(_Strict):
     hwc: str = "D1"
     mwc: str = "H4"
     lwc: str = "M15"
-    # Where open positions are managed (e.g. 4H closes); defaults to the LWC.
+    # Where open positions are managed (the blueprint's 4H closes); unset means the MWC.
     management: str | None = None
 
     def as_dict(self) -> dict[str, str]:

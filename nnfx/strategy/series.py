@@ -44,3 +44,31 @@ def rsi(close: np.ndarray, n: int) -> np.ndarray:
     out[(ad == 0) & (au > 0)] = 100.0
     out[(ad == 0) & (au == 0)] = 50.0
     return out.to_numpy()
+
+
+def pivots(
+    low: np.ndarray, high: np.ndarray, left: int, right: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Indices of swing lows and swing highs (fractals), oldest first.
+
+    Bar ``k`` is a swing low when its low is strictly below the ``left`` lows
+    before it and the ``right`` lows after it (swing highs mirrored). A pivot
+    at ``k`` is only *confirmed* at the close of bar ``k + right``: read it
+    there, never earlier.
+    """
+    n = len(low)
+
+    def find(x: np.ndarray, sign: float) -> np.ndarray:
+        v = sign * x  # find minima of v
+        ok = np.zeros(n, dtype=bool)
+        if n < left + right + 1:
+            return np.flatnonzero(ok)
+        ok[left : n - right] = True
+        for j in range(1, left + 1):
+            ok[left : n - right] &= v[left : n - right] < v[left - j : n - right - j]
+        for j in range(1, right + 1):
+            ok[left : n - right] &= v[left : n - right] < v[left + j : n - right + j]
+        return np.flatnonzero(ok)
+
+    with np.errstate(invalid="ignore"):
+        return find(low, 1.0), find(high, -1.0)

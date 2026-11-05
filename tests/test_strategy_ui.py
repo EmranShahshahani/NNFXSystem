@@ -77,4 +77,8 @@ def test_the_ui_shows_each_candidates_checklist_and_decision_path(tmp_path: Path
     ]  # RSI: too little history
     assert seen["path"] == ["pass", "pass", "na", "pass", "pass", "pass"]
     assert "سفارش ثبت شد" in seen["summary"]
+    assert "0.50%" in seen["summary"].replace("٫", ".")  # the candidate's risk tier
+    for text in (seen["summary"], seen["result"]):
+        assert "undefined" not in text and "NaN" not in text
+    assert "ستاپ‌های بررسی‌شده: 1" in seen["result"]
     assert seen["overflow"] == 0 and seen["errors"] == []
