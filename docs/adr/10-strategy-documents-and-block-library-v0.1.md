@@ -43,8 +43,9 @@ and honest trial counting.
    - Stop: candidate → initial stop.
    - Exit: candidate (with the data) → an Exit Plan in R.
 
-   Confirmation and Market Filter get their contracts with their first Block
-   (tickets 08 and 20); account-wide risk is the document's Risk section
+   Confirmation: candidate → pass / fail / n/a with a reason, a weight toward
+   the Confluence Score and a hard flag (ticket 08). Market Filter gets its
+   contract with its first Block (ticket 20); account-wide risk is the document's Risk section
    (§10), and the Risk kind is reserved for per-candidate sizing Blocks. A Block declares:
    - a registry name;
    - a Persian title;
@@ -149,6 +150,29 @@ and honest trial counting.
 
     Until ticket 08's checklist supplies the Confluence Score, tiered sizing
     uses score 0.
+
+11. **The Pre-Trade Checklist (ticket 08).** Every Setup Candidate is
+    journaled with every Context check (hard gates, weight 0) and every
+    Confirmation check. Each check has its outcome (pass / fail / n/a), its
+    weight, its hard flag and a reason.
+
+    **Scoring.** The Confluence Score is the summed weight of passing
+    Confirmations. It selects the Risk Tier: `tiers[floor(score)]`, capped by
+    the tier list.
+
+    **N/a.** N/a, for example missing data or too little history, is never a
+    pass. A hard check refuses the candidate only when it fails; a hard check
+    that is n/a is shown as such and does not refuse it.
+
+    **Decision path.** Each candidate's path runs context → each
+    Confirmation → risk → stop → order. Once something refuses the candidate,
+    the later stages are marked skipped.
+
+    **Stop labels.** A losing position is labelled justified when its
+    candidate passed every applicable check. Otherwise it is unjustified: it
+    was placed although a soft check failed, a rule break to review. The label
+    is traced through the journal (order key → fill → position). The API
+    returns the candidates and labels, and the UI shows them.
 
 ## Consequences
 

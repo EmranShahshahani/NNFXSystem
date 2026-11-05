@@ -17,6 +17,7 @@ from nnfx.data.synthetic import intraday_walk
 from nnfx.instruments import crypto_spec
 from nnfx.strategy import REGISTRY, StrategyData
 from nnfx.strategy.blocks import (
+    ConfirmationBlock,
     ContextBlock,
     ContextOutput,
     ExecutionBlock,
@@ -75,7 +76,9 @@ SERIES = sorted(
     v for t, c in REGISTRY.items() if issubclass(c, (ContextBlock, SetupBlock)) for v in variants(t)
 )
 PER_CANDIDATE = sorted(
-    t for t, c in REGISTRY.items() if issubclass(c, (ExecutionBlock, StopBlock, ExitBlock))
+    t
+    for t, c in REGISTRY.items()
+    if issubclass(c, (ConfirmationBlock, ExecutionBlock, StopBlock, ExitBlock))
 )
 
 
@@ -89,6 +92,7 @@ def test_the_registry_holds_the_tracer_blocks_and_gates_cover_all_of_them():
     } <= set(REGISTRY)
     assert {v.partition("@")[0] for v in SERIES} | set(PER_CANDIDATE) == set(REGISTRY)
     assert "three_sma_alignment@hwc" in SERIES
+    assert {"rsi_momentum", "volume_expansion"} <= set(PER_CANDIDATE)
     assert len(candidates()) >= 10  # the fixture really produces setups to gate
 
 
@@ -152,6 +156,9 @@ def per_candidate(btype: str, c: SetupCandidate, d: StrategyData) -> tuple[list[
         return prices, [(o.expires_after_bars, o.oco_group, o.invalidation is None) for o in orders]
     if isinstance(b, StopBlock):
         return [b.initial_stop(c, d)], None
+    if isinstance(b, ConfirmationBlock):
+        res = b.check(c, d)  # verdicts are scale-free: the outcome, never the wording
+        return [], res.outcome
     assert isinstance(b, ExitBlock)
     return [], b.plan(c, d)  # exits are in R: scale-free by construction
 

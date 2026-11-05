@@ -71,7 +71,7 @@ def test_backtest_runs_the_document_and_logs_a_trial(base: str, dirs: tuple[Path
     assert [(t["exit_reason"], t["r_multiple"]) for t in res["trades"]] == [
         ("target", pytest.approx(2.0))
     ]
-    assert res["candidates"] == 1 and res["fingerprint"] == res["config_digest"]
+    assert len(res["candidates"]) == 1 and res["fingerprint"] == res["config_digest"]
     assert "E[R]=+2.000" in res["summary"]  # one position carries the whole 1R
     rows = (dirs[1] / "strategy_trials.jsonl").read_text().splitlines()
     assert json.loads(rows[-1])["id"] == res["trial_id"]
@@ -144,3 +144,23 @@ def test_strategy_endpoints_need_an_account_when_accounts_are_on(
         assert code == 200 and res["ok"] and len(res["trades"]) == 1
     finally:
         httpd.shutdown()
+
+
+def test_the_backtest_returns_each_candidates_checklist(base: str, dirs: tuple[Path, Path]):
+    raw = copy.deepcopy(DOC)
+    raw["blocks"].insert(
+        2, {"kind": "confirmation", "type": "volume_expansion", "params": {"lookback": 5}}
+    )
+    code, res = post(
+        base + "/api/strategy/backtest",
+        {"document": raw, "datasets": [dataset(dirs)], "zero_costs": True},
+    )
+    assert code == 200 and res["ok"], res
+    (cand,) = res["candidates"]
+    assert [(c["block"], c["outcome"]) for c in cand["checklist"]] == [
+        ("three_sma_alignment#0", "pass"),
+        ("volume_expansion#2", "pass"),
+    ]
+    assert cand["decision"] == "placed" and cand["score"] == 1.0
+    assert [p["stage"] for p in cand["decision_path"]][-3:] == ["risk", "stop", "order"]
+    assert res["trades"][0]["stop_label"] is None  # a winner carries no stop label

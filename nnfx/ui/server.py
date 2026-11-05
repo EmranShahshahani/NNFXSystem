@@ -275,7 +275,6 @@ class App:
         )
         r = run.result
         met = run.metrics()
-        candidates = [ev for rec in journal.records("cycle") for ev in rec["evaluations"]]
         return _clean_dict(
             {
                 "ok": True,
@@ -283,8 +282,11 @@ class App:
                 "config_digest": r.config_digest,
                 "trial_id": run.trial_id,
                 "summary": met.summary(),
-                "trades": [asdict(t) for t in r.trades],
-                "candidates": len(candidates),
+                "trades": [
+                    {**asdict(t), "stop_label": run.stop_labels.get(t.position_id)}
+                    for t in r.trades
+                ],
+                "candidates": run.candidates,  # each with its Pre-Trade Checklist
                 "blocked": dict(r.blocked),
                 "rejected": dict(r.rejected),
                 "equity": [

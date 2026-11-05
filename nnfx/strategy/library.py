@@ -13,6 +13,9 @@ from nnfx.engine.types import ExitPlan, ExitStep
 from nnfx.strategy.blocks import (
     BlockKind,
     BlockParams,
+    CheckResult,
+    ConfirmationBlock,
+    ConfirmationParams,
     ContextBlock,
     ContextOutput,
     ExecutionBlock,
@@ -26,7 +29,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
     register,
 )
-from nnfx.strategy.series import falling, rising, sma
+from nnfx.strategy.series import falling, rising, rsi, sma
 
 
 # ---------------------------------------------------------------- context
@@ -122,6 +125,86 @@ class CandleSetup(SetupBlock[CandleSetupParams]):
         trigger = np.where(d > 0, h, np.where(d < 0, lo, nan))
         inval = np.where(d > 0, lo, np.where(d < 0, h, nan))
         return SetupOutput(d, trigger, inval, inval.copy(), {"rejection_wick": d != 0})
+
+
+# ----------------------------------------------------------- confirmation
+class RsiMomentumParams(ConfirmationParams):
+    period: int = Field(14, ge=2, description="دورهٔ RSI")
+    long_above: float = Field(70.0, gt=0, lt=100, description="برای خرید، RSI بالاتر از این")
+    short_below: float = Field(30.0, gt=0, lt=100, description="برای فروش، RSI پایین‌تر از این")
+
+
+@register
+class RsiMomentum(ConfirmationBlock[RsiMomentumParams]):
+    """RSI momentum on the setup candle (blueprint: RSI 14 above 70 longs, below 30 shorts).
+
+    Not applicable until ``period + 1`` closes exist. The basic form; the
+    oscillator methods (Bollinger on RSI, divergences, ...) are ticket 15.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "rsi_momentum"
+    title_fa = "مومنتوم RSI"
+    sources = ("tcp-blueprint: RSI 14 momentum confirmation",)
+    Params = RsiMomentumParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p = self.p
+        close = data.base.close[: candidate.bar + 1]
+        if len(close) < p.period + 1:
+            return CheckResult(
+                "na", f"RSI {p.period} needs {p.period + 1} closes, {len(close)} so far"
+            )
+        # Wilder smoothing settles within ~10 periods: a causal window keeps checks cheap.
+        value = float(rsi(close[-max(10 * p.period, 200) :], p.period)[-1])
+        if candidate.direction > 0:
+            ok = value > p.long_above
+            return CheckResult(
+                "pass" if ok else "fail", f"RSI {value:.1f} {'>' if ok else '<='} {p.long_above:g}"
+            )
+        ok = value < p.short_below
+        return CheckResult(
+            "pass" if ok else "fail", f"RSI {value:.1f} {'<' if ok else '>='} {p.short_below:g}"
+        )
+
+
+class VolumeExpansionParams(ConfirmationParams):
+    lookback: int = Field(20, ge=1, description="تعداد کندل‌های میانگین حجم")
+    factor: float = Field(1.0, gt=0, description="حجم کندل ستاپ دست‌کم این ضریبِ میانگین")
+
+
+@register
+class VolumeExpansion(ConfirmationBlock[VolumeExpansionParams]):
+    """The setup candle's volume against the average of the ``lookback`` bars before it.
+
+    Not applicable when the venue reports no volume or there is too little
+    history. The basic form; the volume matrix and climaxes are ticket 17.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "volume_expansion"
+    title_fa = "افزایش حجم"
+    sources = ("tcp-blueprint: volume confirms a new leg",)
+    Params = VolumeExpansionParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p = self.p
+        f = data.base
+        if f.volume_kind == "none":
+            return CheckResult("na", "the venue reports no volume")
+        i = candidate.bar
+        if i < p.lookback:
+            return CheckResult(
+                "na", f"needs {p.lookback} bars of volume before the setup, {i} so far"
+            )
+        v = f.volume
+        avg = float(np.mean(v[i - p.lookback : i]))
+        ratio = float(v[i]) / avg if avg > 0 else float("inf")
+        ok = ratio >= p.factor
+        return CheckResult(
+            "pass" if ok else "fail",
+            f"volume {ratio:.2f}x its {p.lookback}-bar average (needs {p.factor:g}x)",
+        )
 
 
 # -------------------------------------------------------------- execution

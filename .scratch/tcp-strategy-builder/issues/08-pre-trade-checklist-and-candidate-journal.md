@@ -4,12 +4,12 @@
 
 **Blocked by:** 05 (Strategy Document tracer bullet)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Each candidate's journal record lists every check with outcome and reason
-- [ ] The UI shows the checklist and the decision path (level test -> volume -> RSI -> trigger -> management) per candidate
-- [ ] Not-applicable checks (e.g. missing data) are shown as such and never counted as passes
-- [ ] Justified vs unjustified stop label on every losing trade
-- [ ] API and UI tests read a candidate's checklist
+- [x] Each candidate's journal record lists every check with outcome and reason
+- [x] The UI shows the checklist and the decision path (level test -> volume -> RSI -> trigger -> management) per candidate
+- [x] Not-applicable checks (e.g. missing data) are shown as such and never counted as passes
+- [x] Justified vs unjustified stop label on every losing trade
+- [x] API and UI tests read a candidate's checklist
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

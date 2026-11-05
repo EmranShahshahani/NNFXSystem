@@ -9,12 +9,14 @@ Contracts by kind:
 
 - Context: ``compute(data) -> ContextOutput``, per-bar allowed directions.
 - Setup: ``compute(data) -> SetupOutput``, per-bar Setup Candidates.
+- Confirmation: ``check(candidate, data) -> CheckResult`` (pass / fail / na),
+  with a ``weight`` toward the Confluence Score and a ``hard`` flag.
 - Execution: ``orders(candidate, data) -> [OrderSpec]``.
 - Stop: ``initial_stop(candidate, data) -> price``.
 - Exit: ``plan(candidate, data) -> ExitPlan``.
 
-(Confirmation, Risk and Market Filter kinds are named here and get their
-contracts with the tickets that add the first Block of each.)
+(Market Filter gets its contract with ticket 20; account-wide risk is the
+document's Risk section, ADR 10 §10.)
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ from enum import StrEnum
 from typing import Any, ClassVar, Literal
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from nnfx.config import SessionConfig
 from nnfx.data.bars import BarFrame, ns
@@ -193,6 +195,17 @@ class SetupCandidate:
         }
 
 
+Outcome = Literal["pass", "fail", "na"]
+
+
+@dataclass(frozen=True)
+class CheckResult:
+    """A Confirmation Block's verdict on one candidate."""
+
+    outcome: Outcome  # "na": not applicable here (e.g. missing data); never a pass
+    reason: str
+
+
 @dataclass(frozen=True)
 class OrderSpec:
     """A stop-market entry an Execution Block asks for (sized and stopped later)."""
@@ -227,6 +240,18 @@ class SetupBlock[P: BlockParams](Block[P]):
         raise NotImplementedError
 
 
+class ConfirmationParams(BlockParams):
+    """Every Confirmation Block has a weight toward the Confluence Score and a hard-fail flag."""
+
+    weight: float = Field(1.0, ge=0, description="وزن در امتیاز هم‌گرایی")
+    hard: bool = Field(False, description="رد شدن این بررسی، ستاپ را کامل رد می‌کند")
+
+
+class ConfirmationBlock[P: BlockParams](Block[P]):
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        raise NotImplementedError
+
+
 class ExecutionBlock[P: BlockParams](Block[P]):
     def orders(self, candidate: SetupCandidate, data: StrategyData) -> list[OrderSpec]:
         raise NotImplementedError
@@ -245,6 +270,7 @@ class ExitBlock[P: BlockParams](Block[P]):
 BASES: dict[BlockKind, type[Block[Any]]] = {
     BlockKind.CONTEXT: ContextBlock,
     BlockKind.SETUP: SetupBlock,
+    BlockKind.CONFIRMATION: ConfirmationBlock,
     BlockKind.EXECUTION: ExecutionBlock,
     BlockKind.STOP: StopBlock,
     BlockKind.EXIT: ExitBlock,

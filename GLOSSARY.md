@@ -24,7 +24,9 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Block Kind**: Context, Setup, Confirmation, Execution, Stop, Exit, Risk, Market Filter.
 - **Template**: a read-only Strategy Document users clone and customise. "TCP Azizpour" is the first.
 - **Setup Candidate**: what a Setup Block emits when its pattern completes: direction, trigger price, invalidation price, proposed stop, tags.
-- **Confluence Score**: the count of satisfied checklist items for a Setup Candidate; it selects the Risk Tier.
+- **Confluence Score**: the summed weight of a Setup Candidate's passing Confirmation checks (each weighs 1 by default, so usually their count); it selects the Risk Tier. Not-applicable checks never count.
+- **Decision Path**: a candidate's way through context → confirmations → risk → stop → order, with the first refusal and the stages it skipped.
+- **Justified / Unjustified Stop**: a loss on a setup that passed every applicable check, versus one placed although a soft check failed (a rule break to review).
 - **Pre-Trade Checklist**: the ordered list of Confirmation and Context checks a Setup Candidate must pass; any hard-fail aborts it.
 
 ## Trade City Pro terms

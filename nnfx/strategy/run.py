@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -41,6 +42,8 @@ class DocumentRun:
     fingerprint: str
     result: BacktestResult
     trial_id: str | None
+    candidates: list[dict[str, Any]] = field(default_factory=list)  # one per Setup Candidate
+    stop_labels: dict[str, str] = field(default_factory=dict)  # losing position -> (un)justified
 
     def metrics(self) -> Metrics:
         """Performance in R, where one entry risks its whole 1R (ADR 10 §8)."""
@@ -112,6 +115,7 @@ def backtest_document(
     # Always, logged or not: the holdout is touch-once (doc 03 §3).
     market = market_of({s: instruments[s] for s in frames})
     segment = segment_of(market, frames, end)
+    journal = journal if journal is not None else Journal()  # the candidates live in it
     cfg = document_config(doc, config)
     compiled = compile_document(doc, frames, instruments, cfg.session)
     result = BacktestHarness(
@@ -127,6 +131,7 @@ def backtest_document(
     ).run()
     fp = doc.fingerprint()
     result = replace(result, config_digest=fp)
+    candidates, labels = _candidates_and_labels(journal, result)
     trial = None
     if research is not None:
         rs = [t.r_multiple for t in result.trades]
@@ -142,4 +147,34 @@ def backtest_document(
                 "net_pnl": float(sum(t.net_pnl for t in result.trades)),
             },
         )
-    return DocumentRun(fp, result, trial)
+    return DocumentRun(fp, result, trial, candidates, labels)
+
+
+def _candidates_and_labels(
+    journal: Journal, result: BacktestResult
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    """Every candidate's record, and justified/unjustified labels for the losing positions.
+
+    The journal ties them together: a candidate's order key -> the broker's fill
+    of that key -> the position the trades belong to.
+    """
+    candidates, justified_by_key, position_key = [], {}, {}
+    for rec in journal.records("cycle"):
+        for ev in rec["evaluations"]:
+            candidates.append({"symbol": ev["symbol"], "time": ev["time"], **ev["values"]})
+            for intent in ev["intents"]:
+                justified_by_key[intent["idempotency_key"]] = bool(ev["values"].get("justified"))
+        for e in rec.get("orders", []):
+            if e.get("e") == "fill":
+                position_key[e["pid"]] = e["key"]
+    net: dict[str, float] = {}
+    for t in result.trades:
+        net[t.position_id] = net.get(t.position_id, 0.0) + t.net_pnl
+    labels = {
+        pid: "justified"
+        if justified_by_key.get(position_key.get(pid, ""), False)
+        else "unjustified"
+        for pid, pnl in net.items()
+        if pnl < 0
+    }
+    return candidates, labels

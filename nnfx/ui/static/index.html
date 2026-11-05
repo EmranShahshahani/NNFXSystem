@@ -77,6 +77,11 @@ pre { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; margin: 
 .chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 3px 10px;
   cursor: pointer; color: var(--muted); font: inherit; font-size: 12px; }
 .chip.on { color: var(--ink); border-color: var(--accent); }
+details.cand { border-top: 1px solid var(--line); padding: 6px 0; }
+details.cand summary { cursor: pointer; }
+.path { margin: 6px 0; line-height: 2; }
+.chip.st-pass { border-color: var(--up); } .chip.st-fail { border-color: var(--down); color: var(--down); }
+.chip.st-na, .chip.st-skipped { opacity: .6; }
 .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 4px 0 0; }
 .legend i { display: inline-block; width: 10px; height: 3px; vertical-align: middle; margin-inline-end: 5px; }
 .hidden { display: none; }
@@ -497,6 +502,27 @@ const SAMPLE_DOC = {
   ],
   risk: { risk_per_trade: 0.005 },
 };
+const STOP_FA = { justified: "موجه", unjustified: "ناموجه (قانون‌شکنی)" };
+const OUTCOME_FA = { pass: "✓ قبول", fail: "✗ رد", na: "— نامربوط", skipped: "· انجام نشد" };
+const STAGE_FA = { context: "زمینه", risk: "ریسک", stop: "حد ضرر", order: "سفارش" };
+function stCandidates(cands) {
+  if (!cands.length) return el("div", { class: "panel muted" }, "هیچ ستاپی در این بازه پیدا نشد.");
+  return el("div", { class: "panel" }, el("h2", {}, `چک‌لیست پیش از معامله (${cands.length} ستاپ)`),
+    cands.map(c => el("details", { class: "cand" },
+      el("summary", {},
+        el("span", { dir: "ltr" }, c.time.slice(0, 16).replace("T", " ")), " · ", el("bdi", {}, c.symbol), " · ",
+        c.direction > 0 ? "خرید" : "فروش", " · ", el("span", { dir: "ltr" }, c.setup), " · امتیاز ", fmt(c.score, 1),
+        " · ریسک ", pct(c.tier, 2), " · ",
+        el("b", { class: c.decision === "placed" ? "pos" : "neg" }, c.decision === "placed" ? "سفارش ثبت شد" : "رد شد")),
+      el("div", { class: "path" }, c.decision_path.flatMap((p, k) => [k ? el("span", { class: "muted" }, " ← ") : null,
+        el("span", { class: "chip st-" + p.status, title: OUTCOME_FA[p.status] || p.status }, el("bdi", {}, STAGE_FA[p.stage] || p.stage), " ", OUTCOME_FA[p.status]?.slice(0, 1) || "")])),
+      c.reasons.length ? el("div", { class: "neg" }, "دلیل: ", el("bdi", { dir: "ltr" }, c.reasons.join("، "))) : null,
+      el("div", { class: "tablewrap", dir: "ltr" }, el("table", {},
+        el("tr", {}, ["بررسی", "نوع", "نتیجه", "وزن", "سخت", "توضیح"].map(h => el("th", {}, h))),
+        c.checklist.map(i => el("tr", {}, el("td", {}, i.block), el("td", {}, i.kind === "context" ? "زمینه" : "تأیید"),
+          el("td", { class: i.outcome === "pass" ? "pos" : i.outcome === "fail" ? "neg" : "muted" }, OUTCOME_FA[i.outcome]),
+          el("td", {}, fmt(i.weight, 1)), el("td", {}, i.hard ? "بله" : "—"), el("td", {}, i.reason))))))));
+}
 function stDoc() {
   try { return JSON.parse($("#st-doc").value); }
   catch (e) { throw new Error("JSON نامعتبر است: " + e.message); }
@@ -513,10 +539,10 @@ async function loadStrategy() {
     el("input", { type: "checkbox", class: "st-ds", value: JSON.stringify(d) }), " ", el("bdi", {}, d.symbol), " ", el("span", { class: "muted" }, d.timeframe))))
     : el("div", { class: "muted" }, "دادهٔ درون‌روزی نیست. با «nnfx fetch --timeframe M15» کندل ۱۵ دقیقه‌ای بگیرید."));
   const blocks = await api("/api/strategy/blocks");
-  $("#st-blocks").replaceChildren(el("div", { class: "tablewrap", style: "max-height:none" }, el("table", {}, el("tr", {}, el("th", {}, "نوع"), el("th", {}, "بلوک"), el("th", {}, "پارامترها")),
-    blocks.map(b => el("tr", {}, el("td", {}, b.kind_fa), el("td", {}, b.title_fa, el("div", { class: "muted", dir: "ltr" }, b.type)),
-      el("td", { dir: "ltr", style: "font-family:var(--mono);font-size:11px" },
-        Object.entries(b.params.properties || {}).map(([k, v]) => el("div", { title: v.description || "", style: "overflow-wrap:anywhere" }, `${k} = ${JSON.stringify(v.default)}`))))))));
+  $("#st-blocks").replaceChildren(el("table", {}, el("tr", {}, el("th", {}, "نوع"), el("th", {}, "بلوک و پارامترهای پیش‌فرض")),
+    blocks.map(b => el("tr", {}, el("td", {}, b.kind_fa), el("td", {}, b.title_fa, el("div", { class: "muted", dir: "ltr" }, b.type),
+      el("div", { dir: "ltr", style: "font-family:var(--mono);font-size:11px;overflow-wrap:anywhere" },
+        Object.entries(b.params.properties || {}).map(([k, v]) => el("div", { title: v.description || "" }, `${k} = ${JSON.stringify(v.default)}`))))))));
 }
 $("#st-sample").addEventListener("click", () => { $("#st-doc").value = JSON.stringify(SAMPLE_DOC, null, 2); });
 $("#st-validate").addEventListener("click", async () => {
@@ -538,12 +564,14 @@ $("#st-run").addEventListener("click", async () => {
     $("#st-out").replaceChildren(
       el("div", { class: "panel" }, el("h2", {}, "نتیجه"),
         el("div", {}, "اثر انگشت سند: ", el("code", { dir: "ltr" }, r.fingerprint), " · آزمون: ", el("code", { dir: "ltr" }, r.trial_id || "—")),
-        el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidates} · معاملات: ${r.trades.length}`),
+        el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidates.length} · معاملات: ${r.trades.length}`),
         el("pre", { dir: "ltr", class: "ltr" }, r.summary)),
+      stCandidates(r.candidates),
       el("div", { class: "panel" }, el("h2", {}, "معاملات"), el("div", { class: "tablewrap", dir: "ltr" },
-        el("table", {}, el("tr", {}, ["ورود", "جهت", "قیمت ورود", "قیمت خروج", "دلیل", "R"].map(h => el("th", {}, h))),
+        el("table", {}, el("tr", {}, ["ورود", "جهت", "قیمت ورود", "قیمت خروج", "دلیل", "R", "حد ضرر"].map(h => el("th", {}, h))),
           r.trades.map(t => el("tr", {}, el("td", {}, t.entry_time.slice(0, 16).replace("T", " ")), el("td", {}, t.direction > 0 ? "خرید" : "فروش"),
-            el("td", {}, fmt(t.entry_price, 4)), el("td", {}, fmt(t.exit_price, 4)), el("td", {}, t.exit_reason), el("td", {}, signed(t.r_multiple, 2))))))));
+            el("td", {}, fmt(t.entry_price, 4)), el("td", {}, fmt(t.exit_price, 4)), el("td", {}, t.exit_reason), el("td", {}, signed(t.r_multiple, 2)),
+            el("td", { class: t.stop_label === "unjustified" ? "neg" : "" }, STOP_FA[t.stop_label] || "—")))))));
   } catch (e) { $("#st-error").textContent = e.message; } finally { $("#st-run").disabled = false; }
 });
 
