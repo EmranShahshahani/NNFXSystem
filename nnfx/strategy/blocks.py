@@ -196,6 +196,8 @@ class SetupCandidate:
 
 
 Outcome = Literal["pass", "fail", "na"]
+# A decision-path stage also shows "skipped" once something earlier refused the candidate.
+StageStatus = Literal["pass", "fail", "na", "skipped"]
 
 
 @dataclass(frozen=True)
@@ -204,6 +206,32 @@ class CheckResult:
 
     outcome: Outcome  # "na": not applicable here (e.g. missing data); never a pass
     reason: str
+
+
+@dataclass(frozen=True)
+class ChecklistItem:
+    """One line of a candidate's Pre-Trade Checklist."""
+
+    block: str  # the Block's label, e.g. "rsi_momentum#2"
+    kind: Literal["context", "confirmation"]
+    outcome: Outcome
+    weight: float  # toward the Confluence Score (0 for context gates)
+    hard: bool  # a failure refuses the candidate
+    reason: str
+
+    @property
+    def refusal(self) -> str | None:
+        return f"{self.kind}:{self.block}" if self.hard and self.outcome == "fail" else None
+
+    def record(self) -> dict[str, Any]:
+        return {
+            "block": self.block,
+            "kind": self.kind,
+            "outcome": self.outcome,
+            "weight": self.weight,
+            "hard": self.hard,
+            "reason": self.reason,
+        }
 
 
 @dataclass(frozen=True)
@@ -247,7 +275,7 @@ class ConfirmationParams(BlockParams):
     hard: bool = Field(False, description="رد شدن این بررسی، ستاپ را کامل رد می‌کند")
 
 
-class ConfirmationBlock[P: BlockParams](Block[P]):
+class ConfirmationBlock[P: ConfirmationParams](Block[P]):
     def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
         raise NotImplementedError
 

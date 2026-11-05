@@ -149,7 +149,12 @@ def test_strategy_endpoints_need_an_account_when_accounts_are_on(
 def test_the_backtest_returns_each_candidates_checklist(base: str, dirs: tuple[Path, Path]):
     raw = copy.deepcopy(DOC)
     raw["blocks"].insert(
-        2, {"kind": "confirmation", "type": "volume_expansion", "params": {"lookback": 5}}
+        2,
+        {
+            "kind": "confirmation",
+            "type": "volume_expansion",
+            "params": {"lookback": 5, "factor": 0.5},
+        },
     )
     code, res = post(
         base + "/api/strategy/backtest",

@@ -157,22 +157,29 @@ and honest trial counting.
     weight, its hard flag and a reason.
 
     **Scoring.** The Confluence Score is the summed weight of passing
-    Confirmations. It selects the Risk Tier: `tiers[floor(score)]`, capped by
-    the tier list.
+    Confirmations, rounded so fractional weights reach their tier in any
+    order. It selects the Risk Tier: `tiers[floor(score)]`, capped by the tier
+    list.
 
     **N/a.** N/a, for example missing data or too little history, is never a
-    pass. A hard check refuses the candidate only when it fails; a hard check
-    that is n/a is shown as such and does not refuse it.
+    pass. A hard check refuses the candidate only when it fails.
 
-    **Decision path.** Each candidate's path runs context → each
-    Confirmation → risk → stop → order. Once something refuses the candidate,
-    the later stages are marked skipped.
+    **Refusals and the decision path.** Every refusal reason is journaled:
+    hard checklist failures and the risk refusals (`cannot_short`, position
+    limit, halts, open-risk cap). The decision path runs context → each
+    Confirmation → risk → stop → order. Every stage after the first refusal
+    is marked skipped, while the checklist keeps every outcome.
 
-    **Stop labels.** A losing position is labelled justified when its
-    candidate passed every applicable check. Otherwise it is unjustified: it
-    was placed although a soft check failed, a rule break to review. The label
-    is traced through the journal (order key → fill → position). The API
-    returns the candidates and labels, and the UI shows them.
+    **Soft checks.** A soft check that fails lowers the score; it does not
+    abort the candidate. The blueprint's "if any branch is False, abort" is
+    the hard flag.
+
+    **Stop labels.** A placed setup is *justified* when every applicable check
+    passed and its score reaches `checklist.justified_min_score` (default 1,
+    "a valid setup with high confluence"). Every position with a losing exit
+    is labelled justified, unjustified, or unknown when the journal cannot
+    trace it (order key → fill → position). The API returns the latest 500
+    candidates with the total count and the labels, and the UI shows them.
 
 ## Consequences
 

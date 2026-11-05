@@ -10,5 +10,6 @@
 - [ ] Statistics views per dimension with counts and expectancy
 - [ ] Review prompt at every 50 trades; rule-change warning before 100 forward trades
 - [ ] API tests for the statistics
+- [ ] Trades carry the blueprint journal fields (session, setup type, risk tier, size, leverage, MAE, slippage, fees; spec story 102), noted in ticket 08 review
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

@@ -43,7 +43,8 @@ class DocumentRun:
     result: BacktestResult
     trial_id: str | None
     candidates: list[dict[str, Any]] = field(default_factory=list)  # one per Setup Candidate
-    stop_labels: dict[str, str] = field(default_factory=dict)  # losing position -> (un)justified
+    # Position with a losing exit -> "justified" / "unjustified" / "unknown" (untraceable).
+    stop_labels: dict[str, str] = field(default_factory=dict)
 
     def metrics(self) -> Metrics:
         """Performance in R, where one entry risks its whole 1R (ADR 10 §8)."""
@@ -163,18 +164,17 @@ def _candidates_and_labels(
         for ev in rec["evaluations"]:
             candidates.append({"symbol": ev["symbol"], "time": ev["time"], **ev["values"]})
             for intent in ev["intents"]:
-                justified_by_key[intent["idempotency_key"]] = bool(ev["values"].get("justified"))
+                justified_by_key[intent["idempotency_key"]] = ev["values"].get("justified") is True
         for e in rec.get("orders", []):
             if e.get("e") == "fill":
                 position_key[e["pid"]] = e["key"]
-    net: dict[str, float] = {}
-    for t in result.trades:
-        net[t.position_id] = net.get(t.position_id, 0.0) + t.net_pnl
     labels = {
-        pid: "justified"
-        if justified_by_key.get(position_key.get(pid, ""), False)
-        else "unjustified"
-        for pid, pnl in net.items()
-        if pnl < 0
+        t.position_id: (
+            "unknown"
+            if (key := position_key.get(t.position_id)) is None or key not in justified_by_key
+            else ("justified" if justified_by_key[key] else "unjustified")
+        )
+        for t in result.trades
+        if t.net_pnl < 0  # every losing exit's position is labelled, partial ones included
     }
     return candidates, labels

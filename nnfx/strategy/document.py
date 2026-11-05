@@ -129,6 +129,14 @@ class RiskSection(_Strict):
         return v
 
 
+class ChecklistSection(_Strict):
+    """How the Pre-Trade Checklist judges a setup (ADR 10 §11)."""
+
+    # A stop is "justified" only on a setup that passed every applicable check AND
+    # reached this Confluence Score (blueprint: "a valid setup with high confluence").
+    justified_min_score: float = Field(1.0, ge=0)
+
+
 class StrategyDocument(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -138,6 +146,7 @@ class StrategyDocument(BaseModel):
     universe: list[str] = Field(default_factory=list)
     blocks: list[BlockSpec]
     risk: RiskSection = RiskSection()
+    checklist: ChecklistSection = ChecklistSection()
 
     def fingerprint(self) -> str:
         return hashlib.sha256(canonical_json(self.model_dump(mode="json")).encode()).hexdigest()[

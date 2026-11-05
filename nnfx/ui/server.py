@@ -60,6 +60,9 @@ def _clean_dict(o: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+MAX_CANDIDATES = 500  # candidates returned per backtest (about 1 KB each)
+
+
 class App:
     def __init__(
         self,

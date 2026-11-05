@@ -502,12 +502,13 @@ const SAMPLE_DOC = {
   ],
   risk: { risk_per_trade: 0.005 },
 };
-const STOP_FA = { justified: "موجه", unjustified: "ناموجه (قانون‌شکنی)" };
+const STOP_FA = { justified: "موجه", unjustified: "ناموجه (قانون‌شکنی)", unknown: "نامشخص" };
 const OUTCOME_FA = { pass: "✓ قبول", fail: "✗ رد", na: "— نامربوط", skipped: "· انجام نشد" };
 const STAGE_FA = { context: "زمینه", risk: "ریسک", stop: "حد ضرر", order: "سفارش" };
-function stCandidates(cands) {
+function stCandidates(cands, total) {
   if (!cands.length) return el("div", { class: "panel muted" }, "هیچ ستاپی در این بازه پیدا نشد.");
-  return el("div", { class: "panel" }, el("h2", {}, `چک‌لیست پیش از معامله (${cands.length} ستاپ)`),
+  return el("div", { class: "panel" }, el("h2", {}, `چک‌لیست پیش از معامله (${total} ستاپ)`),
+    total > cands.length ? el("div", { class: "note" }, `فقط ${cands.length} ستاپ آخر نمایش داده می‌شود.`) : null,
     cands.map(c => el("details", { class: "cand" },
       el("summary", {},
         el("span", { dir: "ltr" }, c.time.slice(0, 16).replace("T", " ")), " · ", el("bdi", {}, c.symbol), " · ",
@@ -564,9 +565,9 @@ $("#st-run").addEventListener("click", async () => {
     $("#st-out").replaceChildren(
       el("div", { class: "panel" }, el("h2", {}, "نتیجه"),
         el("div", {}, "اثر انگشت سند: ", el("code", { dir: "ltr" }, r.fingerprint), " · آزمون: ", el("code", { dir: "ltr" }, r.trial_id || "—")),
-        el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidates.length} · معاملات: ${r.trades.length}`),
+        el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidate_count} · معاملات: ${r.trades.length}`),
         el("pre", { dir: "ltr", class: "ltr" }, r.summary)),
-      stCandidates(r.candidates),
+      stCandidates(r.candidates, r.candidate_count),
       el("div", { class: "panel" }, el("h2", {}, "معاملات"), el("div", { class: "tablewrap", dir: "ltr" },
         el("table", {}, el("tr", {}, ["ورود", "جهت", "قیمت ورود", "قیمت خروج", "دلیل", "R", "حد ضرر"].map(h => el("th", {}, h))),
           r.trades.map(t => el("tr", {}, el("td", {}, t.entry_time.slice(0, 16).replace("T", " ")), el("td", {}, t.direction > 0 ? "خرید" : "فروش"),

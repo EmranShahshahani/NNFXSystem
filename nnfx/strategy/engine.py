@@ -18,6 +18,7 @@ Pending orders, fills, cancellations and exits are the shared broker's
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -40,6 +41,7 @@ from nnfx.engine.types import (
 from nnfx.instruments import InstrumentSpec
 from nnfx.strategy.blocks import (
     BlockKind,
+    ChecklistItem,
     ConfirmationBlock,
     ContextBlock,
     ContextOutput,
@@ -48,6 +50,7 @@ from nnfx.strategy.blocks import (
     SetupBlock,
     SetupCandidate,
     SetupOutput,
+    StageStatus,
     StopBlock,
     StrategyData,
 )
@@ -174,44 +177,30 @@ class DocumentEngine:
 
     def _checklist(
         self, cand: SetupCandidate, comp: CompiledSymbol
-    ) -> tuple[list[dict[str, Any]], float, list[str]]:
-        """Every Context and Confirmation check: (checklist, Confluence Score, hard failures)."""
-        items: list[dict[str, Any]] = []
-        for name, out in comp.contexts:
-            ok = out.allows(cand.bar, cand.direction)
-            side = "long" if cand.direction > 0 else "short"
-            items.append(
-                {
-                    "block": name,
-                    "kind": "context",
-                    "outcome": "pass" if ok else "fail",
-                    "weight": 0.0,
-                    "hard": True,
-                    "reason": f"{side}s {'allowed' if ok else 'not allowed'} here",
-                }
+    ) -> tuple[list[ChecklistItem], float]:
+        """Every Context and Confirmation check, and the Confluence Score."""
+        side = "longs" if cand.direction > 0 else "shorts"
+        items = [
+            ChecklistItem(
+                name,
+                "context",
+                "pass" if (ok := out.allows(cand.bar, cand.direction)) else "fail",
+                0.0,
+                True,
+                f"{side} {'allowed' if ok else 'not allowed'} here",
             )
-        score = 0.0
+            for name, out in comp.contexts
+        ]
         for name, block in self.compiled.confirmations:
             res = block.check(cand, comp.data)
-            weight, hard = float(block.p.weight), bool(block.p.hard)
-            if res.outcome == "pass":
-                score += weight
             items.append(
-                {
-                    "block": name,
-                    "kind": "confirmation",
-                    "outcome": res.outcome,
-                    "weight": weight,
-                    "hard": hard,
-                    "reason": res.reason,
-                }
+                ChecklistItem(
+                    name, "confirmation", res.outcome, block.p.weight, block.p.hard, res.reason
+                )
             )
-        hard_fails = [
-            f"{i['kind'] if i['kind'] == 'context' else 'checklist'}:{i['block']}"
-            for i in items
-            if i["hard"] and i["outcome"] == "fail"
-        ]
-        return items, score, hard_fails
+        # Rounded: fractional weights (0.6 + 0.3 + 0.1) must reach their tier in any order.
+        score = round(sum(i.weight for i in items if i.outcome == "pass"), 9)
+        return items, score
 
     def _evaluate(
         self,
@@ -224,27 +213,15 @@ class DocumentEngine:
     ) -> tuple[Evaluation, float]:
         """The Pre-Trade Checklist, then risk, stop and order; returns the evaluation and risk cash.
 
-        The decision path walks context -> each confirmation -> risk -> stop ->
-        order; once something refuses the candidate, later stages are skipped.
+        Every refusal reason is journaled. The decision path walks context ->
+        each Confirmation -> risk -> stop -> order and marks every stage after
+        the first refusal as skipped (the checklist still shows its outcomes).
         """
         doc = self.compiled.document
-        checklist, score, hard_fails = self._checklist(cand, comp)
-        blocked = list(hard_fails)
-        path: list[dict[str, str]] = [
-            {
-                "stage": "context",
-                "status": "fail"
-                if any(i["kind"] == "context" and i["outcome"] == "fail" for i in checklist)
-                else "pass",
-            }
-        ]
-        path += [
-            {"stage": i["block"], "status": i["outcome"]}
-            for i in checklist
-            if i["kind"] == "confirmation"
-        ]
+        checklist, score = self._checklist(cand, comp)
+        blocked = [r for i in checklist if (r := i.refusal) is not None]
 
-        risk = govern(doc.risk, account, pd.Timestamp(cand.time), int(score), governor)
+        risk = govern(doc.risk, account, pd.Timestamp(cand.time), math.floor(score), governor)
         risk_cash = risk.risk_fraction * account.equity
         record = risk.record()
         risk_refusals: list[str] = []
@@ -256,12 +233,12 @@ class DocumentEngine:
         cap = doc.risk.max_open_risk
         if cap is not None and committed + risk_cash > cap * account.equity * (1 + 1e-9):
             risk_refusals.append("open_risk_cap")
+        refused_by_checklist = bool(blocked)
+        blocked += risk_refusals  # always journaled, even after a checklist refusal
 
         intents: list[Intent] = []
-        stages = {"risk": "skipped", "stop": "skipped", "order": "skipped"}
-        if not blocked:
-            stages["risk"] = "fail" if risk_refusals else "pass"
-            blocked += risk_refusals
+        stop_status: StageStatus = "skipped"
+        order_status: StageStatus = "skipped"
         if not blocked:
             stop = self.compiled.stop.initial_stop(cand, comp.data)
             if not np.isfinite(stop) or (cand.trigger - stop) * cand.direction <= 0:
@@ -273,37 +250,56 @@ class DocumentEngine:
                 if problem is not None:
                     blocked.append(problem[0])
                     record["leverage_detail"] = problem[1]
-            stages["stop"] = "fail" if blocked else "pass"
+            stop_status = "fail" if blocked else "pass"
             if not blocked:
                 intents, problems = self._orders(cand, comp, stop, risk.risk_fraction)
                 blocked += problems
-                stages["order"] = "fail" if problems else "pass"
-        path += [{"stage": k, "status": v} for k, v in stages.items()]
+                order_status = "fail" if problems else "pass"
 
-        applicable = [i for i in checklist if i["outcome"] != "na"]
+        path: list[tuple[str, StageStatus]] = []
+        refused = False
+        context = [i for i in checklist if i.kind == "context"]
+        context_ok = all(i.outcome == "pass" for i in context)
+        path.append(("context", "pass" if context_ok else "fail"))
+        refused = not context_ok
+        for i in checklist:
+            if i.kind == "confirmation":
+                path.append((i.block, "skipped" if refused else i.outcome))
+                refused = refused or i.refusal is not None
+        risk_status: StageStatus = (
+            "skipped" if refused_by_checklist else ("fail" if risk_refusals else "pass")
+        )
+        path += [("risk", risk_status), ("stop", stop_status), ("order", order_status)]
+
+        placed = not blocked
+        applicable = [i for i in checklist if i.outcome != "na"]
+        justified = (
+            all(i.outcome == "pass" for i in applicable)
+            and score >= doc.checklist.justified_min_score
+            if placed
+            else None
+        )
         evaluation = Evaluation(
             symbol=cand.symbol,
             time=cand.time,
             inputs={"bar": cand.bar},
             values={
                 **cand.record(),
-                "checklist": checklist,
+                "checklist": [i.record() for i in checklist],
                 "score": score,
-                "tier": risk.base_risk,
+                "risk_tier": risk.base_risk,
                 "risk": record,
-                "decision": "refused" if blocked else "placed",
+                "decision": "placed" if placed else "refused",
                 "reasons": blocked,
-                # A stop on a setup that passed every applicable check is a normal loss.
-                "justified": all(i["outcome"] == "pass" for i in applicable),
-                "decision_path": path,
+                # On a placed setup: would a stop here be a normal loss (ADR 10 §11)?
+                "justified": justified,
+                "decision_path": [{"stage": s, "status": st} for s, st in path],
             },
             state_before=SymbolState(),
             state_after=SymbolState(),
-            intents=intents if not blocked else [],
+            intents=intents if placed else [],
             conditions={
-                "context": {
-                    i["block"]: i["outcome"] == "pass" for i in checklist if i["kind"] == "context"
-                },
+                "context": {i.block: i.outcome == "pass" for i in context},
                 "risk": {"allowed": risk.allowed},
             },
             blocked=blocked,

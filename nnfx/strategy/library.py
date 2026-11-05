@@ -132,20 +132,26 @@ class RsiMomentumParams(ConfirmationParams):
     period: int = Field(14, ge=2, description="دورهٔ RSI")
     long_above: float = Field(70.0, gt=0, lt=100, description="برای خرید، RSI بالاتر از این")
     short_below: float = Field(30.0, gt=0, lt=100, description="برای فروش، RSI پایین‌تر از این")
+    fresh_bars: int = Field(
+        3, ge=0, description="RSI باید در این تعداد کندل اخیر وارد ناحیه شده باشد (۰: فقط سطح)"
+    )
 
 
 @register
 class RsiMomentum(ConfirmationBlock[RsiMomentumParams]):
-    """RSI momentum on the setup candle (blueprint: RSI 14 above 70 longs, below 30 shorts).
+    """RSI momentum on the setup candle (blueprint 04: RSI 14 must *cross into* overbought
+    for longs, oversold for shorts).
 
-    Not applicable until ``period + 1`` closes exist. The basic form; the
-    oscillator methods (Bollinger on RSI, divergences, ...) are ticket 15.
+    Passes when RSI is beyond the threshold now and was not, at some point, within
+    the last ``fresh_bars`` bars (it *entered* the zone); ``fresh_bars = 0`` checks
+    the level only. Not applicable until ``period + 1`` closes exist. The basic
+    form; the oscillator methods (Bollinger on RSI, divergences, ...) are ticket 15.
     """
 
     kind = BlockKind.CONFIRMATION
     type = "rsi_momentum"
     title_fa = "مومنتوم RSI"
-    sources = ("tcp-blueprint: RSI 14 momentum confirmation",)
+    sources = ("tcp-blueprint 04: RSI 14 crossing into overbought/oversold",)
     Params = RsiMomentumParams
 
     def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
@@ -155,16 +161,23 @@ class RsiMomentum(ConfirmationBlock[RsiMomentumParams]):
             return CheckResult(
                 "na", f"RSI {p.period} needs {p.period + 1} closes, {len(close)} so far"
             )
-        # Wilder smoothing settles within ~10 periods: a causal window keeps checks cheap.
-        value = float(rsi(close[-max(10 * p.period, 200) :], p.period)[-1])
-        if candidate.direction > 0:
-            ok = value > p.long_above
+        series = rsi(close, p.period)
+        sign = 1.0 if candidate.direction > 0 else -1.0
+        level = p.long_above if sign > 0 else p.short_below
+        word = "above" if sign > 0 else "below"
+        now = float(series[-1])
+        if not (now - level) * sign > 0:
+            return CheckResult("fail", f"RSI {now:.1f} not {word} {level:g}")
+        if p.fresh_bars == 0:
+            return CheckResult("pass", f"RSI {now:.1f} {word} {level:g}")
+        before = series[-1 - p.fresh_bars : -1]
+        outside = before[np.isfinite(before) & ((before - level) * sign <= 0)]
+        if len(outside):
             return CheckResult(
-                "pass" if ok else "fail", f"RSI {value:.1f} {'>' if ok else '<='} {p.long_above:g}"
+                "pass", f"RSI {now:.1f} entered {word} {level:g} within {p.fresh_bars} bars"
             )
-        ok = value < p.short_below
         return CheckResult(
-            "pass" if ok else "fail", f"RSI {value:.1f} {'<' if ok else '>='} {p.short_below:g}"
+            "fail", f"RSI {now:.1f} already {word} {level:g} for more than {p.fresh_bars} bars"
         )
 
 
@@ -177,8 +190,10 @@ class VolumeExpansionParams(ConfirmationParams):
 class VolumeExpansion(ConfirmationBlock[VolumeExpansionParams]):
     """The setup candle's volume against the average of the ``lookback`` bars before it.
 
-    Not applicable when the venue reports no volume or there is too little
-    history. The basic form; the volume matrix and climaxes are ticket 17.
+    Passes when it is strictly above ``factor`` x that average (expansion for a
+    new leg). Not applicable when the venue reports no volume or there is too
+    little history. The basic form: the continuation case (quieter than the
+    impulse), the volume matrix and climaxes are ticket 17.
     """
 
     kind = BlockKind.CONFIRMATION
@@ -200,10 +215,10 @@ class VolumeExpansion(ConfirmationBlock[VolumeExpansionParams]):
         v = f.volume
         avg = float(np.mean(v[i - p.lookback : i]))
         ratio = float(v[i]) / avg if avg > 0 else float("inf")
-        ok = ratio >= p.factor
+        ok = ratio > p.factor  # expansion: strictly above the average
         return CheckResult(
             "pass" if ok else "fail",
-            f"volume {ratio:.2f}x its {p.lookback}-bar average (needs {p.factor:g}x)",
+            f"volume {ratio:.2f}x its {p.lookback}-bar average (needs more than {p.factor:g}x)",
         )
 
 
