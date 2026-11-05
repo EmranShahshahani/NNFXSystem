@@ -40,6 +40,7 @@ from nnfx.data.timeframes import TimeframeViews
 from nnfx.engine.types import ExitPlan, PositionView
 from nnfx.instruments import InstrumentSpec
 from nnfx.strategy.series import pivots
+from nnfx.strategy.structure import dow_states
 
 Role = Literal["hwc", "mwc", "lwc"]
 
@@ -152,8 +153,6 @@ class StrategyData:
 
     def dow(self, role: str, pivot_bars: int) -> np.ndarray:
         """The Dow trend state of each ``role`` bar (``structure.dow_states``), cached."""
-        from nnfx.strategy.structure import dow_states
-
         key = ("dow", role, pivot_bars)
         if key not in self._cache:
             f = self.frames[role]

@@ -11,7 +11,7 @@ import pytest
 from nnfx.journal.journal import Journal
 from nnfx.strategy import validate_document
 from nnfx.strategy.run import backtest_document
-from nnfx.strategy.structure import dow_states, wave_bias
+from nnfx.strategy.structure import WaveBias, dow_states, wave_bias
 from tests.test_strategy_engine import BTC, DOC, SYM, frame
 
 Row = tuple[float, float, float, float]
@@ -36,12 +36,13 @@ def states(rows: list[Row], n: int = 2) -> np.ndarray:
 
 # ------------------------------------------------------------------ Dow
 def test_higher_highs_and_higher_lows_make_an_uptrend():
-    rows = path(110, 105, 115, 110, 120)  # HL at 110 > 105? no: lows 100(start), 105, 110
+    rows = path(110, 105, 115, 110, 120)  # swing lows 105 then 110 (a higher low)
     s = states(rows)
     assert s[0] == 0 and s[-1] == 1
-    # It turns up on the close that breaks the last confirmed swing high (115).
+    # It turns up on the first close above the last confirmed swing high (115).
     first = int(np.argmax(s == 1))
-    assert rows[first][3] > 115 and all(r[3] <= 115 for r in rows[20:first])
+    peak = [r[3] for r in rows].index(115.0)
+    assert rows[first][3] > 115 and all(r[3] <= 115 for r in rows[peak:first])
 
 
 def test_a_trend_ends_only_on_a_failed_peak_and_a_neckline_break():
@@ -75,7 +76,7 @@ def test_downtrends_mirror_uptrends():
 
 
 # --------------------------------------------------------------- waves
-def bias(h: list[int], m: list[int], lo: list[int], **kw: bool):
+def bias(h: list[int], m: list[int], lo: list[int], **kw: bool) -> WaveBias:
     return wave_bias(np.array(h), np.array(m), np.array(lo), **kw)
 
 
@@ -102,6 +103,22 @@ def test_the_hwc_turns_flat_only_after_the_lwc_and_then_the_mwc():
 def test_an_mwc_change_without_the_lwc_first_does_not_flip_the_hwc():
     b = bias([1, 1, 1], [1, -1, -1], [1, 1, 1])
     assert b.hwc_effective.tolist() == [1, 1, 1] and not b.short_ok.any()
+    # The MWC first and the LWC after is the wrong order: still no flip.
+    late = bias([1, 1, 1, 1], [1, -1, -1, -1], [1, 1, -1, -1])
+    assert late.hwc_effective.tolist() == [1, 1, 1, 1] and not late.short_ok.any()
+    # Both on the same bar counts.
+    same = bias([1, 1], [1, -1], [1, -1])
+    assert same.hwc_effective.tolist() == [1, 0]
+
+
+def test_dow_states_skip_nan_bars_and_need_a_positive_pivot_window():
+    rows = path(110, 105, 115, 110, 120, 113, 118, 111)
+    a = np.asarray(rows, dtype=float)
+    a[len(path(110, 105, 115, 110, 120)) + 3, 2] = np.nan  # a NaN low in the neckline span
+    s = dow_states(a[:, 2], a[:, 1], a[:, 3], 2)
+    assert s[-1] != 1  # the failed peak still ends the trend
+    with pytest.raises(ValueError):
+        dow_states(a[:, 2], a[:, 1], a[:, 3], 0)
 
 
 def test_the_hwc_ending_its_own_trend_makes_it_flat():
@@ -143,7 +160,7 @@ def run(rows: list[Row], raw: dict[str, Any]):
 
 def test_a_two_way_box_trade_is_tagged_counter_trend_and_closes_at_2r():
     ctx = {"kind": "context", "type": "wave_cycles", "params": {"two_way_box": True}}
-    out = run([*FLAT, FLAT_SETUP, FILL, *TO_2R], document(ctx, {"counter_trend": "tagged"}))
+    out = run([*FLAT, FLAT_SETUP, FILL, *TO_2R], document(ctx, {}))  # tagged by default
     (c,) = out.candidates
     assert c["decision"] == "placed" and "counter_trend" in c["tags"]
     (t,) = out.result.trades  # no ladder, no Runner: everything at 2R
@@ -199,3 +216,54 @@ def test_wave_cycles_never_look_ahead_on_a_fixture_with_hwc_trends():
         assert np.array_equal(part.short_ok, full.short_ok[:n])
         for k in (0, 1):
             assert np.array_equal(part.tags["counter_trend"][k], full.tags["counter_trend"][k][:n])
+
+
+def test_every_wave_rule_through_the_harness_on_three_real_timeframes():
+    """H4 / H1 / M15 on a trending synthetic series: each candidate's journaled
+    decision follows the wave rules, and every rule is exercised."""
+    from nnfx.data.synthetic import intraday_walk
+
+    raw = document({"kind": "context", "type": "wave_cycles", "params": {"two_way_box": True}})
+    raw["timeframes"] = {"hwc": "H4", "mwc": "H1", "lwc": "M15"}
+    raw["risk"]["max_positions_per_symbol"] = 100
+    res = validate_document(raw)
+    assert res.document is not None, res.render()
+    bars = intraday_walk(96 * 40, seed=3, symbol=SYM)
+    out = backtest_document(res.document, {SYM: bars}, {SYM: BTC}, journal=Journal())
+    from nnfx.config import SessionConfig
+    from nnfx.strategy import StrategyData
+    from nnfx.strategy.library import WaveCycles, WaveCyclesParams
+
+    d = StrategyData.build(bars, raw["timeframes"], BTC, SessionConfig())
+    ctx = WaveCycles(WaveCyclesParams(two_way_box=True)).compute(d)
+    at = {t.isoformat(): i for i, t in enumerate(d.base.index)}
+    seen: set[str] = set()
+    for c in out.candidates:
+        i, side = at[c["time"]], c["direction"]
+        allowed = ctx.allows(i, side)
+        assert (c["checklist"][0]["outcome"] == "pass") == allowed
+        assert ("counter_trend" in c["tags"]) == ctx.tags_for(i, side).__contains__("counter_trend")
+        eff, mwc = int(ctx.flags["hwc_effective"][i]), int(ctx.flags["mwc_state"][i])
+        lwc = int(ctx.flags["lwc_state"][i])
+        if eff != 0 and side == -eff:
+            assert not allowed
+            seen.add("against_hwc_refused" + ("_lwc_with_side" if lwc == side else ""))
+        if eff != 0 and side == eff:
+            assert allowed and "counter_trend" not in c["tags"]
+            seen.add("with_hwc")
+        if eff == 0 and ctx.flags["primary"][i] != 0 and ctx.flags["hwc_state"][i] != 0:
+            seen.add("bottom_up_flat")
+        if bool(ctx.flags["box"][i]):
+            assert allowed and "counter_trend" in c["tags"]
+            seen.add("box")
+        if eff == 0 and mwc != 0 and side == mwc and side == -ctx.flags["primary"][i]:
+            assert "counter_trend" in c["tags"]
+            seen.add("secondary_wave")
+    assert {"against_hwc_refused", "with_hwc", "bottom_up_flat", "box"} <= seen, seen
+    # Secondary-wave and box trades are really placed, tagged for the Profit Chain.
+    tagged = {
+        c["time"]
+        for c in out.candidates
+        if "counter_trend" in c["tags"] and c["decision"] == "placed"
+    }
+    assert tagged

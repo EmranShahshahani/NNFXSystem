@@ -130,7 +130,8 @@ class WaveCyclesParams(BlockParams):
         True, description="وقتی HWC خنثی است، جهت روند MWC مجاز باشد (موج فرعی)"
     )
     two_way_box: bool = Field(
-        False, description="باکس دوطرفه: وقتی HWC و MWC هر دو رنج‌اند، هر دو جهت با تارگت ۲R تا ۳R"
+        False,
+        description="باکس دوطرفه: وقتی HWC و MWC هر دو رنج‌اند، هر دو جهت (برچسب خلاف روند: ۲R تا ۳R در زنجیرهٔ سود)",
     )
 
 
@@ -404,7 +405,7 @@ class ProfitChainParams(BlockParams):
         0.05, ge=0, description="فاصلهٔ حد ضرر رانر پشت سوئینگ، درصد قیمت"
     )
     counter_trend: Literal["off", "always", "tagged"] = Field(
-        "off",
+        "tagged",
         description="حالت خلاف روند: خاموش، همیشه، یا فقط ستاپ‌های برچسب counter_trend",
     )
     counter_trend_exit: Literal["2r", "boundary"] = Field(

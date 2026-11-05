@@ -222,15 +222,14 @@ and honest trial counting.
     check `manage()` for lookahead and price scale the way §5 checks every
     other Block.
 
-    **Counter-trend mode.** `always`, or `tagged` for candidates tagged
-    `counter_trend`, drops the Runner and closes everything at 2R. With
+    **Counter-trend mode.** `always`, or `tagged` (the default) for
+    candidates tagged `counter_trend`, drops the Runner and closes everything at 2R. With
     `counter_trend_exit: boundary` it closes at the first structural boundary
     instead: the nearest confirmed management swing beyond the trigger at the
     time of the setup, clamped to [2R, `counter_trend_max_r` = 3R], since
     secondary-wave trades target 1:2 or 1:3. A boundary at 1.2R becomes 2R
     (the floor) and one at 6R becomes 3R. "2R or the boundary" is the user's
-    choice, not whichever comes first. No Block sets the tag yet; market structure (ticket 09)
-    will.
+    choice, not whichever comes first. `wave_cycles` sets the tag (§13).
 
     **Spot recycling.** With `recycle_to_spot`, a whole position closing at
     `recycle_min_r` (5R) or more records its net profit as moved from futures
@@ -252,6 +251,8 @@ and honest trial counting.
       broken swing low is also a downtrend, so a strict lower high turns
       down on the next bar, while an equal high stays in range. A deep
       pullback through a higher low alone does not end the trend.
+    - "Turns down" means on a later close below the latest swing low,
+      usually the very next one.
 
     Two Context Blocks read these states:
     - `dow_trend` gates on one role. In range it allows no trade, or both
@@ -260,22 +261,33 @@ and honest trial counting.
       videos 63, 64, 26):
       - The HWC's trend sets the direction, so an LWC downtrend inside an
         HWC uptrend is never shorted.
-      - The HWC is treated as flat only after the LWC and then the MWC turn
-        away from its trend (range or opposite), or when its own trend ends.
-        An MWC turn with the LWC still in line does not count. The MWC
-        coming back restores the bias.
+      - The HWC is treated as flat only when the MWC turns away from its
+        trend (range or opposite) while the LWC already has (the same bar
+        counts), or when its own trend ends. An MWC that turns first does
+        not count, even if the LWC follows later. The MWC coming back
+        restores the bias. "Flat" is this effective bias: the HWC's own Dow
+        state may still read up, and the box can then open.
       - A flat HWC follows the MWC's trend (`follow_mwc_when_flat`).
       - With the HWC flat and the MWC ranging, `two_way_box` allows both
         directions.
       - Trades against the HWC's last trend, and box trades, are tagged
-        `counter_trend`. The Profit Chain's `counter_trend: tagged` closes
-        them at 2R-3R (§12).
+        `counter_trend`. The Profit Chain's default `counter_trend: tagged`
+        closes them at 2R-3R (§12). `fixed_r` ignores the tag.
+      - The box only allows both directions. The entries still come from
+        the document's Setup Blocks. Stop-buy and stop-sell triggers at
+        the box extremes need boxes, which come in ticket 11.
 
     Context Blocks can now tag candidates by direction. The engine merges the
     tags before the checklist, so they are journaled and reach the Exit Block.
-    The registry gate's daily HWC never trends on its 40-day fixture, so a
-    dedicated test checks `wave_cycles` for lookahead on H4/H1/M15, where
-    every rule fires.
+    A tag is merged even when the Context that sets it refuses the
+    candidate.
+
+    The registry gate's daily HWC never trends on its 40-day fixture. A
+    dedicated test therefore checks `wave_cycles` for lookahead on H4/H1/M15,
+    where every rule fires. A harness run on the same three timeframes checks
+    each candidate's journaled decision and tags against the rules. Hand-built
+    harness fixtures cover the box, the range refusal and the failed peak;
+    the pure functions are unit-tested rule by rule.
 
 ## Consequences
 

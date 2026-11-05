@@ -27,8 +27,14 @@ def dow_states(low: np.ndarray, high: np.ndarray, close: np.ndarray, pivot_bars:
       neckline, the lowest low between those two peaks. The state goes back
       to range; a lower high plus a break of a swing low then makes it down.
       A deep pullback that breaks a higher low without a failed peak does not
-      end the trend. Down is mirrored.
+      end the trend. Down is mirrored. After a strict lower high the state
+      turns down on a later close below the latest swing low (usually the
+      very next one); after an equal high it stays in range.
+
+    A NaN bar is never a swing; neckline extremes skip NaN.
     """
+    if pivot_bars < 1:
+        raise ValueError("pivot_bars must be at least 1")
     n = len(close)
     lows, highs = pivots(low, high, pivot_bars, pivot_bars)
     out = np.zeros(n, dtype="int8")
@@ -46,12 +52,12 @@ def dow_states(low: np.ndarray, high: np.ndarray, close: np.ndarray, pivot_bars:
         c = close[j]
         if s == UP:
             if len(hs) >= 2 and high[hs[-1]] <= high[hs[-2]]:
-                neck = low[hs[-2] + 1 : hs[-1]].min()
+                neck = np.nanmin(low[hs[-2] + 1 : hs[-1]])  # never empty: swings are 2+ apart
                 if c < neck:
                     s = RANGE
         elif s == DOWN:
             if len(ls) >= 2 and low[ls[-1]] >= low[ls[-2]]:
-                neck = high[ls[-2] + 1 : ls[-1]].max()
+                neck = np.nanmax(high[ls[-2] + 1 : ls[-1]])
                 if c > neck:
                     s = RANGE
         elif hs and len(ls) >= 2 and c > high[hs[-1]] and low[ls[-1]] > low[ls[-2]]:
@@ -88,9 +94,12 @@ def wave_bias(
     - **The HWC sets the direction** (video 63). In an HWC uptrend only longs
       are allowed, so an LWC downtrend is never shorted: it is a discounted
       long entry. Mirrored for a downtrend.
-    - **Bottom-up reversal.** The HWC is treated as flat only once the LWC has
-      turned away from its trend (range or opposite) and then the MWC has too,
-      or once the HWC's own trend has ended. One LWC breakdown never flips it.
+    - **Bottom-up reversal.** The HWC is treated as flat only when the MWC
+      turns away from its trend (range or opposite) while the LWC already has
+      (the same bar counts), or once the HWC's own trend has ended. An MWC
+      that turns first does not count, even if the LWC follows. One LWC
+      breakdown never flips it. "Flat" is this effective bias: the HWC's own
+      Dow state may still read up.
     - **A flat HWC** follows the MWC's trend (``follow_mwc_when_flat``). A
       trade against the HWC's last trend is a secondary wave, tagged
       counter-trend.
@@ -103,22 +112,22 @@ def wave_bias(
     cl, cs = np.zeros(n, bool), np.zeros(n, bool)
     prim_out, eff_out, box = np.zeros(n, "int8"), np.zeros(n, "int8"), np.zeros(n, bool)
     prim = 0
-    lwc_away = False  # the LWC has turned away from the primary trend
-    sequence = False  # ... and then the MWC did too
+    lwc_away = False  # the LWC had turned away from the primary trend by the last bar
+    mwc_with = True  # the MWC was with the primary trend at the last bar
+    sequence = False  # the MWC turned away while the LWC already had
     for i in range(n):
         h, m, lo = int(hwc[i]), int(mwc[i]), int(lwc[i])
         if h != 0 and h != prim:
-            prim, lwc_away, sequence = h, False, False
+            prim, lwc_away, mwc_with, sequence = h, False, True, False
         if prim != 0:
             if m == prim:
                 sequence = False  # the MWC is back with the trend
-            elif lwc_away or lo != prim:
-                sequence = True  # the MWC turned after (or with) the LWC
-            lwc_away = lo != prim
+            elif mwc_with and (lwc_away or lo != prim):
+                sequence = True  # the MWC turns now, after (or with) the LWC
+            lwc_away, mwc_with = lo != prim, m == prim
         eff = prim if h != 0 and not sequence else 0
         if eff != 0:
-            ok = eff
-            long_ok[i], short_ok[i] = ok > 0, ok < 0
+            long_ok[i], short_ok[i] = eff > 0, eff < 0
         elif m != 0 and follow_mwc_when_flat:
             long_ok[i], short_ok[i] = m > 0, m < 0
             cl[i], cs[i] = prim < 0, prim > 0

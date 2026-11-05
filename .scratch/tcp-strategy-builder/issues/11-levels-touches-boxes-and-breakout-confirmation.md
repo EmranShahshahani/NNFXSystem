@@ -11,6 +11,7 @@
 - [ ] Touch-count rule enforced with parameters
 - [ ] Box Breakout setup emits a candidate with trigger beyond the edge and stop per blueprint
 - [ ] Each breakout confirmation is a separate Confirmation Block
+- [ ] Two-way box mode (ticket 09): stop-buy and stop-sell triggers at the box extremes when `wave_cycles` reports the box
 - [ ] Fixtures for sweep vs breakout, first-touch refusal, and each confirmation
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`
