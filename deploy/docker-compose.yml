@@ -26,7 +26,7 @@ services:
     image: nnfx-beta
     restart: unless-stopped
     environment:
-      NNFX_ORDERBOOK_SYMBOLS: ${NNFX_ORDERBOOK_SYMBOLS:-BTC/IRT USDT/IRT}
+      NNFX_ORDERBOOK_SYMBOLS: ${NNFX_ORDERBOOK_SYMBOLS:-BTC/IRT USDT/IRT ETH/IRT}
       NNFX_ORDERBOOK_INTERVAL: ${NNFX_ORDERBOOK_INTERVAL:-10}
     volumes:
       - orderbook-data:/app/data/orderbook

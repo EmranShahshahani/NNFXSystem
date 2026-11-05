@@ -35,6 +35,9 @@ class OrderBookSnapshot:
     bids: np.ndarray  # (n, 2): price, size; highest price first
     asks: np.ndarray  # (n, 2): price, size; lowest price first
     last_trade: float | None = None
+    # When the exchange last updated this book (Nobitex ``lastUpdate``); ``time`` is
+    # when it was seen. A stale book seen late keeps its old exchange time.
+    exchange_time: pd.Timestamp | None = None
 
     @classmethod
     def of(
@@ -44,10 +47,16 @@ class OrderBookSnapshot:
         bids: Sequence[Sequence[float]],
         asks: Sequence[Sequence[float]],
         last_trade: float | None = None,
+        exchange_time: pd.Timestamp | None = None,
     ) -> OrderBookSnapshot:
         """Build from rows in any order; levels with no size are dropped."""
         return cls(
-            symbol, pd.Timestamp(time), _levels(bids, True), _levels(asks, False), last_trade
+            symbol,
+            pd.Timestamp(time),
+            _levels(bids, True),
+            _levels(asks, False),
+            last_trade,
+            None if exchange_time is None else pd.Timestamp(exchange_time),
         )
 
     @property
@@ -62,10 +71,16 @@ class OrderBookSnapshot:
     def mid(self) -> float:
         return (self.best_bid + self.best_ask) / 2.0
 
-    def at(self, time: pd.Timestamp) -> OrderBookSnapshot:
-        """The same book stamped with another time (the recorder's clock)."""
+    @property
+    def two_sided(self) -> bool:
+        """Both sides present and not crossed: the only books walls are read from."""
+        return bool(len(self.bids) and len(self.asks) and self.best_bid < self.best_ask)
+
+    def seen_at(self, time: pd.Timestamp) -> OrderBookSnapshot:
+        """The same book as seen at ``time`` (the recorder's clock); keeps its exchange time."""
+        ex = self.exchange_time if self.exchange_time is not None else self.time
         return OrderBookSnapshot(
-            self.symbol, pd.Timestamp(time), self.bids, self.asks, self.last_trade
+            self.symbol, pd.Timestamp(time), self.bids, self.asks, self.last_trade, ex
         )
 
     def to_json(self) -> dict[str, object]:
@@ -75,17 +90,19 @@ class OrderBookSnapshot:
             "bids": self.bids.tolist(),
             "asks": self.asks.tolist(),
             "last": self.last_trade,
+            "ex": None if self.exchange_time is None else self.exchange_time.isoformat(),
         }
 
     @classmethod
     def from_json(cls, d: dict[str, object]) -> OrderBookSnapshot:
-        last = d.get("last")
+        last, ex = d.get("last"), d.get("ex")
         return cls.of(
             str(d["symbol"]),
             pd.Timestamp(str(d["t"])),
             d["bids"],  # type: ignore[arg-type]
             d["asks"],  # type: ignore[arg-type]
             None if last is None else float(last),  # type: ignore[arg-type]
+            None if ex is None else pd.Timestamp(str(ex)),
         )
 
 
@@ -109,8 +126,10 @@ def depth_to_move(snapshot: OrderBookSnapshot, pct: float, side: Literal["buy", 
         levels, limit = snapshot.bids, snapshot.best_bid * (1 - pct / 100.0)
         reached = levels[:, 0] >= limit * (1 - 1e-12)
     taken = levels[reached]
+    # Exhausted: every level was taken and even the last one stops short of the limit.
+    short = len(taken) == 0 or abs(taken[-1, 0] - limit) > 1e-12 * limit
     return Depth(
         base=float(taken[:, 1].sum()),
         quote=float((taken[:, 0] * taken[:, 1]).sum()),
-        exhausted=bool(reached.all()),
+        exhausted=bool(reached.all()) and short,
     )

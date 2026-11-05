@@ -47,4 +47,5 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Relative-Strength Sieve**: altcoin selection by ALT/BTC trend (and ALT/ETH or ETH/BTC).
 - **MF (Multiplier Factor)**: higher-timeframe minutes ÷ chart minutes; scales an indicator period to mirror a higher timeframe.
 - **Order Book Source**: provider of order-book snapshots (live exchange, recorded, or fixture).
-- **Wall**: a resting limit-order cluster that persists across snapshots; a wall that vanishes as price approaches is a **Spoof**.
+- **Wall**: a resting limit-order cluster, large relative to the book's own depth, that persists across snapshots. It ends **consumed** (price traded through it), as a **Spoof** (it vanished or stepped back while price approached) or **faded** (pulled while price moved away). A level that spoofed is **suspect** for a while.
+- **Depth to move**: the size a market order must take to push price x% from the best level.

@@ -102,19 +102,25 @@ def test_live_provider_reads_one_symbol_or_all_in_one_call():
 
 # ------------------------------------------------- recorder and replays
 def test_recorder_stores_snapshots_that_replay_without_lookahead(tmp_path: Path):
-    times = iter(T0 + pd.Timedelta(seconds=10 * i) for i in range(100))
+    now = {"t": T0}
     sleeps: list[float] = []
+
+    def sleep(sec: float) -> None:
+        sleeps.append(sec)
+        now["t"] += pd.Timedelta(seconds=sec)
+
     n = record(
         NobitexOrderBook(http_get=FakeNobitex()),
         ["BTC/IRT", "USDT/IRT"],
         tmp_path,
         interval_s=10.0,
         iterations=3,
-        sleep=sleeps.append,
-        clock=lambda: next(times),
+        sleep=sleep,
+        clock=lambda: now["t"],
     )
     assert n == 6 and sleeps == [10.0, 10.0]
-    rec = RecordedOrderBook(tmp_path, max_age=pd.Timedelta(seconds=15))
+    # Judge staleness by when the books were seen here (the docs' example is from 2022).
+    rec = RecordedOrderBook(tmp_path, max_age=None)
     got = rec.snapshots("BTC/IRT", T0, T0 + pd.Timedelta(minutes=1))
     # Recorded at the recorder's clock, not the exchange's lastUpdate.
     assert [s.time for s in got] == [T0 + pd.Timedelta(seconds=s) for s in (0, 10, 20)]
@@ -122,7 +128,6 @@ def test_recorder_stores_snapshots_that_replay_without_lookahead(tmp_path: Path)
         seconds=10
     )
     assert rec.snapshot("BTC/IRT", T0 - pd.Timedelta(seconds=1)) is None  # nothing yet
-    assert rec.snapshot("BTC/IRT", T0 + pd.Timedelta(minutes=5)) is None  # too stale
     assert rec.snapshot("ETH/IRT", T0) is None
     assert got[0].bids.tolist() == parse_nobitex(V3_EXAMPLE, "BTC/IRT").bids.tolist()
 
@@ -283,3 +288,172 @@ def test_cli_records_snapshots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         len(rec.snapshots("USDT/IRT", T0 - pd.Timedelta(days=36500), pd.Timestamp.now(tz="UTC")))
         == 2
     )
+
+
+# ------------------------------------------------------------ review fixes
+def test_a_truncated_last_line_does_not_lose_the_recording(tmp_path: Path):
+    from nnfx.orderbook import append_snapshot
+
+    for t in (0, 10):
+        append_snapshot(tmp_path, snap(t, [(99, 1)], [(101, 1)]))
+    f = next((tmp_path / "BTC_IRT").glob("*.jsonl"))
+    f.write_text(f.read_text() + '{"t": "2024-01-01T00:00:20+00:00", "symb')  # killed mid-write
+    rec = RecordedOrderBook(tmp_path, max_age=None)
+    assert len(rec.snapshots("BTC/IRT", T0, T0 + pd.Timedelta(minutes=1))) == 2
+
+
+def test_one_missing_symbol_does_not_stop_the_others(tmp_path: Path):
+    def only_btc(url: str) -> bytes:
+        return json.dumps({"status": "ok", "BTCIRT": V3_EXAMPLE}).encode()
+
+    times = iter(T0 + pd.Timedelta(seconds=10 * i) for i in range(100))
+    errors: list[str] = []
+    n = record(
+        NobitexOrderBook(http_get=only_btc),
+        ["BTC/IRT", "DOGE/IRT"],
+        tmp_path,
+        iterations=2,
+        sleep=lambda s: None,
+        clock=lambda: next(times),
+        on_error=errors.append,
+    )
+    assert n == 2 and len(errors) == 2 and all("DOGE/IRT" in e for e in errors)
+
+
+def test_the_exchange_book_time_is_kept_and_judges_staleness(tmp_path: Path):
+    # Recorded at 10:00 but Nobitex's book is from 2022: too old to be the book "at" 10:00.
+    clock = T0 + pd.Timedelta(hours=10)
+    record(
+        NobitexOrderBook(http_get=FakeNobitex()),
+        ["BTC/IRT"],
+        tmp_path,
+        iterations=1,
+        clock=lambda: clock,
+    )
+    rec = RecordedOrderBook(tmp_path, max_age=pd.Timedelta(minutes=2))
+    (s,) = rec.snapshots("BTC/IRT", clock, clock)
+    assert s.time == clock and s.exchange_time == pd.Timestamp(1644991756704, unit="ms", tz="UTC")
+    assert rec.snapshot("BTC/IRT", clock) is None
+
+
+def test_polls_keep_their_rhythm_whatever_a_poll_costs(tmp_path: Path):
+    now = {"t": T0}
+    sleeps: list[float] = []
+
+    def slow_get(url: str) -> bytes:
+        now["t"] += pd.Timedelta(seconds=3)  # each poll takes 3 s
+        return json.dumps(V3_EXAMPLE).encode()
+
+    def sleep(s: float) -> None:
+        sleeps.append(s)
+        now["t"] += pd.Timedelta(seconds=s)
+
+    record(
+        NobitexOrderBook(http_get=slow_get),
+        ["BTC/IRT"],
+        tmp_path,
+        interval_s=10.0,
+        iterations=3,
+        sleep=sleep,
+        clock=lambda: now["t"],
+    )
+    assert sleeps == [7.0, 7.0]
+
+
+def test_replays_need_a_time_and_report_their_gaps():
+    book = FixtureOrderBook([snap(t, [(99, 1)], [(101, 1)]) for t in (0, 10, 20, 300, 310)])
+    with pytest.raises(TypeError):
+        book.snapshot("BTC/IRT")  # type: ignore[call-arg]
+    gaps = book.gaps(
+        "BTC/IRT", T0, T0 + pd.Timedelta(seconds=400), max_gap=pd.Timedelta(seconds=30)
+    )
+    assert gaps == [
+        (T0 + pd.Timedelta(seconds=20), T0 + pd.Timedelta(seconds=300)),
+        (T0 + pd.Timedelta(seconds=310), T0 + pd.Timedelta(seconds=400)),
+    ]
+
+
+def test_the_live_provider_can_read_the_depth_endpoint():
+    paths: list[str] = []
+
+    def get(url: str) -> bytes:
+        paths.append(urlparse(url).path)
+        return json.dumps(V2_DEPTH_EXAMPLE).encode()
+
+    s = NobitexOrderBook(http_get=get, endpoint="depth").snapshot("BTC/IRT")
+    assert paths == ["/v2/depth/BTCIRT"] and s is not None and s.best_ask == 7409894000.0
+
+
+def test_depth_reaching_the_limit_exactly_is_not_exhausted():
+    s = snap(0, [(100, 1)], [(100, 1), (101, 1)])
+    assert not depth_to_move(s, 1.0, side="buy").exhausted
+
+
+def test_two_walls_can_stand_in_one_book():
+    def two(t: int) -> OrderBookSnapshot:
+        s = thin(100, t, wall=(105.0, 50.0))
+        asks = [(p, 60.0 if abs(p - 103.0) < 1e-9 else z) for p, z in s.asks.tolist()]
+        return snap(t, s.bids.tolist(), asks, 100)
+
+    tracker = run([two(t) for t in (0, 10, 20)])
+    assert sorted(w.price for w in tracker.walls()) == [103.0, 105.0]
+
+
+def test_a_wall_reports_its_cluster_edges():
+    def clustered(t: int) -> OrderBookSnapshot:
+        s = thin(100, t)
+        asks = [(p, z) for p, z in s.asks.tolist() if not 104.9 < p < 105.2] + [
+            (105.0, 30.0),
+            (105.05, 15.0),
+            (105.1, 10.0),
+        ]
+        return snap(t, s.bids.tolist(), asks, 100)
+
+    tracker = WallTracker(WallParams(percentile=95.0, persist=3, window_pct=10.0, cluster_pct=0.06))
+    for t in (0, 10, 20):
+        tracker.update(clustered(t))
+    (w,) = tracker.walls()
+    assert (w.price, w.low, w.high, w.size) == (105.0, 105.0, 105.1, 55.0)
+
+
+def test_a_gap_through_a_wall_is_consumed_even_near_a_new_cluster():
+    snaps = [thin(100, t, wall=(105.0, 40.0)) for t in (0, 10, 20)]
+    snaps += [thin(105.8, 30, wall=(106.5, 40.0))]  # jumped over 105 to just under a new wall
+    tracker = run(snaps)
+    assert [e.kind for e in tracker.events] == ["confirmed", "consumed"]
+
+
+def test_a_neighbour_never_inherits_a_vanished_walls_status():
+    def book(mid: float, t: int, walls: list[tuple[float, float]]) -> OrderBookSnapshot:
+        s = thin(mid, t)
+        asks = [
+            (p, z) for p, z in s.asks.tolist() if all(abs(p - w) > 1e-9 for w, _ in walls)
+        ] + walls
+        return snap(t, s.bids.tolist(), asks, mid)
+
+    snaps = [book(100, t, [(101.5, 40.0)]) for t in (0, 10, 20)]  # 101.5 confirmed
+    snaps += [book(100.2, 30, [(101.5, 40.0), (101.0, 40.0)])]  # 101.0 appears, unconfirmed
+    snaps += [book(100.4, 40, [(101.0, 40.0)])]  # 101.5 pulled as price approaches
+    tracker = run(snaps)
+    assert [(e.kind, e.wall.price) for e in tracker.events] == [
+        ("confirmed", 101.5),
+        ("spoof", 101.5),
+    ]
+    assert tracker.walls() == []  # 101.0 has two sightings, not three
+
+
+def test_a_level_that_spoofed_is_remembered_when_it_returns():
+    snaps = [thin(100, t, wall=(105.0, 40.0)) for t in (0, 10, 20)]
+    snaps += [thin(102, 30, wall=(105.0, 40.0)), thin(103.5, 40)]  # spoof
+    snaps += [thin(103.5, t, wall=(105.0, 40.0)) for t in (50, 60, 70)]  # back again
+    tracker = run(snaps)
+    assert tracker.walls() == []
+    (w,) = tracker.walls(include_suspect=True)
+    assert w.suspect
+
+
+def test_one_sided_and_crossed_books_are_skipped_without_losing_walls():
+    tracker = run([thin(100, t, wall=(105.0, 40.0)) for t in (0, 10, 20)])
+    assert tracker.update(snap(30, [], [(101, 1)])) == []
+    assert tracker.update(snap(40, [(102, 1)], [(101, 1)])) == []
+    assert [w.price for w in tracker.walls()] == [105.0]

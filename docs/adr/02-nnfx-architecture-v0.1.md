@@ -84,6 +84,8 @@ The **session-close convention** (Spec §3) is applied here and nowhere else. Do
 
 *Amendment (Strategy Builder ticket 01).* Intraday base bars (M15 or H1) may be resampled into H1/H4/D1/W1 views. Re-timing still lives only in the data layer: `session` (D1, the session-close convention) and `timeframes` (H1/H4 on a fixed UTC grid, W1 by ISO week of sessions, labelled at the week's scheduled close). Consumers read a higher timeframe only through `TimeframeViews.as_of`, which exposes bars closed by the reading bar's close. The "no gaps" rule is relaxed for intraday frames of continuous instruments only: an exchange outage leaves missing bars, which the `intraday_gaps` gate flags (not fails), and views aggregate what is there. D1 frames keep the calendar gate unchanged.
 
+*Amendment (Strategy Builder ticket 04).* Order-book data is a second data type beside bars, in `nnfx/orderbook`, behind one `snapshot(symbol, at)` interface (live Nobitex, recorded, fixture). Exchanges serve only the current book, so history exists only where the recorder ran: recorded books are the source data, kept per server under `data/orderbook/` (outside git, like bars), stamped with the time the recorder saw them and with the exchange's own update time. They cannot be re-fetched, so they get no ADR 08 manifest; a backtest that uses them must say which periods had book data (`gaps`), and order-book rules report not-applicable elsewhere. Historical providers require `at` and never answer with a later book; a book older than `max_age` (by exchange time) counts as missing.
+
 Implementations: `DukascopyFeed`, `CsvFeed`, `MT5Feed`, `CcxtFeed`.
 
 ### 3.2 Indicators

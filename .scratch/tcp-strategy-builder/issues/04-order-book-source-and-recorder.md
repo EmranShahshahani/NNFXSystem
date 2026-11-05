@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved (91439de + review fixes)
 
-- [ ] One Order Book Source interface with live-Nobitex, recorded and fixture providers
-- [ ] The live provider parses the documented Nobitex order-book response (tested offline)
-- [ ] A recorder command stores snapshots for chosen symbols at a configurable interval; the deploy stack can run it as a service
-- [ ] Wall detection marks clusters above a configurable depth percentile that persist across N snapshots
-- [ ] Spoof classification is tested with fixtures where a wall steps back or disappears as price approaches
-- [ ] Depth needed to move price by x% is computable from a snapshot
+- [x] One Order Book Source interface with live-Nobitex, recorded and fixture providers
+- [x] The live provider parses the documented Nobitex order-book response (tested offline)
+- [x] A recorder command stores snapshots for chosen symbols at a configurable interval; the deploy stack can run it as a service
+- [x] Wall detection marks clusters above a configurable depth percentile that persist across N snapshots
+- [x] Spoof classification is tested with fixtures where a wall steps back or disappears as price approaches
+- [x] Depth needed to move price by x% is computable from a snapshot
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`
