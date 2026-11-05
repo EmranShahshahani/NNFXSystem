@@ -53,6 +53,27 @@ must not change behaviour while this is added.
    runner rule). Fractions must sum to 1; total initial risk equals the
    approved risk. The existing tp1/runner pair is the special case
    [0.5 at TP1, 0.5 runner].
+   *Amendment (Strategy Builder ticket 03).* Built as `ExitPlan`: steps of
+   (R multiple, fraction of the **original** size, optional `stop_to_r`) plus
+   a Runner fraction; they must sum to 1, R levels must increase, and
+   `stop_to_r` must sit below its step's R. Rules fixed here:
+   (a) R is the planned stop distance, measured from the planned entry: the
+   Trigger for a pending order (so steps, like its absolute stop, do not move
+   on a gap fill), the fill for a market order;
+   (b) the open fills every step it gapped through, at the open, in order;
+   intrabar steps fill in order at their price, with the stop checked first;
+   (c) when a filled step tightens the stop and the same bar reaches the new
+   stop, the rest is stopped there (conservative);
+   (d) step sizes round down to the instrument's `size_step`; the last step
+   or the stop takes what is left. NNFX's single target keeps closing its
+   exact fraction, because its frozen results depend on it;
+   (e) a target change that would pass the next step is refused;
+   (f) hooks: `stop_to_r` is the unconditional stop move; conditional
+   breakeven and trailing the Runner are engine rules sent as `ModifyIntent`
+   after reading `PositionView.steps_filled`.
+   NNFX legs map onto plans: tp1 = one full step, combined = 0.5 step +
+   0.5 Runner, runner/single = empty plan; the hedged pair stays two
+   positions. All six NNFX leg shapes reproduce byte-identical backtests.
 6. **Risk manager extensions.** Tiered risk from flags, a shared open-risk
    budget that releases positions at breakeven, max open positions, a daily
    loss limit reset at 00:00 UTC, and cooldowns. Every rejection is journaled

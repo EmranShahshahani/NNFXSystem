@@ -38,6 +38,8 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Choppy Regime** ("bazar-e chert"): SMAs flat and entangled; breakout orders disabled.
 - **Profit Chain** ("zanjire-ye sood"): the partial take-profit ladder (default 35% at 2R, 40% at 5R, 15% at 10R, 10% runner).
 - **Runner**: the last fraction of a position, trailed behind higher-timeframe swings.
+- **Exit Plan**: a position's exit steps, each closing a fraction of the original size at an R multiple, plus the Runner fraction; together they sum to 1. The Profit Chain is one Exit Plan.
+- **R**: the planned stop distance (planned entry to stop). Exit steps and results are measured in R.
 - **Risk Tier**: risk per trade chosen by confluence: 0.25%, 0.50%, 0.75%, 1.0%.
 - **Streak Governor**: rules that cut risk or halt trading after consecutive losses.
 - **Leverage Governor**: caps leverage so liquidation sits beyond the stop with a safety margin.

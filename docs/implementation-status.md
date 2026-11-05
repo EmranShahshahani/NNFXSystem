@@ -110,3 +110,4 @@ Tickets live in `.scratch/tcp-strategy-builder/issues/`; spec in `../spec.md`.
 |---|---|---|---|
 | 01 | Intraday base bars + timeframe views | `data/timeframes.py`, `data/session.py` (M15 input), feeds (`udf.py`, `ccxt_feed.py`, `tradingview.py`), `intraday_gaps` gate, `fetch --timeframe M15` | `test_timeframes.py` |
 | 02 | Pending stop-market orders | `engine/types.py` (`PendingOrderIntent`, `CancelIntent`, `PendingOrderView`), `brokers/sim.py` (`PendingSpec`, fills/cancels/OCO), `harness/loop.py` (`Engine` protocol, `orders` in each cycle record) | `test_pending_orders.py` (incl. paper restarted every bar, crash before journal) |
+| 03 | Fractional exit steps | `engine/types.py` (`ExitPlan`, `ExitStep`, `ExitStepView`), `brokers/sim.py` (`ExitLevel`, step fills, size-step rounding, legacy state migration) | `test_exit_plan.py`; shared harness helpers in `tests/scripted.py` |

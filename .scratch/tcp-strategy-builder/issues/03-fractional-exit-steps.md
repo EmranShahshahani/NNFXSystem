@@ -4,11 +4,11 @@
 
 **Blocked by:** 02 (Pending stop-market orders)
 
-**Status:** ready-for-agent
+**Status:** resolved (931776f + review fixes)
 
-- [ ] A position carries an exit plan of R-multiple steps and fractions that must sum to 1 (validated)
-- [ ] Each step closes its fraction of the original size when price reaches its R level
-- [ ] Hooks exist for a conditional breakeven move and for a trailing rule on the remainder
-- [ ] NNFX's two-leg behaviour is reproduced exactly through the new exit plan (reference run unchanged)
+- [x] A position carries an exit plan of R-multiple steps and fractions that must sum to 1 (validated)
+- [x] Each step closes its fraction of the original size when price reaches its R level
+- [x] Hooks exist for a conditional breakeven move and for a trailing rule on the remainder
+- [x] NNFX's two-leg behaviour is reproduced exactly through the new exit plan (reference run unchanged)
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

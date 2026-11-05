@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
+from decimal import ROUND_FLOOR, Decimal
 from typing import Any, Literal, Protocol
 
 import pandas as pd
@@ -122,6 +123,9 @@ class ExitLevel:
     # Absolute stop to move to once this step fills (never loosening), if any.
     stop_to: float | None = None
     done: bool = False
+    # Close whole size steps only (exit plans). The single NNFX target closes its
+    # exact fraction, as it always has: its frozen results depend on it.
+    whole_steps: bool = False
 
 
 @dataclass
@@ -152,7 +156,24 @@ class SimPosition:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> SimPosition:
-        return cls(**{**d, "exits": [ExitLevel(**e) for e in d.get("exits", [])]})
+        d = dict(d)
+        if "exits" not in d:
+            # A state file from before exit plans: one target, maybe already scaled out.
+            target, frac = d.pop("target", None), d.pop("target_fraction", 1.0)
+            scaled = d.pop("scaled_out", False)
+            d["exits"] = (
+                []
+                if target is None and not scaled
+                else [
+                    {
+                        "price": target if target is not None else d["entry_price"],
+                        "fraction": frac,
+                        "done": scaled,
+                    }
+                ]
+            )
+            d["original_units"] = d["units"] / (1.0 - frac) if scaled else d["units"]
+        return cls(**{**d, "exits": [ExitLevel(**e) for e in d["exits"]]})
 
     @property
     def next_exit(self) -> ExitLevel | None:
@@ -361,6 +382,11 @@ class SimBroker:
         p.stop = new_stop
         nxt = p.next_exit
         if new_target is not None and nxt is not None:
+            after = [e for e in p.exits if not e.done][1:2]
+            if after and (after[0].price - new_target) * p.direction <= 0:
+                raise ValueError(
+                    f"{position_id}: target {new_target} would pass the next step at {after[0].price}"
+                )
             nxt.price = new_target
 
     def close(self, position_id: str, fraction: float = 1.0, reason: str = "") -> None:
@@ -393,15 +419,18 @@ class SimBroker:
         else:
             stop = px - od.direction * od.stop_distance
             target = None if od.target_distance is None else px + od.direction * od.target_distance
-        d = od.direction
         if od.exit_plan is not None:
-            # Steps sit at R multiples of the planned stop distance, from the actual entry.
-            r_unit = od.stop_distance
+            # Steps sit at R multiples of the planned stop distance from the planned
+            # entry: the Trigger for a pending order (like its absolute stop), the
+            # fill for a market order (whose stop is placed from the fill too).
+            sign, r_unit = od.direction, od.stop_distance
+            anchor = px if od.pending is None else od.pending.trigger(sign)
             exits = [
                 ExitLevel(
-                    price=px + d * st.r * r_unit,
+                    price=anchor + sign * st.r * r_unit,
                     fraction=st.fraction,
-                    stop_to=None if st.stop_to_r is None else px + d * st.stop_to_r * r_unit,
+                    stop_to=None if st.stop_to_r is None else anchor + sign * st.stop_to_r * r_unit,
+                    whole_steps=True,
                 )
                 for st in od.exit_plan.steps
             ]
@@ -601,11 +630,7 @@ class SimBroker:
                 self._close_leg(p, px, ts, "stop_gap", conv, spread=hs, slip=sl)
             else:
                 # Every step the open gapped through fills at the open, in order.
-                while p.id in self.s.positions and (nxt := p.next_exit) is not None:
-                    if (o - nxt.price) * p.direction < 0:
-                        break
-                    px, hs, sl = self._exit_fill(p, o, stop=False, at_open=True)
-                    self._step(p, nxt, px, ts, conv, hs, sl)
+                self._fill_exit_steps(p, o, o, ts, conv, at_open=True)
 
         # 1c. market orders at the open
         keepq: list[_Queued] = []
@@ -636,12 +661,7 @@ class SimBroker:
             if self._stop_hit(p, trig_lo, trig_hi):
                 self._stop_out(p, ts, conv)
                 continue
-            moved = False
-            while p.id in self.s.positions and (nxt := p.next_exit) is not None:
-                if not ((h >= nxt.price) if p.direction > 0 else (lo <= nxt.price)):
-                    break
-                px, hs, sl = self._exit_fill(p, nxt.price, stop=False, at_open=False)
-                moved |= self._step(p, nxt, px, ts, conv, hs, sl)
+            moved = self._fill_exit_steps(p, h, lo, ts, conv, at_open=False)
             # Conservative: a stop the steps just tightened is hit if this bar reached it.
             if moved and p.id in self.s.positions and self._stop_hit(p, trig_lo, trig_hi):
                 self._stop_out(p, ts, conv)
@@ -671,7 +691,24 @@ class SimBroker:
         reason = "stop" if (p.stop - p.initial_stop) * p.direction <= 1e-12 else "trailing_stop"
         self._close_leg(p, px, ts, reason, conv, spread=hs, slip=sl)
 
-    def _step(
+    def _fill_exit_steps(
+        self, p: SimPosition, h: float, lo: float, ts: pd.Timestamp, conv: float, *, at_open: bool
+    ) -> bool:
+        """Fill, in order, every exit step the price range [lo, h] reached.
+
+        At the open (h == lo == open) steps fill at the open; intrabar at their
+        own price. True if a filled step tightened the stop.
+        """
+        moved = False
+        while p.id in self.s.positions and (nxt := p.next_exit) is not None:
+            if not ((h >= nxt.price) if p.direction > 0 else (lo <= nxt.price)):
+                break
+            ref = h if at_open else nxt.price
+            px, hs, sl = self._exit_fill(p, ref, stop=False, at_open=at_open)
+            moved |= self._fill_exit_step(p, nxt, px, ts, conv, hs, sl)
+        return moved
+
+    def _fill_exit_step(
         self,
         p: SimPosition,
         ex: ExitLevel,
@@ -684,12 +721,16 @@ class SimBroker:
         """Close one exit step at ``px``; True if it tightened the stop."""
         ex.done = True
         units = ex.fraction * p.original_units
+        if ex.whole_steps:
+            # A venue closes whole size steps only: round the step's share down.
+            step = Decimal(str(self.instruments[p.symbol].size_step))
+            raw = Decimal(repr(units))
+            units = float((raw / step).to_integral_value(ROUND_FLOOR) * step)
         if p.units - units <= 1e-9 * p.original_units:
             self._close_leg(p, px, ts, "target", conv, spread=hs, slip=sl)
             return False
-        # Fractions are of the original size; _close_leg takes a share of what is left.
-        share = ex.fraction if p.units == p.original_units else units / p.units
-        self._close_leg(p, px, ts, "target_partial", conv, share, spread=hs, slip=sl)
+        if units > 0:
+            self._close_leg(p, px, ts, "target_partial", conv, units / p.units, spread=hs, slip=sl)
         if ex.stop_to is not None and (ex.stop_to - p.stop) * p.direction > 0:
             p.stop = ex.stop_to
             return True

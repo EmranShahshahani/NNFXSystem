@@ -76,30 +76,43 @@ class ExitStep(Model):
     fraction: float = Field(gt=0, le=1)
     stop_to_r: float | None = None
 
+    @model_validator(mode="after")
+    def _check(self) -> ExitStep:
+        if self.stop_to_r is not None and self.stop_to_r >= self.r:
+            raise ValueError(
+                f"stop_to_r {self.stop_to_r} must sit below the step's own R {self.r}, "
+                "or the moved stop could fill at a price the bar never traded"
+            )
+        return self
+
 
 class ExitPlan(Model):
-    """A position's exit steps plus the remainder left to the stop (ADR 09 §5).
+    """A position's exit steps plus the Runner left to the stop (ADR 09 §5).
 
-    Step fractions and the remainder sum to 1. The remainder exits only at the
-    stop, which the engine may trail with a ``ModifyIntent`` (the trailing hook;
-    ``PositionView.steps_filled`` tells it how far the plan has run).
+    Step fractions and the Runner fraction sum to 1. The Runner exits only at
+    the stop. Hooks: a step's ``stop_to_r`` moves the stop when it fills; any
+    other stop rule (a conditional breakeven, a trail on the Runner) is the
+    engine's, sent as a ``ModifyIntent`` once ``PositionView.steps_filled``
+    shows how far the plan has run.
     """
 
     steps: tuple[ExitStep, ...] = ()
-    remainder: float = Field(default=0.0, ge=0)
+    runner: float = Field(default=0.0, ge=0)
 
     @model_validator(mode="after")
     def _check(self) -> ExitPlan:
         rs = [s.r for s in self.steps]
         if any(b <= a for a, b in pairwise(rs)):
             raise ValueError(f"exit steps must have increasing R levels, got {rs}")
-        total = sum(s.fraction for s in self.steps) + self.remainder
+        total = sum(s.fraction for s in self.steps) + self.runner
         if abs(total - 1.0) > 1e-9:
-            raise ValueError(f"exit fractions and remainder must sum to 1, got {total:.6g}")
+            raise ValueError(f"exit fractions and runner must sum to 1, got {total:.6g}")
         return self
 
 
 class ExitStepView(Model):
+    """One exit step of an open position, as an absolute price."""
+
     price: float
     fraction: float
     done: bool
@@ -177,6 +190,10 @@ class EntryIntent(Model):
     # Fractional exit steps; replaces the single target when given.
     exit_plan: ExitPlan | None = None
 
+    def _one_exit_rule(self, has_target: bool) -> None:
+        if self.exit_plan is not None and (has_target or self.target_fraction != 1.0):
+            raise ValueError("give an exit plan or a target (and target_fraction), not both")
+
 
 class OpenIntent(EntryIntent):
     """A market entry at the next bar's open, with stop and target as distances."""
@@ -187,8 +204,7 @@ class OpenIntent(EntryIntent):
 
     @model_validator(mode="after")
     def _check(self) -> OpenIntent:
-        if self.exit_plan is not None and self.target_distance is not None:
-            raise ValueError("give an exit plan or a target, not both")
+        self._one_exit_rule(self.target_distance is not None)
         return self
 
 
@@ -224,8 +240,7 @@ class PendingOrderIntent(EntryIntent):
             raise ValueError(f"target {self.target} must be beyond the entry {self.trigger}")
         if self.expires_after_bars < 1:
             raise ValueError("expires_after_bars must be at least 1")
-        if self.exit_plan is not None and self.target is not None:
-            raise ValueError("give an exit plan or a target, not both")
+        self._one_exit_rule(self.target is not None)
         return self
 
     @property

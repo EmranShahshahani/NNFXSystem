@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from nnfx.brokers.sim import Order
+from nnfx.brokers.costs import CostModel
+from nnfx.brokers.paper import PaperBroker
+from nnfx.brokers.sim import BacktestBroker, Order, SimBroker
 from nnfx.engine.types import ExitPlan, ExitStep, ModifyIntent
-from tests.scripted import SYM, bars, broker, drive, market, pending
+from nnfx.harness.loop import TradingLoop
+from nnfx.journal.journal import Journal
+from tests.scripted import BTC, CFG, SYM, Scripted, bars, broker, drive, market, pending
 
 # A Profit Chain shaped plan: 35% at 2R (then breakeven), 40% at 5R, 15% at 10R, 10% runner.
 CHAIN = ExitPlan(
@@ -15,11 +21,11 @@ CHAIN = ExitPlan(
         ExitStep(r=5.0, fraction=0.40),
         ExitStep(r=10.0, fraction=0.15),
     ),
-    remainder=0.10,
+    runner=0.10,
 )
 
 
-def exits(b) -> list[tuple[str, float, float]]:
+def exits(b: SimBroker) -> list[tuple[str, float, float]]:
     """(reason, exit price, share of the original size) for each closed piece."""
     total = sum(t.units for t in b.trades) + sum(p.units for p in b.s.positions.values())
     return [(t.exit_reason, t.exit_price, round(t.units / total, 6)) for t in b.trades]
@@ -28,7 +34,7 @@ def exits(b) -> list[tuple[str, float, float]]:
 # ------------------------------------------------------------- validation
 def test_fractions_and_remainder_must_sum_to_one():
     with pytest.raises(ValueError, match="sum to 1"):
-        ExitPlan(steps=(ExitStep(r=2.0, fraction=0.5),), remainder=0.4)
+        ExitPlan(steps=(ExitStep(r=2.0, fraction=0.5),), runner=0.4)
     with pytest.raises(ValueError, match="increasing"):
         ExitPlan(steps=(ExitStep(r=5.0, fraction=0.5), ExitStep(r=2.0, fraction=0.5)))
     with pytest.raises(ValueError, match="greater than 0"):
@@ -37,7 +43,11 @@ def test_fractions_and_remainder_must_sum_to_one():
         ExitStep(r=0.0, fraction=0.5)
     with pytest.raises(ValueError, match="exit plan or a target"):
         market(target_distance=5.0, exit_plan=CHAIN)
-    assert ExitPlan(steps=(ExitStep(r=1.0, fraction=1.0),)).remainder == 0.0
+    with pytest.raises(ValueError, match="exit plan or a target"):
+        market(target_fraction=0.5, exit_plan=CHAIN)
+    with pytest.raises(ValueError, match="below the step"):
+        ExitStep(r=2.0, fraction=0.5, stop_to_r=2.0)
+    assert ExitPlan(steps=(ExitStep(r=1.0, fraction=1.0),)).runner == 0.0
 
 
 # ------------------------------------------------------------------ steps
@@ -103,12 +113,66 @@ def test_a_plan_without_remainder_closes_everything_on_the_last_step():
     assert not b.s.positions
 
 
-def test_pending_fills_measure_steps_in_planned_r_from_the_actual_entry():
-    # Trigger 105, stop 95: planned R = 10. A gap fill at 108 puts 2R at 128.
-    plan = ExitPlan(steps=(ExitStep(r=2.0, fraction=0.5),), remainder=0.5)
-    h = bars([(100, 101, 99, 100), (108, 110, 107, 109), (109, 129, 108, 125)])
+def test_pending_steps_are_measured_from_the_trigger_like_the_stop():
+    # Trigger 105, stop 95: R = 10, so 2R is 125 even after a gap fill at 108.
+    plan = ExitPlan(steps=(ExitStep(r=2.0, fraction=0.5),), runner=0.5)
+    h = bars([(100, 101, 99, 100), (108, 110, 107, 109), (109, 126, 108, 120)])
     b, _, _ = drive(h, {0: [pending("k", level=105.0, stop=95.0, exit_plan=plan)]})
-    assert exits(b) == [("target_partial", 128.0, 0.5)]
+    assert exits(b) == [("target_partial", 125.0, 0.5)]
+
+
+def test_a_short_with_costs_steps_down_and_pays_on_every_piece():
+    costs = CostModel.from_venue("config/venues/backtest.yaml")
+    plan = ExitPlan(steps=(ExitStep(r=1.0, fraction=0.5, stop_to_r=0.0),), runner=0.5)
+    h = bars([(100, 101, 99, 100), (100, 101, 94, 95), (95, 101, 94, 100)])
+    b, _, _ = drive(
+        h, {0: [market(direction=-1, exit_plan=plan)]}, BacktestBroker({SYM: BTC}, costs, 10_000.0)
+    )
+    (first, rest) = b.trades
+    entry = first.entry_price
+    assert first.exit_reason == "target_partial" and first.exit_price > entry - 5.0
+    assert rest.exit_reason == "trailing_stop" and all(t.commission > 0 for t in b.trades)
+
+
+def test_partial_closes_round_down_to_the_size_step():
+    fifo = BTC.model_copy(update={"size_step": __import__("decimal").Decimal("0.01")})
+    b = BacktestBroker({SYM: fifo}, CostModel.zero(), 10_000.0)
+    plan = ExitPlan(
+        steps=(ExitStep(r=1.0, fraction=1 / 3), ExitStep(r=2.0, fraction=1 / 3)), runner=1 / 3
+    )
+    h = bars([(100, 101, 99, 100), (100, 111, 99, 110)])
+    b, _, _ = drive(h, {0: [market(exit_plan=plan)]}, b)
+    units = [t.units for t in b.trades]
+    assert all(abs(u * 100 - round(u * 100)) < 1e-9 for u in units)
+    (p,) = b.s.positions.values()
+    assert sum(units) + p.units == pytest.approx(p.original_units)
+
+
+def test_moving_a_target_past_the_next_step_is_refused():
+    h = bars([(100, 101, 99, 100), (100, 102, 99, 101)])
+    b, _, _ = drive(h, {0: [market(exit_plan=CHAIN)]})
+    (p,) = b.s.positions.values()
+    with pytest.raises(ValueError, match="next step"):
+        b.modify_stop(p.id, p.stop, 130.0)
+    b.modify_stop(p.id, p.stop, 112.0)
+    assert b.positions()[0].target == 112.0
+
+
+def test_a_paper_state_from_before_exit_plans_still_loads(tmp_path: Path):
+    import json
+
+    h = bars([(100, 101, 99, 100), (100, 102, 99, 101)])
+    b, _, _ = drive(h, {0: [market(target_distance=10.0, target_fraction=0.5)]})
+    state = json.loads(b.dump_state())
+    for v in state["positions"].values():  # the old position shape
+        ex = v.pop("exits")[0]
+        v.pop("original_units")
+        v.update(target=ex["price"], target_fraction=ex["fraction"], scaled_out=False)
+    path = tmp_path / "old.json"
+    path.write_text(json.dumps(state))
+    paper = PaperBroker({SYM: BTC}, CostModel.zero(), 10_000.0, state_path=path)
+    (p,) = paper.positions()
+    assert (p.target, p.target_fraction, p.scaled_out) == (b.positions()[0].target, 0.5, False)
 
 
 # ------------------------------------------------------------------ hooks
@@ -135,13 +199,7 @@ def test_the_engine_sees_step_progress_and_can_trail_the_remainder():
     assert exits(b)[-1] == ("trailing_stop", 140.0, 0.1)
 
 
-def test_paper_broker_restarted_every_bar_runs_the_plan_like_the_backtest(tmp_path):
-    from nnfx.brokers.costs import CostModel
-    from nnfx.brokers.paper import PaperBroker
-    from nnfx.harness.loop import TradingLoop
-    from nnfx.journal.journal import Journal
-    from tests.scripted import BTC, CFG, Scripted
-
+def test_paper_broker_restarted_every_bar_runs_the_plan_like_the_backtest(tmp_path: Path):
     rows = [
         (100, 101, 99, 100),
         (100, 104, 99, 103),
@@ -163,22 +221,29 @@ def test_paper_broker_restarted_every_bar_runs_the_plan_like_the_backtest(tmp_pa
 
 
 # ------------------------------------------------------- NNFX equivalence
-def test_the_legacy_half_at_target_order_is_the_same_as_its_exit_plan():
+@pytest.mark.parametrize(
+    ("leg", "frac", "plan_runner"),
+    [("combined", 0.5, 0.5), ("tp1", 1.0, 0.0)],
+)
+def test_the_legacy_target_order_is_the_same_as_its_exit_plan(leg, frac, plan_runner):
+    """NNFX's legs as exit plans: tp1 = one full step, combined = half then a Runner.
+
+    (The runner and single legs have no target: an empty plan with runner 1.)"""
     rows = [(1.0, 1.001, 0.999, 1.0), (1.0, 1.011, 0.999, 1.01), (1.01, 1.02, 1.0, 1.015)]
     h = bars(rows)
     base = dict(
         symbol=SYM,
         direction=1,
         units=20_000.0,
-        leg="combined",
+        leg=leg,
         entry_type="standard",
         signal_time="s",
         atr=0.01,
         stop_distance=0.015,
         risk_cash=300.0,
     )
-    legacy = Order(**base, target_distance=0.01, target_fraction=0.5)
-    plan = ExitPlan(steps=(ExitStep(r=0.01 / 0.015, fraction=0.5),), remainder=0.5)
+    legacy = Order(**base, target_distance=0.01, target_fraction=frac)
+    plan = ExitPlan(steps=(ExitStep(r=0.01 / 0.015, fraction=frac),), runner=plan_runner)
     explicit = Order(**base, target_distance=None, target_fraction=1.0, exit_plan=plan)
     results = []
     for order in (legacy, explicit):
@@ -189,4 +254,4 @@ def test_the_legacy_half_at_target_order_is_the_same_as_its_exit_plan():
             b.process_bar(SYM, h.index[i], o, hi, lo, c)
         results.append(([t.__dict__ for t in b.trades], b.positions()))
     assert results[0] == results[1]
-    assert results[0][0][0]["exit_reason"] == "target_partial"
+    assert results[0][0][0]["exit_reason"] == ("target_partial" if frac < 1 else "target")
