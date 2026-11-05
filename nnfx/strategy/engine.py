@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from nnfx.config import SessionConfig, SystemConfig
 from nnfx.data.bars import BarFrame
@@ -49,6 +50,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
 )
 from nnfx.strategy.document import StrategyDocument
+from nnfx.strategy.risk import govern, leverage_problem
 from nnfx.strategy.series import atr
 
 
@@ -121,6 +123,11 @@ class DocumentEngine:
         intents: list[Intent] = []
         evaluations: list[Evaluation] = []
         limit = self.compiled.document.risk.max_positions_per_symbol
+        # Risk already committed: open positions not yet at breakeven, resting orders,
+        # and orders placed earlier in this cycle (ADR 09 §6: breakeven releases risk).
+        committed = sum(
+            p.risk_cash for p in open_positions if (p.entry_price - p.stop) * p.direction > 0
+        ) + sum(o.risk_cash for o in account_state.pending_orders)
         for sym in sorted(history):
             comp = self.compiled.symbols.get(sym)
             if comp is None:
@@ -137,39 +144,66 @@ class DocumentEngine:
                 cand = SetupCandidate.at(out, comp.data, stype, bidx, i)
                 if cand is None:
                     continue
-                ev = self._evaluate(cand, comp, busy >= limit)
+                ev, risk_cash = self._evaluate(cand, comp, busy >= limit, account_state, committed)
                 if ev.intents:
                     busy += 1
+                    committed += risk_cash
                 intents += ev.intents
                 evaluations.append(ev)
         return Decision(intents, state, evaluations)
 
-    def _evaluate(self, cand: SetupCandidate, comp: CompiledSymbol, full: bool) -> Evaluation:
+    def _evaluate(
+        self,
+        cand: SetupCandidate,
+        comp: CompiledSymbol,
+        full: bool,
+        account: AccountState,
+        committed: float,
+    ) -> tuple[Evaluation, float]:
+        """Every check on one candidate, in order; returns its evaluation and its risk cash."""
+        doc = self.compiled.document
         context = {name: out.allows(cand.bar, cand.direction) for name, out in comp.contexts}
         blocked = [f"context:{name}" for name, ok in context.items() if not ok]
         if cand.direction < 0 and not comp.data.instrument.can_short:
             blocked.append("cannot_short")
         if full:
             blocked.append("position_limit")
+        # Ticket 08's checklist supplies the Confluence Score; until then it is 0.
+        risk = govern(doc.risk, account, pd.Timestamp(cand.time), score=0)
+        blocked += risk.blocked
+        risk_cash = risk.risk_fraction * account.equity
+        cap = doc.risk.max_open_risk
+        if cap is not None and committed + risk_cash > cap * account.equity * (1 + 1e-9):
+            blocked.append("open_risk_cap")
         intents: list[Intent] = []
         if not blocked:
-            intents, problems = self._orders(cand, comp)
-            blocked += problems
-        return Evaluation(
+            stop = self.compiled.stop.initial_stop(cand, comp.data)
+            if not np.isfinite(stop) or (cand.trigger - stop) * cand.direction <= 0:
+                blocked.append("no_stop")  # an entry without a stop is never placed
+            else:
+                problem = leverage_problem(doc.risk, comp.data.instrument, cand.trigger, stop)
+                if problem is not None:
+                    blocked.append(problem)
+                else:
+                    intents, problems = self._orders(cand, comp, stop, risk.risk_fraction)
+                    blocked += problems
+        evaluation = Evaluation(
             symbol=cand.symbol,
             time=cand.time,
             inputs={"bar": cand.bar},
-            values=cand.record(),
+            values={**cand.record(), "risk": risk.record()},
             state_before=SymbolState(),
             state_after=SymbolState(),
             intents=intents if not blocked else [],
-            conditions={"context": context},
+            conditions={"context": context, "risk": {"allowed": risk.allowed}},
             blocked=blocked,
         )
+        return evaluation, risk_cash
 
-    def _orders(self, cand: SetupCandidate, comp: CompiledSymbol) -> tuple[list[Intent], list[str]]:
-        doc, data = self.compiled.document, comp.data
-        stop = self.compiled.stop.initial_stop(cand, data)
+    def _orders(
+        self, cand: SetupCandidate, comp: CompiledSymbol, stop: float, risk_fraction: float
+    ) -> tuple[list[Intent], list[str]]:
+        data = comp.data
         plan = self.compiled.exit.plan(cand, data)
         a = float(comp.atr[cand.bar])
         out: list[Intent] = []
@@ -187,7 +221,7 @@ class DocumentEngine:
                             entry_type="setup",
                             signal_time=cand.time,
                             atr=a if np.isfinite(a) else 0.0,
-                            risk_fraction=doc.risk.risk_per_trade,
+                            risk_fraction=risk_fraction,
                             idempotency_key=f"{cand.symbol}|{cand.time}|b{cand.block_index}|e{eidx}|{k}",
                             level=spec.level,
                             buffer=spec.buffer,

@@ -41,9 +41,14 @@ from nnfx.engine.types import (
     Leg,
     PendingOrderView,
     PositionView,
+    TradeOutcome,
     trigger_price,
 )
 from nnfx.instruments import InstrumentSpec
+
+# Closed positions the account reports to engines (the governors look back 50 trades,
+# a day, and a week).
+RECENT_OUTCOMES = 500
 
 ConversionFn = Callable[[str, pd.Timestamp], float]
 
@@ -153,6 +158,8 @@ class SimPosition:
     carry: float = 0.0
     carry_kind: str = "none"
     bars_held: int = 0
+    realized_net: float = 0.0  # net P&L of the exits taken so far
+    risk_closed: float = 0.0  # risk assigned to the exits taken so far
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> SimPosition:
@@ -200,6 +207,7 @@ class SimPosition:
                 ExitStepView(price=e.price, fraction=e.fraction, done=e.done) for e in self.exits
             ),
             steps_filled=sum(e.done for e in self.exits),
+            risk_cash=self.risk_cash,
         )
 
 
@@ -275,6 +283,7 @@ class _Pending:
             bars_active=self.bars_active,
             oco_group=sp.oco_group,
             placed_time=self.placed_time,
+            risk_cash=self.order.risk_cash,
         )
 
 
@@ -295,6 +304,9 @@ class SimState:
     events: list[dict[str, Any]] = field(default_factory=list)
     last_bar: dict[str, str] = field(default_factory=dict)
     exit_bar: dict[str, str] = field(default_factory=dict)
+    initial_equity: float = 0.0
+    trough_equity: float = 0.0  # lowest equity since the last high
+    outcomes: list[dict[str, Any]] = field(default_factory=list)
 
 
 class SimBroker:
@@ -310,7 +322,12 @@ class SimBroker:
         self.costs = costs
         self.currency = account_currency
         self.conversion = conversion or (lambda ccy, ts: 1.0)
-        self.s = SimState(balance=initial_equity, peak_equity=initial_equity)
+        self.s = SimState(
+            balance=initial_equity,
+            peak_equity=initial_equity,
+            initial_equity=initial_equity,
+            trough_equity=initial_equity,
+        )
         self.trades: list[Trade] = []
 
     # ---------------------------------------------------------------- protocol
@@ -341,6 +358,11 @@ class SimBroker:
                 sym for sym, t in self.s.exit_bar.items() if t == self.s.last_bar.get(sym)
             ),
             pending_orders=tuple(q.view() for q in self.s.pending),
+            initial_equity=self.s.initial_equity or None,
+            drawdown_from_peak=(
+                1.0 - self.s.trough_equity / self.s.peak_equity if self.s.peak_equity > 0 else 0.0
+            ),
+            recent_outcomes=tuple(TradeOutcome(**o) for o in self.s.outcomes[-RECENT_OUTCOMES:]),
         )
 
     def value_per_price_unit(self, symbol: str, ts: pd.Timestamp) -> float:
@@ -566,7 +588,18 @@ class SimBroker:
         self.s.balance += gross - comm + carry
         self.s.exit_bar[p.symbol] = ts.isoformat()
         self._event("close", pid=p.id, fraction=fraction, units=units, reason=reason)
+        p.realized_net += net
+        p.risk_closed += risk
         if fraction >= 1.0 - 1e-12:
+            self.s.outcomes.append(
+                {
+                    "position_id": p.id,
+                    "symbol": p.symbol,
+                    "exit_time": ts.isoformat(),
+                    "net_pnl": p.realized_net,
+                    "risk_cash": p.risk_closed,
+                }
+            )
             del self.s.positions[p.id]
         else:
             p.units -= units
@@ -680,7 +713,11 @@ class SimBroker:
             p.bars_held += 1
         self.s.last_close[symbol] = c
         self.s.last_conv[symbol] = conv
-        self.s.peak_equity = max(self.s.peak_equity, self.equity())
+        eq = self.equity()
+        if eq >= self.s.peak_equity:
+            self.s.peak_equity = self.s.trough_equity = eq
+        else:
+            self.s.trough_equity = min(self.s.trough_equity or eq, eq)
 
     @staticmethod
     def _stop_hit(p: SimPosition, trig_lo: float, trig_hi: float) -> bool:
@@ -781,6 +818,9 @@ class SimBroker:
             events=d.get("events", []),
             last_bar=d.get("last_bar", {}),
             exit_bar=d.get("exit_bar", {}),
+            initial_equity=d.get("initial_equity", 0.0),
+            trough_equity=d.get("trough_equity", d["peak_equity"]),
+            outcomes=d.get("outcomes", []),
         )
         self.trades = [Trade(**t) for t in trades]
 

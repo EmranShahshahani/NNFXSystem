@@ -113,6 +113,18 @@ class RiskManager:
                     f"(liq distance {liq_distance:.6g} <= {need:.6g})",
                 )
         exposures = self._exposures(open_positions, instruments, approved_this_cycle)
+        # Resting pending orders are exposure-in-waiting: they count against the caps
+        # (ADR 09 §4 amendment (e)).
+        exposures += [
+            _Exposure(
+                o.symbol,
+                o.direction,
+                o.risk_cash / account.equity if account.equity > 0 else 0.0,
+                instruments[o.symbol],
+            )
+            for o in account.pending_orders
+            if o.symbol in instruments
+        ]
         new = _Exposure(intent.symbol, intent.direction, intent.risk_fraction, inst)
         # The legs of one entry share a signal; count entries, not legs.
         if cfg.max_positions_per_ccy is not None:

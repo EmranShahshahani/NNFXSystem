@@ -4,17 +4,17 @@
 
 **Blocked by:** 05 (Strategy Document tracer bullet)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Size = equity x tier / stop distance; leverage only sets margin
-- [ ] Tier mapping from Confluence Score is a parameter (defaults 0.25/0.50/0.75/1.0%), never above 1%
-- [ ] Max leverage < 100% / (stop% x 1.5); an order whose liquidation price is closer than its stop is rejected
-- [ ] An entry intent without a stop is refused
-- [ ] Streak Governor: 3 consecutive losses -> 0.25%, 5 -> 48h halt, base risk restored after a win (all parameters)
-- [ ] Daily loss limit (default -1.5%) halts for 24h; weekly limit parameter
-- [ ] Performance governor: rolling 50-trade win rate < 40% or drawdown > 6% -> 0.25% until equity recovers
-- [ ] Risk recalculated only at +/-10% equity milestones (parameter)
-- [ ] Resting pending orders count against the open-risk and exposure caps (ADR 09 §4 amendment (e); found in ticket 02 review)
-- [ ] Harness-level tests for each rule
+- [x] Size = equity x tier / stop distance; leverage only sets margin
+- [x] Tier mapping from Confluence Score is a parameter (defaults 0.25/0.50/0.75/1.0%), never above 1%
+- [x] Max leverage < 100% / (stop% x 1.5); an order whose liquidation price is closer than its stop is rejected
+- [x] An entry intent without a stop is refused
+- [x] Streak Governor: 3 consecutive losses -> 0.25%, 5 -> 48h halt, base risk restored after a win (all parameters)
+- [x] Daily loss limit (default -1.5%) halts for 24h; weekly limit parameter
+- [x] Performance governor: rolling 50-trade win rate < 40% or drawdown > 6% -> 0.25% until equity recovers
+- [x] Risk recalculated only at +/-10% equity milestones (parameter)
+- [x] Resting pending orders count against the open-risk and exposure caps (ADR 09 §4 amendment (e); found in ticket 02 review)
+- [x] Harness-level tests for each rule
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

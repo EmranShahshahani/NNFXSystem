@@ -13,10 +13,11 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
+from itertools import pairwise
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError, field_validator
 
 from nnfx.data.bars import BASE_TIMEFRAMES, TIMEFRAMES
 from nnfx.research.logs import canonical_json
@@ -65,10 +66,66 @@ class BlockSpec(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
 
+CEILING = 0.01  # the blueprint's hard 1% ceiling on risk per trade
+
+
+class StreakGovernor(_Strict):
+    """Consecutive losses cut risk, more of them halt trading (blueprint: video 75)."""
+
+    enabled: bool = True
+    reduce_after: int = Field(3, ge=1)
+    reduced_risk: float = Field(0.0025, gt=0, le=CEILING)
+    halt_after: int = Field(5, ge=1)
+    halt_hours: float = Field(48, gt=0)
+
+
+class LossLimits(_Strict):
+    """Realised loss limits as fractions of the period's starting balance (video 85, 62)."""
+
+    daily: float | None = Field(0.015, gt=0, lt=1)
+    daily_halt_hours: float = Field(24, gt=0)
+    weekly: float | None = Field(None, gt=0, lt=1)  # the blueprint names it without a number
+
+
+class PerformanceGovernor(_Strict):
+    """Degradation shrinks risk until it recovers."""
+
+    enabled: bool = True
+    window: int = Field(50, ge=1)
+    min_win_rate: float = Field(0.40, ge=0, le=1)
+    max_drawdown: float = Field(0.06, gt=0, lt=1)  # until a new equity high
+    reduced_risk: float = Field(0.0025, gt=0, le=CEILING)
+
+
+class LeverageGovernor(_Strict):
+    """Leverage only sets margin: it must keep liquidation beyond the stop."""
+
+    leverage: float = Field(1.0, ge=1)
+    safety: float = Field(1.5, ge=1)  # max leverage < 1 / (stop% x safety)
+
+
 class RiskSection(_Strict):
-    risk_per_trade: float = Field(0.005, gt=0, le=0.01)  # the blueprint's 1% ceiling
+    # "fixed": risk_per_trade (video 75); "tiered": tiers[Confluence Score] (video 7).
+    sizing: Literal["fixed", "tiered"] = "fixed"
+    risk_per_trade: float = Field(0.005, gt=0, le=CEILING)
+    tiers: tuple[float, ...] = (0.0025, 0.005, 0.0075, 0.01)
+    milestone_pct: float | None = Field(0.10, gt=0, lt=1)  # resize risk only at +/-10% equity
+    max_open_risk: float | None = Field(None, gt=0, le=0.2)  # open + resting risk, all symbols
     max_positions_per_symbol: int = Field(1, ge=1)
     atr_period: int = Field(14, ge=1)  # the ATR the risk manager's liquidation check uses
+    streak: StreakGovernor = StreakGovernor()
+    loss_limits: LossLimits = LossLimits()
+    performance: PerformanceGovernor = PerformanceGovernor()
+    leverage: LeverageGovernor = LeverageGovernor()
+
+    @field_validator("tiers")
+    @classmethod
+    def _tiers(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+        if not v or any(not 0 < t <= CEILING for t in v):
+            raise ValueError(f"every tier must be in (0, {CEILING}]")
+        if any(b < a for a, b in pairwise(v)):
+            raise ValueError("tiers must not fall as the Confluence Score rises")
+        return v
 
 
 class StrategyDocument(BaseModel):

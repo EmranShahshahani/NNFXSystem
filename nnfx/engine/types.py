@@ -137,6 +137,17 @@ class PositionView(Model):
     scaled_out: bool = False
     exit_steps: tuple[ExitStepView, ...] = ()
     steps_filled: int = 0
+    risk_cash: float = 0.0  # the risk still assigned to the open units
+
+
+class TradeOutcome(Model):
+    """A fully closed position, as the governors see it."""
+
+    position_id: str
+    symbol: str
+    exit_time: str  # ISO, UTC
+    net_pnl: float  # all its exits, after costs
+    risk_cash: float  # the risk it was sized with
 
 
 class PendingOrderView(Model):
@@ -156,6 +167,7 @@ class PendingOrderView(Model):
     bars_active: int
     oco_group: str | None
     placed_time: str
+    risk_cash: float = 0.0  # the risk the order will carry when it fills
 
 
 class AccountState(Model):
@@ -167,6 +179,11 @@ class AccountState(Model):
     recent_exits: frozenset[str] = frozenset()
     # Resting pending orders, in placement order.
     pending_orders: tuple[PendingOrderView, ...] = ()
+    # For the Strategy Builder's risk governors (all derived from the broker's own
+    # record, so a restarted run governs exactly like an uninterrupted one).
+    initial_equity: float | None = None
+    drawdown_from_peak: float = 0.0  # deepest fall from the last equity high, 0..1
+    recent_outcomes: tuple[TradeOutcome, ...] = ()  # oldest first
 
 
 def trigger_price(level: float, direction: int, buffer: float) -> float:

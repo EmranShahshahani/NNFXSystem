@@ -107,6 +107,22 @@ and honest trial counting.
    exists for a period, they report not-applicable and the result is flagged
    as incomplete.
 
+10. **The risk governor is pure (ticket 06).** The Risk section configures
+    sizing (fixed, or tiered by Confluence Score), the Streak Governor, daily
+    and weekly loss limits, the performance governor, equity-milestone
+    resizing, an open-risk cap and the Leverage Governor. All of these are
+    capped at 1% and every number is a parameter. They are pure functions of
+    the Risk section, the bar time, and the account the broker reports: recent
+    closed-position outcomes, drawdown from the last equity high and initial
+    equity. A restarted paper run therefore governs exactly like an
+    uninterrupted one, with no engine state to lose.
+    - Halts refuse the entry; cuts lower its risk.
+    - Every refusal and every cut is journaled per candidate.
+    - Resting orders count against the open-risk cap and the risk manager's
+      exposure caps.
+    - Until ticket 08's checklist supplies the Confluence Score, tiered
+      sizing uses score 0.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

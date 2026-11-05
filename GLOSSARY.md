@@ -44,7 +44,10 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **R**: the planned stop distance (planned entry to stop). Exit steps and results are measured in R.
 - **Risk Tier**: risk per trade chosen by confluence: 0.25%, 0.50%, 0.75%, 1.0%.
 - **Streak Governor**: rules that cut risk or halt trading after consecutive losses.
-- **Leverage Governor**: caps leverage so liquidation sits beyond the stop with a safety margin.
+- **Leverage Governor**: caps leverage so liquidation sits beyond the stop with a safety margin (max leverage < 1 / (stop% × 1.5)).
+- **Loss Limits**: realised losses for the day (default 1.5%) or week, measured against that period's starting balance, halt new entries (24 h, or until Monday).
+- **Performance Governor**: a rolling win rate below 40% over 50 trades, or a drawdown beyond 6% (until a new equity high), cuts risk to 0.25%.
+- **Equity Milestone**: risk is sized on equity that moves only in ±10% steps from the initial equity.
 - **Dominance Regime**: BTC-led, Altseason, or Altcoin Flush, from BTC/USDT trend and BTC.D trend.
 - **Relative-Strength Sieve**: altcoin selection by ALT/BTC trend (and ALT/ETH or ETH/BTC).
 - **MF (Multiplier Factor)**: higher-timeframe minutes ÷ chart minutes; scales an indicator period to mirror a higher timeframe.
