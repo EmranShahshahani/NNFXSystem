@@ -13,7 +13,7 @@ import json
 import math
 import threading
 import traceback
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import asdict
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -100,12 +100,13 @@ class App:
                 continue
             for p in sorted(d.rglob("*.csv")):
                 parts = p.name.split(".")
-                tf = parts[1] if len(parts) > 2 and parts[1] in ("D1", "H1") else "D1"
+                tf = parts[1] if len(parts) > 2 and parts[1] in ("D1", *BASE_TIMEFRAMES) else "D1"
                 sym = parts[0]
                 if "_" in sym:  # cached crypto names: BTC_USDT_USDT -> BTC/USDT:USDT
                     bits = sym.split("_")
                     sym = f"{bits[0]}/{bits[1]}" + (f":{bits[2]}" if len(bits) > 2 else "")
-                out.append({"path": str(p.relative_to(self.root)), "symbol": sym, "timeframe": tf})
+                rel = p.relative_to(self.root) if p.is_relative_to(self.root) else p
+                out.append({"path": str(rel), "symbol": sym, "timeframe": tf})
         return out
 
     def _safe_path(self, rel: str) -> Path:
@@ -205,12 +206,92 @@ class App:
         return data
 
     def backtest_limited(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        return self._limited(self.backtest, req)
+
+    def _limited(
+        self, fn: Callable[[Mapping[str, Any]], dict[str, Any]], req: Mapping[str, Any]
+    ) -> dict[str, Any]:
         if not self._bt_slots.acquire(timeout=30):
             raise RuntimeError("سرور مشغول است؛ چند لحظه بعد دوباره امتحان کنید")
         try:
-            return self.backtest(req)
+            return fn(req)
         finally:
             self._bt_slots.release()
+
+    # ------------------------------------------------------ Strategy Builder
+    def strategy_blocks(self) -> list[dict[str, Any]]:
+        from nnfx.strategy import block_catalogue
+
+        return block_catalogue()
+
+    def strategy_validate(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        from nnfx.strategy import validate_document
+
+        res = validate_document(req.get("document"))
+        if res.document is None:
+            return {"ok": False, "issues": [asdict(i) for i in res.issues]}
+        return {
+            "ok": True,
+            "fingerprint": res.document.fingerprint(),
+            "document": res.document.model_dump(mode="json"),
+        }
+
+    def strategy_backtest(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        from nnfx.journal.journal import Journal
+        from nnfx.research.metrics import compute_metrics
+        from nnfx.research.trials import ResearchState
+        from nnfx.strategy import validate_document
+        from nnfx.strategy.run import backtest_document
+
+        res = validate_document(req.get("document"))
+        doc = res.document
+        if doc is None:
+            return {"ok": False, "issues": [asdict(i) for i in res.issues]}
+        reg = InstrumentRegistry.load(self.instruments_path)
+        frames: dict[str, BarFrame] = {}
+        inst = {}
+        for ds in req.get("datasets") or []:
+            sym, tf = ds["symbol"], ds.get("timeframe", doc.timeframes.lwc)
+            spec = reg.spec(sym)
+            frames[sym] = read_bars_csv(
+                self._safe_path(ds["path"]), sym, timeframe=tf, volume_kind=spec.volume_kind
+            )
+            inst[sym] = spec
+        if not frames:
+            raise ValueError("pick at least one dataset")
+        costs = None if req.get("zero_costs") else CostModel.from_venue(self.venue_path)
+        journal = Journal()
+        run = backtest_document(
+            doc,
+            frames,
+            inst,
+            costs=costs,
+            journal=journal,
+            research=ResearchState(self.research),
+            stage="strategy/ui",
+        )
+        r = run.result
+        met = compute_metrics(r.trades, r.equity, volume_flags=r.volume_flags, r_per_entry=1.0)
+        candidates = [ev for rec in journal.records("cycle") for ev in rec["evaluations"]]
+        return _clean_dict(
+            {
+                "ok": True,
+                "fingerprint": run.fingerprint,
+                "config_digest": r.config_digest,
+                "trial_id": run.trial_id,
+                "summary": met.summary(),
+                "trades": [asdict(t) for t in r.trades],
+                "candidates": len(candidates),
+                "blocked": dict(r.blocked),
+                "rejected": dict(r.rejected),
+                "equity": [
+                    [t.isoformat(), float(v)]
+                    for t, v in zip(
+                        pd.DatetimeIndex(r.equity.index), r.equity.to_numpy(), strict=True
+                    )
+                ],
+            }
+        )
 
     # ------------------------------------------------------------ beta accounts
     def _accounts(self) -> Auth:
@@ -390,6 +471,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 "/api/research": app.research_state,
                 "/api/live": app.live,
                 "/api/rules": app.rules,
+                "/api/strategy/blocks": app.strategy_blocks,
             }
             if path in ("/", "/index.html"):
                 self._send(200, _index_html(), "text/html; charset=utf-8")
@@ -430,6 +512,10 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 return
             if path == "/api/backtest":
                 self._dispatch(app.backtest_limited, body)
+            elif path == "/api/strategy/validate":
+                self._dispatch(app.strategy_validate, body)
+            elif path == "/api/strategy/backtest":
+                self._dispatch(app._limited, app.strategy_backtest, body)
             elif path == "/api/feedback":
                 self._dispatch(app.add_feedback, user, body)
             elif path == "/api/admin/invites":

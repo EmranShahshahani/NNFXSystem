@@ -229,6 +229,48 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_strategy_validate(args: argparse.Namespace) -> int:
+    from nnfx.strategy import load_document
+
+    try:
+        doc = load_document(args.document)
+    except ValueError as exc:
+        print(exc)
+        return 1
+    print(f"valid: {doc.metadata.name} v{doc.metadata.version}  fingerprint {doc.fingerprint()}")
+    return 0
+
+
+def cmd_strategy_backtest(args: argparse.Namespace) -> int:
+    from nnfx.research.metrics import compute_metrics
+    from nnfx.research.trials import ResearchState
+    from nnfx.strategy import load_document
+    from nnfx.strategy.run import backtest_document
+
+    doc = load_document(args.document)
+    reg = _registry(args)
+    frames = {
+        s: read_bars_csv(p, s, timeframe=doc.timeframes.lwc, volume_kind=reg.spec(s).volume_kind)
+        for s, p in _pairs(args.csv)
+    }
+    run = backtest_document(
+        doc,
+        frames,
+        {s: reg.spec(s) for s in frames},
+        costs=None if args.zero_costs else CostModel.from_venue(args.venue),
+        research=ResearchState(Path(args.research)),
+        stage="strategy/cli",
+    )
+    r = run.result
+    met = compute_metrics(r.trades, r.equity, volume_flags=r.volume_flags, r_per_entry=1.0)
+    print(
+        f"{doc.metadata.name} v{doc.metadata.version}  fingerprint {run.fingerprint}  trial {run.trial_id}"
+    )
+    print(f"trades: {len(r.trades)}")
+    print(met.summary())
+    return 0
+
+
 def cmd_orderbook_record(args: argparse.Namespace) -> int:
     import sys
 
@@ -657,6 +699,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     p = sub.add_parser("determinism", help="reproduce the committed reference run")
     p.add_argument("--write-reference", action="store_true")
     p.set_defaults(fn=cmd_determinism)
+
+    st = sub.add_parser("strategy", help="Strategy Documents: validate and backtest")
+    stsub = st.add_subparsers(dest="stcmd", required=True)
+    p = stsub.add_parser("validate", help="check a Strategy Document (JSON or YAML)")
+    p.add_argument("document")
+    p.set_defaults(fn=cmd_strategy_validate)
+    p = stsub.add_parser("backtest", help="backtest a Strategy Document and log its Trial")
+    p.add_argument("document")
+    p.add_argument("--csv", action="append", required=True, metavar="SYMBOL=PATH")
+    p.add_argument("--instruments", default="config/instruments.yaml")
+    p.add_argument("--venue", default="config/venues/backtest.yaml")
+    p.add_argument("--research", default="research")
+    p.add_argument("--zero-costs", action="store_true")
+    p.set_defaults(fn=cmd_strategy_backtest)
 
     ob = sub.add_parser("orderbook", help="order-book snapshots (live Nobitex, recorded)")
     obsub = ob.add_subparsers(dest="obcmd", required=True)

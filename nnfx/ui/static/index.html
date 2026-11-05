@@ -101,6 +101,7 @@ pre { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; margin: 
   <h1>میز کار NNFX <span class="muted" style="font-weight:400">بتا</span></h1>
   <nav id="tabs">
     <button data-tab="backtest" class="on">بک‌تست</button>
+    <button data-tab="strategy">استراتژی‌ساز</button>
     <button data-tab="indicators">اندیکاتورها</button>
     <button data-tab="rules">قوانین ترید سیتی پرو</button>
     <button data-tab="research">پژوهش</button>
@@ -128,6 +129,25 @@ pre { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; margin: 
       <div id="bt-out">
         <div class="panel muted">داده را انتخاب کنید و <b>اجرای بک‌تست</b> را بزنید.</div>
       </div>
+    </div>
+  </section>
+  <section id="tab-strategy" class="hidden">
+    <div class="grid">
+      <div>
+        <div class="panel"><h2>سند استراتژی</h2>
+          <div class="note">سند را به صورت JSON بنویسید یا <button class="linkbtn" id="st-sample">نمونه</button> را بزنید. بلوک‌ها و پارامترهایشان در فهرست پایین آمده‌اند.</div>
+          <textarea id="st-doc" dir="ltr" spellcheck="false" style="min-height:280px;font-family:var(--mono);font-size:12px"></textarea>
+          <button id="st-validate">اعتبارسنجی</button>
+        </div>
+        <div class="panel"><h2>داده</h2><div id="st-datasets" class="muted">در حال بارگذاری…</div>
+          <label><input type="checkbox" id="st-zero"> بدون هزینهٔ معامله</label>
+          <div class="note">هر بک‌تست سند، با اثر انگشت سند، در دفتر آزمون‌های استراتژی ثبت می‌شود (جدا از آزمون‌های NNFX).</div>
+          <button class="primary" id="st-run">بک‌تست سند</button>
+          <div id="st-error" class="err"></div>
+        </div>
+        <div class="panel"><h2>بلوک‌ها</h2><div id="st-blocks" class="muted">در حال بارگذاری…</div></div>
+      </div>
+      <div id="st-out"><div class="panel muted">سند را اعتبارسنجی یا بک‌تست کنید.</div></div>
     </div>
   </section>
   <section id="tab-indicators" class="hidden">
@@ -182,7 +202,7 @@ const loaded = {};
 document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll("main > section").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + b.dataset.tab));
-  if (!loaded[b.dataset.tab]) { loaded[b.dataset.tab] = true; ({ indicators: loadIndicators, rules: loadRules, research: loadResearch, live: loadLive, admin: loadAdmin })[b.dataset.tab]?.(); }
+  if (!loaded[b.dataset.tab]) { loaded[b.dataset.tab] = true; ({ strategy: loadStrategy, indicators: loadIndicators, rules: loadRules, research: loadResearch, live: loadLive, admin: loadAdmin })[b.dataset.tab]?.(); }
 }));
 
 // ---------------------------------------------------------------- svg charts
@@ -462,6 +482,69 @@ $("#fb-send").addEventListener("click", async () => {
     await api("/api/feedback", { text: $("#fb-text").value, page });
     $("#fb-text").value = ""; $("#fb-msg").textContent = "ممنون! بازخورد ثبت شد.";
   } catch (e) { $("#fb-msg").textContent = e.message; }
+});
+
+// ---------------------------------------------------------------- strategy builder
+const SAMPLE_DOC = {
+  metadata: { name: "نمونهٔ ساده", version: 1 },
+  timeframes: { hwc: "D1", mwc: "H4", lwc: "M15" },
+  blocks: [
+    { kind: "context", type: "three_sma_alignment", params: { timeframe: "mwc" } },
+    { kind: "setup", type: "candle_setup" },
+    { kind: "execution", type: "stop_market", params: { expiry_bars: 4 } },
+    { kind: "stop", type: "structural_stop" },
+    { kind: "exit", type: "fixed_r", params: { r: 2 } },
+  ],
+  risk: { risk_per_trade: 0.005 },
+};
+function stDoc() {
+  try { return JSON.parse($("#st-doc").value); }
+  catch (e) { throw new Error("JSON نامعتبر است: " + e.message); }
+}
+function stIssues(issues) {
+  return el("div", { class: "panel" }, el("h2", {}, "ایرادهای سند"),
+    el("table", {}, el("tr", {}, el("th", {}, "مسیر"), el("th", {}, "توضیح")),
+      issues.map(i => el("tr", {}, el("td", { dir: "ltr" }, el("bdi", {}, i.path || "—")), el("td", {}, i.message)))));
+}
+async function loadStrategy() {
+  if (!$("#st-doc").value) $("#st-doc").value = JSON.stringify(SAMPLE_DOC, null, 2);
+  const ds = (await api("/api/datasets")).filter(d => d.timeframe !== "D1");
+  $("#st-datasets").replaceChildren(ds.length ? el("div", {}, ds.map(d => el("label", { style: "display:block" },
+    el("input", { type: "checkbox", class: "st-ds", value: JSON.stringify(d) }), " ", el("bdi", {}, d.symbol), " ", el("span", { class: "muted" }, d.timeframe))))
+    : el("div", { class: "muted" }, "دادهٔ درون‌روزی نیست. با «nnfx fetch --timeframe M15» کندل ۱۵ دقیقه‌ای بگیرید."));
+  const blocks = await api("/api/strategy/blocks");
+  $("#st-blocks").replaceChildren(el("div", { class: "tablewrap", style: "max-height:none" }, el("table", {}, el("tr", {}, el("th", {}, "نوع"), el("th", {}, "بلوک"), el("th", {}, "پارامترها")),
+    blocks.map(b => el("tr", {}, el("td", {}, b.kind_fa), el("td", {}, b.title_fa, el("div", { class: "muted", dir: "ltr" }, b.type)),
+      el("td", { dir: "ltr", style: "font-family:var(--mono);font-size:11px" },
+        Object.entries(b.params.properties || {}).map(([k, v]) => el("div", { title: v.description || "", style: "overflow-wrap:anywhere" }, `${k} = ${JSON.stringify(v.default)}`))))))));
+}
+$("#st-sample").addEventListener("click", () => { $("#st-doc").value = JSON.stringify(SAMPLE_DOC, null, 2); });
+$("#st-validate").addEventListener("click", async () => {
+  $("#st-error").textContent = "";
+  try {
+    const r = await api("/api/strategy/validate", { document: stDoc() });
+    $("#st-out").replaceChildren(r.ok
+      ? el("div", { class: "panel" }, el("h2", {}, "سند معتبر است"), el("div", {}, "اثر انگشت: ", el("code", { dir: "ltr" }, r.fingerprint)))
+      : stIssues(r.issues));
+  } catch (e) { $("#st-error").textContent = e.message; }
+});
+$("#st-run").addEventListener("click", async () => {
+  $("#st-error").textContent = "";
+  const datasets = [...document.querySelectorAll(".st-ds:checked")].map(c => JSON.parse(c.value));
+  $("#st-run").disabled = true;
+  try {
+    const r = await api("/api/strategy/backtest", { document: stDoc(), datasets, zero_costs: $("#st-zero").checked });
+    if (!r.ok) { $("#st-out").replaceChildren(stIssues(r.issues)); return; }
+    $("#st-out").replaceChildren(
+      el("div", { class: "panel" }, el("h2", {}, "نتیجه"),
+        el("div", {}, "اثر انگشت سند: ", el("code", { dir: "ltr" }, r.fingerprint), " · آزمون: ", el("code", { dir: "ltr" }, r.trial_id || "—")),
+        el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidates} · معاملات: ${r.trades.length}`),
+        el("pre", { dir: "ltr", class: "ltr" }, r.summary)),
+      el("div", { class: "panel" }, el("h2", {}, "معاملات"), el("div", { class: "tablewrap", dir: "ltr" },
+        el("table", {}, el("tr", {}, ["ورود", "جهت", "قیمت ورود", "قیمت خروج", "دلیل", "R"].map(h => el("th", {}, h))),
+          r.trades.map(t => el("tr", {}, el("td", {}, t.entry_time.slice(0, 16).replace("T", " ")), el("td", {}, t.direction > 0 ? "خرید" : "فروش"),
+            el("td", {}, fmt(t.entry_price, 4)), el("td", {}, fmt(t.exit_price, 4)), el("td", {}, t.exit_reason), el("td", {}, signed(t.r_multiple, 2))))))));
+  } catch (e) { $("#st-error").textContent = e.message; } finally { $("#st-run").disabled = false; }
 });
 
 (async function boot() {

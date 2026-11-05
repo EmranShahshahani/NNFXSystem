@@ -18,6 +18,8 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 ## Strategy Builder
 
 - **Strategy Document**: a user's strategy as data: an ordered set of Blocks with parameters, timeframes and risk rules. Versioned and content-hashed. Never code.
+- **Fingerprint**: the content hash of a resolved Strategy Document; every result and Trial of the document carries it.
+- **Strategy Engine**: the one engine that interprets any Strategy Document (`DocumentEngine`), on the shared harness.
 - **Block**: one configurable rule from the Block Library, of one Block Kind. Every number in a Block is a parameter with a default.
 - **Block Kind**: Context, Setup, Confirmation, Execution, Stop, Exit, Risk, Market Filter.
 - **Template**: a read-only Strategy Document users clone and customise. "TCP Azizpour" is the first.

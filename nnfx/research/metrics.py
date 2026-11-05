@@ -43,7 +43,13 @@ class Entry:
     spliced: bool = False
 
 
-def entries_from_trades(trades: Sequence[Trade]) -> list[Entry]:
+def entries_from_trades(trades: Sequence[Trade], *, r_per_entry: float = 2.0) -> list[Entry]:
+    """Group legs into entries; an entry's R is its net over (its total risk / ``r_per_entry``).
+
+    NNFX opens two positions of 1R each per entry (doc 06), so 1R is half the
+    entry's risk. A Strategy Document entry risks its whole 1R in one position:
+    pass ``r_per_entry=1``.
+    """
     groups: dict[tuple[str, str], list[Trade]] = defaultdict(list)
     for t in trades:
         groups[(t.symbol, t.signal_time)].append(t)
@@ -52,7 +58,7 @@ def entries_from_trades(trades: Sequence[Trade]) -> list[Entry]:
         groups.items(), key=lambda kv: (min(t.entry_time for t in kv[1]), kv[0])
     ):
         risk = sum(t.risk_cash for t in legs)
-        unit = risk / 2.0 if risk > 0 else 1.0
+        unit = risk / r_per_entry if risk > 0 else 1.0
         net = sum(t.net_pnl for t in legs)
         out.append(
             Entry(
@@ -265,8 +271,9 @@ def compute_metrics(
     rng: np.random.Generator | None = None,
     n_boot: int = 2000,
     volume_flags: Sequence[str] = (),
+    r_per_entry: float = 2.0,
 ) -> Metrics:
-    entries = entries_from_trades(trades)
+    entries = entries_from_trades(trades, r_per_entry=r_per_entry)
     rs = np.array([e.r for e in entries], dtype="float64")
     wins, losses = rs[rs > 0].sum(), -rs[rs < 0].sum()
     ret = equity.pct_change().dropna() if len(equity) > 1 else pd.Series(dtype="float64")
