@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 import numpy as np
@@ -180,6 +180,9 @@ class DocumentEngine:
                 cand = SetupCandidate.at(out, comp.data, stype, bidx, i)
                 if cand is None:
                     continue
+                extra = set().union(*(c.tags_for(i, cand.direction) for _, c in comp.contexts))
+                if extra - set(cand.tags):  # e.g. counter_trend from the wave cycles
+                    cand = replace(cand, tags=tuple(sorted(set(cand.tags) | extra)))
                 ev, risk_cash = self._evaluate(
                     cand, comp, busy >= limit, account_state, committed, state.governor
                 )

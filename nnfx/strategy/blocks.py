@@ -150,6 +150,17 @@ class StrategyData:
         out: tuple[np.ndarray, np.ndarray] = self._cache[key]
         return out
 
+    def dow(self, role: str, pivot_bars: int) -> np.ndarray:
+        """The Dow trend state of each ``role`` bar (``structure.dow_states``), cached."""
+        from nnfx.strategy.structure import dow_states
+
+        key = ("dow", role, pivot_bars)
+        if key not in self._cache:
+            f = self.frames[role]
+            self._cache[key] = dow_states(f.low, f.high, f.close, pivot_bars)
+        out: np.ndarray = self._cache[key]
+        return out
+
     def bar_containing(self, role: str, time: str) -> int:
         """The ``role`` bar that the LWC bar labelled ``time`` belongs to.
 
@@ -176,10 +187,16 @@ class StrategyData:
 class ContextOutput:
     long_ok: np.ndarray  # bool per LWC bar
     short_ok: np.ndarray
-    flags: dict[str, np.ndarray] = field(default_factory=dict)
+    flags: dict[str, np.ndarray] = field(default_factory=dict)  # per-bar states, for the record
+    # Candidate tags by direction: tag -> (bool per bar for longs, for shorts).
+    tags: dict[str, tuple[np.ndarray, np.ndarray]] = field(default_factory=dict)
 
     def allows(self, i: int, direction: int) -> bool:
         return bool(self.long_ok[i] if direction > 0 else self.short_ok[i])
+
+    def tags_for(self, i: int, direction: int) -> set[str]:
+        k = 0 if direction > 0 else 1
+        return {t for t, sides in self.tags.items() if sides[k][i]}
 
 
 @dataclass(frozen=True)

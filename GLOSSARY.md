@@ -32,6 +32,10 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 ## Trade City Pro terms
 
 - **HWC / MWC / LWC**: High, Medium and Low Wave Cycle: macro trend timeframe (weekly/daily), structure timeframe (daily/4H), execution timeframe (15m).
+- **Dow state**: a timeframe role's trend at each close: up (a break of the last swing high with a higher low), down (mirrored) or range. A trend ends only on a **failed peak**: an equal or lower swing high, then a close below the **neckline** (the lowest low between the two peaks). Mirrored for downtrends.
+- **Primary / secondary wave**: the primary wave is the HWC's trend; a trade against it (a correction or an early reversal) is a secondary wave, tagged `counter_trend`, and takes only 2R-3R.
+- **Bottom-up reversal**: the HWC is treated as flat only after the LWC and then the MWC turn away from its trend; one LWC breakdown never flips the bias.
+- **Two-way box**: when the HWC is flat and the MWC ranges, both directions are allowed on the LWC with 2R-3R targets (opt-in).
 - **Second Wave**: the continuation impulse after the first breakout leg; the preferred place for setups.
 - **Candle Setup**: TCP's flagship 15m entry candle: long rejection wick, small opposite wick, 7 SMA behind the wick and never through the body.
 - **Trigger**: a pending stop-market order just beyond a level (setup high/low or box edge). Price must come to it.

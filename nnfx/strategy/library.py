@@ -35,6 +35,7 @@ from nnfx.strategy.blocks import (
     register,
 )
 from nnfx.strategy.series import falling, rising, rsi, sma
+from nnfx.strategy.structure import wave_bias
 
 
 # ---------------------------------------------------------------- context
@@ -83,6 +84,91 @@ class ThreeSmaAlignment(ContextBlock[ThreeSmaParams]):
             dn &= falling(a, n) & falling(b, n) & falling(s, n)
         return ContextOutput(
             data.aligned(p.timeframe, up, False), data.aligned(p.timeframe, dn, False)
+        )
+
+
+class DowTrendParams(BlockParams):
+    timeframe: Role = Field("mwc", description="تایم‌فریمی که روند داو روی آن سنجیده می‌شود")
+    pivot_bars: int = Field(2, ge=1, description="پیوت: تعداد کندل‌های دو طرف")
+    in_range: Literal["none", "both"] = Field(
+        "none", description="در حالت رنج: هیچ معامله‌ای، یا هر دو جهت"
+    )
+
+
+@register
+class DowTrend(ContextBlock[DowTrendParams]):
+    """Longs in a Dow uptrend (HH/HL), shorts in a downtrend, on one timeframe role.
+
+    A trend starts on a break of the last swing with a higher low (lower high)
+    and ends only on a failed peak plus a neckline break (videos 3, 28; see
+    ``structure.dow_states``). Swings are confirmed ``pivot_bars`` bars later.
+    """
+
+    kind = BlockKind.CONTEXT
+    type = "dow_trend"
+    title_fa = "روند داو (سقف و کف)"
+    sources = (
+        "tcp-blueprint 01: video 3 (Dow theory HH/HL, LH/LL)",
+        "tcp-blueprint 03: video 28 (failed peak and neckline)",
+    )
+    Params = DowTrendParams
+
+    def compute(self, data: StrategyData) -> ContextOutput:
+        p = self.p
+        st = data.dow(p.timeframe, p.pivot_bars)
+        rng = st == 0 if p.in_range == "both" else np.zeros(len(st), bool)
+        return ContextOutput(
+            data.aligned(p.timeframe, (st > 0) | rng, False),
+            data.aligned(p.timeframe, (st < 0) | rng, False),
+            {"state": data.aligned(p.timeframe, st, 0)},
+        )
+
+
+class WaveCyclesParams(BlockParams):
+    pivot_bars: int = Field(2, ge=1, description="پیوت: تعداد کندل‌های دو طرف (هر سه نقش)")
+    follow_mwc_when_flat: bool = Field(
+        True, description="وقتی HWC خنثی است، جهت روند MWC مجاز باشد (موج فرعی)"
+    )
+    two_way_box: bool = Field(
+        False, description="باکس دوطرفه: وقتی HWC و MWC هر دو رنج‌اند، هر دو جهت با تارگت ۲R تا ۳R"
+    )
+
+
+@register
+class WaveCycles(ContextBlock[WaveCyclesParams]):
+    """The HWC/MWC/LWC wave cycles (videos 63, 64; see ``structure.wave_bias``).
+
+    The HWC's Dow trend sets the direction; an LWC counter-move inside it is
+    never shorted. The HWC is treated as flat only after the LWC and then the
+    MWC turn away. Trades against the HWC's last trend (secondary waves, the
+    two-way box) are tagged ``counter_trend``, which the Profit Chain's
+    ``counter_trend: tagged`` mode closes at 2R-3R.
+    """
+
+    kind = BlockKind.CONTEXT
+    type = "wave_cycles"
+    title_fa = "سیکل‌های موج (HWC/MWC/LWC)"
+    sources = (
+        "tcp-blueprint 07: video 63 (cycle taxonomy, bottom-up reversal)",
+        "tcp-blueprint 07: video 64 (two-way trading box)",
+        "tcp-blueprint 03: video 26 (primary vs secondary waves)",
+    )
+    Params = WaveCyclesParams
+
+    def compute(self, data: StrategyData) -> ContextOutput:
+        p = self.p
+        st = {r: data.aligned(r, data.dow(r, p.pivot_bars), 0) for r in ("hwc", "mwc", "lwc")}
+        b = wave_bias(
+            st["hwc"],
+            st["mwc"],
+            st["lwc"],
+            follow_mwc_when_flat=p.follow_mwc_when_flat,
+            two_way_box=p.two_way_box,
+        )
+        flags = {f"{r}_state": s for r, s in st.items()}
+        flags.update(primary=b.primary, hwc_effective=b.hwc_effective, box=b.box)
+        return ContextOutput(
+            b.long_ok, b.short_ok, flags, {"counter_trend": (b.counter_long, b.counter_short)}
         )
 
 

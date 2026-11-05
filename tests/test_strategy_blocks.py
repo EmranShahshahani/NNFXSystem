@@ -64,8 +64,12 @@ def candidates() -> list[SetupCandidate]:
 def arrays(out: ContextOutput | SetupOutput) -> dict[str, np.ndarray]:
     """Every published array of a series Block's output, flags and tags flattened."""
     a = {f.name: getattr(out, f.name) for f in fields(out) if f.name not in ("flags", "tags")}
-    extra = out.flags if isinstance(out, ContextOutput) else out.tags
-    a.update({f"extra:{k}": v for k, v in extra.items()})
+    if isinstance(out, ContextOutput):
+        a.update({f"extra:{k}": v for k, v in out.flags.items()})
+        for k, (lo, sh) in out.tags.items():
+            a.update({f"tag:{k}:long": lo, f"tag:{k}:short": sh})
+    else:
+        a.update({f"extra:{k}": v for k, v in out.tags.items()})
     return a
 
 

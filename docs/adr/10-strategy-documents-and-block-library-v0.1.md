@@ -36,7 +36,8 @@ and honest trial counting.
 3. **Blocks are registry-resolved and typed by kind.** The kinds are Context,
    Setup, Confirmation, Execution, Stop, Exit, Risk and Market Filter. Each
    kind has one contract:
-   - Context: per-bar allowed directions and flags.
+   - Context: per-bar allowed directions, flags, and candidate tags by
+     direction (merged into each candidate, e.g. `counter_trend`, §13).
    - Setup: per-bar Setup Candidates (direction, trigger, invalidation,
      proposed stop, tags).
    - Execution: candidate → stop-market orders.
@@ -239,6 +240,42 @@ and honest trial counting.
     the broker's equity. The run splits the equity curve into trading and
     spot, and the API returns the transfers, the spot balance and the
     trading equity curve.
+
+13. **Market structure and wave cycles (ticket 09).** `structure.dow_states`
+    gives each role's Dow state (up / range / down) at every close, from
+    swings confirmed `pivot_bars` bars later:
+    - Range turns up on a close above the latest swing high while the latest
+      swing low is a higher low (video 3). Down is mirrored.
+    - Up ends only on a failed peak: the latest swing high is equal to or
+      below the one before, and a close breaks the neckline, the lowest low
+      between them (video 28). The state goes to range. A lower high plus a
+      broken swing low is also a downtrend, so a strict lower high turns
+      down on the next bar, while an equal high stays in range. A deep
+      pullback through a higher low alone does not end the trend.
+
+    Two Context Blocks read these states:
+    - `dow_trend` gates on one role. In range it allows no trade, or both
+      directions.
+    - `wave_cycles` combines HWC, MWC and LWC (`structure.wave_bias`,
+      videos 63, 64, 26):
+      - The HWC's trend sets the direction, so an LWC downtrend inside an
+        HWC uptrend is never shorted.
+      - The HWC is treated as flat only after the LWC and then the MWC turn
+        away from its trend (range or opposite), or when its own trend ends.
+        An MWC turn with the LWC still in line does not count. The MWC
+        coming back restores the bias.
+      - A flat HWC follows the MWC's trend (`follow_mwc_when_flat`).
+      - With the HWC flat and the MWC ranging, `two_way_box` allows both
+        directions.
+      - Trades against the HWC's last trend, and box trades, are tagged
+        `counter_trend`. The Profit Chain's `counter_trend: tagged` closes
+        them at 2R-3R (§12).
+
+    Context Blocks can now tag candidates by direction. The engine merges the
+    tags before the checklist, so they are journaled and reach the Exit Block.
+    The registry gate's daily HWC never trends on its 40-day fixture, so a
+    dedicated test checks `wave_cycles` for lookahead on H4/H1/M15, where
+    every rule fires.
 
 ## Consequences
 
