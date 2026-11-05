@@ -242,32 +242,28 @@ def cmd_strategy_validate(args: argparse.Namespace) -> int:
 
 
 def cmd_strategy_backtest(args: argparse.Namespace) -> int:
-    from nnfx.research.metrics import compute_metrics
     from nnfx.research.trials import ResearchState
     from nnfx.strategy import load_document
-    from nnfx.strategy.run import backtest_document
+    from nnfx.strategy.run import backtest_document, load_frames
 
-    doc = load_document(args.document)
-    reg = _registry(args)
-    frames = {
-        s: read_bars_csv(p, s, timeframe=doc.timeframes.lwc, volume_kind=reg.spec(s).volume_kind)
-        for s, p in _pairs(args.csv)
-    }
+    try:
+        doc = load_document(args.document)
+    except ValueError as exc:
+        print(exc)
+        return 1
+    frames, inst = load_frames(_pairs(args.csv), _registry(args), doc.timeframes.lwc)
     run = backtest_document(
         doc,
         frames,
-        {s: reg.spec(s) for s in frames},
+        inst,
         costs=None if args.zero_costs else CostModel.from_venue(args.venue),
         research=ResearchState(Path(args.research)),
         stage="strategy/cli",
     )
-    r = run.result
-    met = compute_metrics(r.trades, r.equity, volume_flags=r.volume_flags, r_per_entry=1.0)
-    print(
-        f"{doc.metadata.name} v{doc.metadata.version}  fingerprint {run.fingerprint}  trial {run.trial_id}"
-    )
-    print(f"trades: {len(r.trades)}")
-    print(met.summary())
+    name = f"{doc.metadata.name} v{doc.metadata.version}"
+    print(f"{name}  fingerprint {run.fingerprint}  trial {run.trial_id}")
+    print(f"trades: {len(run.result.trades)}")
+    print(run.metrics().summary())
     return 0
 
 

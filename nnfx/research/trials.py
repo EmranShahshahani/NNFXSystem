@@ -60,20 +60,11 @@ class ResearchState:
         stage: str,
         metrics: Mapping[str, Any] | None = None,
     ) -> str:
-        if segment == "holdout":
-            raise HoldoutAccessError("holdout runs are not trials; use HoldoutGuard")
-        scope = {"market": market, "segment": segment, "symbols": sorted(symbols)}
+        scope = self._scope(market, segment, symbols)
         tid = trial_id(config, scope)
-        if tid not in self.trials.distinct():
-            self.trials.append(
-                {
-                    "id": tid,
-                    "stage": stage,
-                    "config": config.digest(),
-                    **scope,
-                    "metrics": dict(metrics or {}),
-                }
-            )
+        self._log_once(
+            self.trials, tid, {"stage": stage, "config": config.digest(), **scope}, metrics
+        )
         if segment == "validation":
             self.log_validation_pass(tid, stage)
         return tid
@@ -88,23 +79,31 @@ class ResearchState:
         stage: str,
         metrics: Mapping[str, Any] | None = None,
     ) -> str:
-        """Log one backtest of a Strategy Document version; the id is (fingerprint, scope)."""
-        if segment == "holdout":
-            raise HoldoutAccessError("holdout runs are not trials; use HoldoutGuard")
-        scope = {"market": market, "segment": segment, "symbols": sorted(symbols)}
+        """Log one backtest of a Strategy Document version; the id is (fingerprint, scope).
+
+        A separate family (ADR 10 §7): it writes neither NNFX's trial log nor its
+        validation passes, which feed NNFX's verdict criteria.
+        """
+        scope = self._scope(market, segment, symbols)
         payload = canonical_json({"document": fingerprint, "scope": scope})
         tid = "s_" + hashlib.sha256(payload.encode()).hexdigest()[:20]
-        if tid not in self.strategy_trials.distinct():
-            self.strategy_trials.append(
-                {
-                    "id": tid,
-                    "stage": stage,
-                    "document": fingerprint,
-                    **scope,
-                    "metrics": dict(metrics or {}),
-                }
-            )
+        self._log_once(
+            self.strategy_trials, tid, {"stage": stage, "document": fingerprint, **scope}, metrics
+        )
         return tid
+
+    @staticmethod
+    def _scope(market: Market, segment: SegmentName, symbols: Sequence[str]) -> dict[str, Any]:
+        if segment == "holdout":
+            raise HoldoutAccessError("holdout runs are not trials; use HoldoutGuard")
+        return {"market": market, "segment": segment, "symbols": sorted(symbols)}
+
+    @staticmethod
+    def _log_once(
+        log: AppendOnlyLog, tid: str, row: Mapping[str, Any], metrics: Mapping[str, Any] | None
+    ) -> None:
+        if tid not in log.distinct():
+            log.append({"id": tid, **row, "metrics": dict(metrics or {})})
 
     def trial_count(self) -> int:
         return self.trials.count()

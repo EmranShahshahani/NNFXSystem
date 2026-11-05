@@ -140,3 +140,36 @@ def test_a_run_reaching_into_the_holdout_is_refused(tmp_path: Path):
 def test_the_result_carries_the_document_fingerprint():
     out, _ = run([*RISE, SETUP, FILL, *TO_TARGET])
     assert out.fingerprint == doc().fingerprint() == out.result.config_digest
+
+
+# ------------------------------------------------------------ review fixes
+def test_the_holdout_is_refused_even_without_a_research_log():
+    late = frame([*RISE, SETUP, FILL, *TO_TARGET], start="2025-02-01")
+    with pytest.raises(HoldoutAccessError):
+        backtest_document(doc(), {SYM: late}, {SYM: BTC})
+
+
+def test_the_market_comes_from_the_instruments():
+    from nnfx.instruments import fx_spec
+    from nnfx.strategy.run import market_of
+
+    assert market_of({SYM: BTC}) == "crypto"
+    assert market_of({"EURUSD": fx_spec("EURUSD")}) == "fx"
+    with pytest.raises(ValueError, match="one market"):
+        market_of({SYM: BTC, "EURUSD": fx_spec("EURUSD")})
+
+
+def test_a_short_on_a_spot_market_is_journaled_as_blocked():
+    # The mirror image of the long setup: a short Candle Setup after a fall.
+    fall = [(200.0 - k, 200.1 - k, 198.9 - k, 199.0 - k) for k in range(10)]
+    short_setup = (190.0, 195.0, 189.7, 189.8)  # long upper wick, SMA 7 inside it
+    raw = copy.deepcopy(DOC)
+    _, journal = run([*fall, short_setup, (189.8, 189.9, 188.0, 188.1)], raw)
+    (ev,) = [ev for r in journal.records("cycle") for ev in r["evaluations"]]
+    assert ev["values"]["direction"] == -1 and ev["blocked"] == ["cannot_short"]
+
+
+def test_candidates_carry_their_setup_tags():
+    _, journal = run([*RISE, SETUP, FILL, *TO_TARGET])
+    (ev,) = [ev for r in journal.records("cycle") for ev in r["evaluations"]]
+    assert ev["values"]["tags"] == ["rejection_wick"]

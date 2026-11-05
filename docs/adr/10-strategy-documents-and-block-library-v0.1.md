@@ -38,10 +38,10 @@ and honest trial counting.
    kind has one contract:
    - Context: per-bar allowed directions and flags.
    - Setup: per-bar Setup Candidates (direction, trigger, invalidation,
-     proposed stop).
+     proposed stop, tags).
    - Execution: candidate → stop-market orders.
    - Stop: candidate → initial stop.
-   - Exit: candidate → an Exit Plan in R.
+   - Exit: candidate (with the data) → an Exit Plan in R.
 
    Confirmation, Risk and Market Filter get their contracts with their first
    Block (tickets 06-08 and 20). A Block declares:
@@ -60,10 +60,12 @@ and honest trial counting.
 
 5. **Blocks are causal, and the gates prove it for every Block.** The gate
    suite iterates the registry, so a new Block is gated the moment it is
-   registered. Each Block must pass three checks:
+   registered. A Block with a timeframe parameter is gated on every role.
+   Each Block must pass three checks:
    - **No lookahead:** outputs on truncated history equal the prefix of the
      outputs on full history.
-   - **Determinism:** identical outputs from rebuilt inputs.
+   - **Determinism:** identical outputs from rebuilt inputs, and the same hash
+     of every Block's outputs in a separate process.
    - **Price-scale invariance:** prices scale, everything else is unchanged.
      Exits are in R and are scale-free.
 
@@ -76,8 +78,9 @@ and honest trial counting.
    symbol at compile time; causality makes reading them at bar *i* safe. Per
    LWC bar the engine:
    - reads the candidates;
-   - checks each candidate against every Context Block and the position
-     limit;
+   - checks each candidate against every Context Block, the position limit,
+     and whether the instrument can be shorted (a refused short is journaled
+     as `cannot_short`, never dropped silently);
    - asks the Stop, Exit and Execution Blocks for orders;
    - emits pending orders sized at the Risk section's risk.
 
@@ -90,7 +93,8 @@ and honest trial counting.
    a Trial (id = fingerprint + scope) in `research/strategy_trials.jsonl`
    (union-merged like the other logs). It never counts toward NNFX's trial
    total or its deflated Sharpe, and the frozen H2021/H2026 pre-registration
-   is untouched. A run whose data reaches the market's holdout is refused. A
+   is untouched. A run whose data reaches its market's holdout is refused,
+   whether or not it is logged; the market comes from the instruments. A
    Template's results become evidence only under its own pre-registration
    (spec, Research integration).
 

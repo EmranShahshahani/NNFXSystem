@@ -11,7 +11,7 @@ Contracts by kind:
 - Setup: ``compute(data) -> SetupOutput``, per-bar Setup Candidates.
 - Execution: ``orders(candidate, data) -> [OrderSpec]``.
 - Stop: ``initial_stop(candidate, data) -> price``.
-- Exit: ``plan(candidate) -> ExitPlan``.
+- Exit: ``plan(candidate, data) -> ExitPlan``.
 
 (Confirmation, Risk and Market Filter kinds are named here and get their
 contracts with the tickets that add the first Block of each.)
@@ -61,9 +61,12 @@ KIND_FA = {
 
 
 class BlockParams(BaseModel):
-    """Every field needs a default and a description (the UI renders forms from them)."""
+    """Every field needs a default and a description (the UI renders forms from them).
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    Strict: "4" is not a number and true is not 1 (an int is accepted for a float).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
 
 
 # ------------------------------------------------------------------- data
@@ -140,6 +143,7 @@ class SetupOutput:
     trigger: np.ndarray  # prices; NaN where no candidate
     invalidation: np.ndarray
     stop: np.ndarray  # the setup's proposed stop
+    tags: dict[str, np.ndarray] = field(default_factory=dict)  # tag -> bool per bar
 
     PRICE_FIELDS: ClassVar[tuple[str, ...]] = ("trigger", "invalidation", "stop")
 
@@ -155,6 +159,7 @@ class SetupCandidate:
     trigger: float
     invalidation: float
     stop: float
+    tags: tuple[str, ...] = ()
 
     @classmethod
     def at(
@@ -173,6 +178,7 @@ class SetupCandidate:
             float(out.trigger[i]),
             float(out.invalidation[i]),
             float(out.stop[i]),
+            tuple(sorted(t for t, on in out.tags.items() if on[i])),
         )
 
     def record(self) -> dict[str, Any]:
@@ -183,6 +189,7 @@ class SetupCandidate:
             "trigger": self.trigger,
             "invalidation": self.invalidation,
             "stop": self.stop,
+            "tags": list(self.tags),
         }
 
 
@@ -198,7 +205,7 @@ class OrderSpec:
 
 
 # ----------------------------------------------------------------- blocks
-class Block:
+class Block[P: BlockParams]:
     kind: ClassVar[BlockKind]
     type: ClassVar[str]
     title_fa: ClassVar[str]
@@ -206,46 +213,46 @@ class Block:
     # builtins.type: the class attribute ``type`` (the registry name) shadows the builtin here.
     Params: ClassVar[builtins.type[BlockParams]] = BlockParams
 
-    def __init__(self, params: BlockParams | None = None) -> None:
-        self.p = params if params is not None else self.Params()
+    def __init__(self, params: P | None = None) -> None:
+        self.p: P = params if params is not None else self.Params()  # type: ignore[assignment]
 
 
-class ContextBlock(Block):
+class ContextBlock[P: BlockParams](Block[P]):
     def compute(self, data: StrategyData) -> ContextOutput:
         raise NotImplementedError
 
 
-class SetupBlock(Block):
+class SetupBlock[P: BlockParams](Block[P]):
     def compute(self, data: StrategyData) -> SetupOutput:
         raise NotImplementedError
 
 
-class ExecutionBlock(Block):
+class ExecutionBlock[P: BlockParams](Block[P]):
     def orders(self, candidate: SetupCandidate, data: StrategyData) -> list[OrderSpec]:
         raise NotImplementedError
 
 
-class StopBlock(Block):
+class StopBlock[P: BlockParams](Block[P]):
     def initial_stop(self, candidate: SetupCandidate, data: StrategyData) -> float:
         raise NotImplementedError
 
 
-class ExitBlock(Block):
-    def plan(self, candidate: SetupCandidate) -> ExitPlan:
+class ExitBlock[P: BlockParams](Block[P]):
+    def plan(self, candidate: SetupCandidate, data: StrategyData) -> ExitPlan:
         raise NotImplementedError
 
 
-BASES: dict[BlockKind, type[Block]] = {
+BASES: dict[BlockKind, type[Block[Any]]] = {
     BlockKind.CONTEXT: ContextBlock,
     BlockKind.SETUP: SetupBlock,
     BlockKind.EXECUTION: ExecutionBlock,
     BlockKind.STOP: StopBlock,
     BlockKind.EXIT: ExitBlock,
 }
-REGISTRY: dict[str, type[Block]] = {}
+REGISTRY: dict[str, type[Block[Any]]] = {}
 
 
-def register(cls: type[Block]) -> type[Block]:
+def register[B: type[Block[Any]]](cls: B) -> B:
     if cls.type in REGISTRY:
         raise ValueError(f"block type {cls.type!r} registered twice")
     if not issubclass(cls, BASES[cls.kind]):

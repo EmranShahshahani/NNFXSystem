@@ -7,7 +7,6 @@ number is a parameter with the blueprint's default (docs/sources/tcp-blueprint).
 from __future__ import annotations
 
 import numpy as np
-import pandas as pd
 from pydantic import Field, model_validator
 
 from nnfx.engine.types import ExitPlan, ExitStep
@@ -27,18 +26,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
     register,
 )
-
-
-def sma(x: np.ndarray, n: int) -> np.ndarray:
-    """Simple moving average; NaN until ``n`` bars exist (causal)."""
-    return pd.Series(x).rolling(n, min_periods=n).mean().to_numpy()
-
-
-def atr(high: np.ndarray, low: np.ndarray, close: np.ndarray, n: int = 14) -> np.ndarray:
-    """Wilder's average true range; NaN until ``n`` bars exist (causal)."""
-    prev = np.r_[np.nan, close[:-1]]
-    tr = np.nanmax(np.column_stack([high - low, np.abs(high - prev), np.abs(low - prev)]), axis=1)
-    return pd.Series(tr).ewm(alpha=1.0 / n, adjust=False, min_periods=n).mean().to_numpy()
+from nnfx.strategy.series import falling, rising, sma
 
 
 # ---------------------------------------------------------------- context
@@ -47,7 +35,9 @@ class ThreeSmaParams(BlockParams):
     mid: int = Field(25, gt=0, description="SMA میانی (ساختار)")
     slow: int = Field(99, gt=0, description="SMA بلند (مبنای کلان)")
     timeframe: Role = Field("mwc", description="تایم‌فریمی که هم‌ترازی روی آن سنجیده می‌شود")
-    close_beyond_mid: bool = Field(True, description="بسته‌شدن قیمت هم باید آن سوی SMA میانی باشد")
+    price_beyond_fast: bool = Field(True, description="قیمت هم باید آن سوی SMA کوتاه بسته شود")
+    same_slope: bool = Field(True, description="هر سه میانگین باید هم‌جهت شیب داشته باشند")
+    slope_bars: int = Field(1, ge=1, description="شیب نسبت به چند کندل قبل سنجیده شود")
 
     @model_validator(mode="after")
     def _ordered(self) -> ThreeSmaParams:
@@ -57,8 +47,11 @@ class ThreeSmaParams(BlockParams):
 
 
 @register
-class ThreeSmaAlignment(ContextBlock):
-    """Longs only when SMA fast > mid > slow on the chosen timeframe; shorts mirrored."""
+class ThreeSmaAlignment(ContextBlock[ThreeSmaParams]):
+    """Longs only when price > SMA fast > mid > slow, all sloping up; shorts mirrored.
+
+    The blueprint's 3-SMA system (7 momentum, 25 structure, 99 macro baseline).
+    """
 
     kind = BlockKind.CONTEXT
     type = "three_sma_alignment"
@@ -67,16 +60,19 @@ class ThreeSmaAlignment(ContextBlock):
     Params = ThreeSmaParams
 
     def compute(self, data: StrategyData) -> ContextOutput:
-        p: ThreeSmaParams = self.p  # type: ignore[assignment]
-        f = data.frames[p.timeframe]
-        c = f.close
+        p = self.p
+        c = data.frames[p.timeframe].close
         a, b, s = sma(c, p.fast), sma(c, p.mid), sma(c, p.slow)
         with np.errstate(invalid="ignore"):
             up = (a > b) & (b > s)
             dn = (a < b) & (b < s)
-            if p.close_beyond_mid:
-                up &= c > b
-                dn &= c < b
+            if p.price_beyond_fast:
+                up &= c > a
+                dn &= c < a
+        if p.same_slope:
+            n = p.slope_bars
+            up &= rising(a, n) & rising(b, n) & rising(s, n)
+            dn &= falling(a, n) & falling(b, n) & falling(s, n)
         return ContextOutput(
             data.aligned(p.timeframe, up, False), data.aligned(p.timeframe, dn, False)
         )
@@ -85,56 +81,47 @@ class ThreeSmaAlignment(ContextBlock):
 # ------------------------------------------------------------------ setup
 class CandleSetupParams(BlockParams):
     sma: int = Field(7, gt=0, description="SMA که باید پشت سایه باشد")
-    min_wick: float = Field(0.5, gt=0, lt=1, description="کمترین سایهٔ ردکننده، سهمی از طول کندل")
-    max_opposite_wick: float = Field(
-        0.25, ge=0, lt=1, description="بیشترین سایهٔ مخالف، سهمی از طول کندل"
+    wick_to_body: float = Field(
+        1.5, gt=0, description="سایهٔ ردکننده دست‌کم چند برابر بدنه (۱٫۵ تا ۲)"
     )
+    opposite_to_body: float = Field(1.0, gt=0, description="سایهٔ مخالف کمتر از این ضریبِ بدنه")
 
 
 @register
-class CandleSetup(SetupBlock):
-    """TCP's 15m entry candle (basic form): a long rejection wick with the SMA inside it.
+class CandleSetup(SetupBlock[CandleSetupParams]):
+    """TCP's 15m entry candle (basic form), blueprint 01.
 
-    Long: lower wick >= ``min_wick`` of the range, upper wick <= ``max_opposite_wick``
-    of the range, and the SMA between the low and the body (behind the wick,
-    never through the body). Trigger above the high, invalidation and proposed
-    stop at the low. Shorts mirrored. The full Candle Setup is ticket 10.
+    Long: a lower (rejection) wick at least ``wick_to_body`` x the real body,
+    an upper wick smaller than ``opposite_to_body`` x the body, and the SMA
+    between the low and the body (behind the wick, never through the body).
+    Trigger at the high; invalidation and proposed stop at the low. Shorts
+    mirrored. The full Candle Setup (context, location, size) is ticket 10.
     """
 
     kind = BlockKind.SETUP
     type = "candle_setup"
     title_fa = "کندل ستاپ (پایه)"
-    sources = ("tcp-blueprint: Candle Setup",)
+    sources = ("tcp-blueprint 01: Candle Setup",)
     Params = CandleSetupParams
 
     def compute(self, data: StrategyData) -> SetupOutput:
-        p: CandleSetupParams = self.p  # type: ignore[assignment]
+        p = self.p
         f = data.base
         o, h, lo, c = f.open, f.high, f.low, f.close
         m = sma(c, p.sma)
-        rng = h - lo
+        body = np.abs(c - o)
         body_lo, body_hi = np.minimum(o, c), np.maximum(o, c)
-        with np.errstate(invalid="ignore", divide="ignore"):
-            lower, upper = (body_lo - lo) / rng, (h - body_hi) / rng
-            long_ = (
-                (rng > 0)
-                & (lower >= p.min_wick)
-                & (upper <= p.max_opposite_wick)
-                & (lo <= m)
-                & (m <= body_lo)
-            )
-            short = (
-                (rng > 0)
-                & (upper >= p.min_wick)
-                & (lower <= p.max_opposite_wick)
-                & (body_hi <= m)
-                & (m <= h)
-            )
+        lower, upper = body_lo - lo, h - body_hi
+        with np.errstate(invalid="ignore"):
+            long_ = (lower >= p.wick_to_body * body) & (upper < p.opposite_to_body * body)
+            long_ &= (lower > 0) & (lo <= m) & (m <= body_lo)
+            short = (upper >= p.wick_to_body * body) & (lower < p.opposite_to_body * body)
+            short &= (upper > 0) & (body_hi <= m) & (m <= h)
         d = np.where(long_, 1, np.where(short, -1, 0)).astype("int8")
         nan = np.full(len(f), np.nan)
         trigger = np.where(d > 0, h, np.where(d < 0, lo, nan))
         inval = np.where(d > 0, lo, np.where(d < 0, h, nan))
-        return SetupOutput(d, trigger, inval, inval.copy())
+        return SetupOutput(d, trigger, inval, inval.copy(), {"rejection_wick": d != 0})
 
 
 # -------------------------------------------------------------- execution
@@ -145,7 +132,7 @@ class StopMarketParams(BlockParams):
 
 
 @register
-class StopMarket(ExecutionBlock):
+class StopMarket(ExecutionBlock[StopMarketParams]):
     """A stop-market order just beyond the setup's trigger (the TCP Trigger)."""
 
     kind = BlockKind.EXECUTION
@@ -155,7 +142,7 @@ class StopMarket(ExecutionBlock):
     Params = StopMarketParams
 
     def orders(self, candidate: SetupCandidate, data: StrategyData) -> list[OrderSpec]:
-        p: StopMarketParams = self.p  # type: ignore[assignment]
+        p = self.p
         return [
             OrderSpec(
                 level=candidate.trigger,
@@ -172,7 +159,7 @@ class StructuralStopParams(BlockParams):
 
 
 @register
-class StructuralStop(StopBlock):
+class StructuralStop(StopBlock[StructuralStopParams]):
     """The stop just beyond the setup's structural level (its proposed stop)."""
 
     kind = BlockKind.STOP
@@ -182,8 +169,7 @@ class StructuralStop(StopBlock):
     Params = StructuralStopParams
 
     def initial_stop(self, candidate: SetupCandidate, data: StrategyData) -> float:
-        p: StructuralStopParams = self.p  # type: ignore[assignment]
-        return candidate.stop - candidate.direction * candidate.stop * p.buffer_pct / 100.0
+        return candidate.stop - candidate.direction * candidate.stop * self.p.buffer_pct / 100.0
 
 
 # ------------------------------------------------------------------- exit
@@ -192,7 +178,7 @@ class FixedRParams(BlockParams):
 
 
 @register
-class FixedR(ExitBlock):
+class FixedR(ExitBlock[FixedRParams]):
     """Close the whole position at ``r`` R."""
 
     kind = BlockKind.EXIT
@@ -201,6 +187,5 @@ class FixedR(ExitBlock):
     sources = ("tcp-blueprint: no exit below 2R",)
     Params = FixedRParams
 
-    def plan(self, candidate: SetupCandidate) -> ExitPlan:
-        p: FixedRParams = self.p  # type: ignore[assignment]
-        return ExitPlan(steps=(ExitStep(r=p.r, fraction=1.0),))
+    def plan(self, candidate: SetupCandidate, data: StrategyData) -> ExitPlan:
+        return ExitPlan(steps=(ExitStep(r=self.p.r, fraction=1.0),))

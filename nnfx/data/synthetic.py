@@ -113,5 +113,7 @@ def intraday_walk(
         {"open": open_, "high": high, "low": low, "close": close, "volume": rng.uniform(1, 10, n)},
         index=idx,
     )
-    tf = {15: "M15", 60: "H1"}.get(minutes, f"M{minutes}")
+    tf = {15: "M15", 60: "H1"}.get(minutes)
+    if tf is None:
+        raise ValueError("intraday_walk makes 15- or 60-minute bars (the base timeframes)")
     return BarFrame(df, symbol, timeframe=tf, volume_kind="traded")

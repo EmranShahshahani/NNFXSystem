@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -48,13 +49,13 @@ from nnfx.strategy.blocks import (
     StrategyData,
 )
 from nnfx.strategy.document import StrategyDocument
-from nnfx.strategy.library import atr
+from nnfx.strategy.series import atr
 
 
 @dataclass(frozen=True)
 class CompiledSymbol:
     data: StrategyData
-    contexts: list[tuple[str, ContextOutput]]  # (label, output)
+    contexts: list[tuple[str, ContextOutput]]  # (block label, output)
     setups: list[tuple[int, str, SetupOutput]]  # (document position, type, output)
     atr: np.ndarray
 
@@ -63,12 +64,12 @@ class CompiledSymbol:
 class CompiledDocument:
     document: StrategyDocument
     symbols: dict[str, CompiledSymbol]
-    executions: list[tuple[int, ExecutionBlock]]
-    stop: StopBlock
-    exit: ExitBlock
+    executions: list[tuple[int, ExecutionBlock[Any]]]
+    stop: StopBlock[Any]
+    exit: ExitBlock[Any]  # validation allows one enabled Stop and one Exit Block
 
 
-def label(index: int, btype: str) -> str:
+def block_label(index: int, btype: str) -> str:
     return f"{btype}#{index}"
 
 
@@ -87,12 +88,12 @@ def compile_document(
         symbols[sym] = CompiledSymbol(
             data,
             [
-                (label(i, b.type), b.compute(data))
+                (block_label(i, b.type), b.compute(data))
                 for i, b in contexts
                 if isinstance(b, ContextBlock)
             ],
             [(i, b.type, b.compute(data)) for i, b in setups if isinstance(b, SetupBlock)],
-            atr(f.high, f.low, f.close),
+            atr(f.high, f.low, f.close, doc.risk.atr_period),
         )
     stops = [b for _, b in doc.instances(BlockKind.STOP) if isinstance(b, StopBlock)]
     exits = [b for _, b in doc.instances(BlockKind.EXIT) if isinstance(b, ExitBlock)]
@@ -106,7 +107,7 @@ class DocumentEngine:
     """A pure engine over a compiled Strategy Document (same contract as StrategyEngine)."""
 
     def __init__(self, compiled: CompiledDocument) -> None:
-        self.c = compiled
+        self.compiled = compiled
 
     def decide(
         self,
@@ -119,9 +120,9 @@ class DocumentEngine:
         state = state or EngineState()
         intents: list[Intent] = []
         evaluations: list[Evaluation] = []
-        limit = self.c.document.risk.max_positions_per_symbol
+        limit = self.compiled.document.risk.max_positions_per_symbol
         for sym in sorted(history):
-            comp = self.c.symbols.get(sym)
+            comp = self.compiled.symbols.get(sym)
             if comp is None:
                 continue
             i = history[sym].end
@@ -146,6 +147,8 @@ class DocumentEngine:
     def _evaluate(self, cand: SetupCandidate, comp: CompiledSymbol, full: bool) -> Evaluation:
         context = {name: out.allows(cand.bar, cand.direction) for name, out in comp.contexts}
         blocked = [f"context:{name}" for name, ok in context.items() if not ok]
+        if cand.direction < 0 and not comp.data.instrument.can_short:
+            blocked.append("cannot_short")
         if full:
             blocked.append("position_limit")
         intents: list[Intent] = []
@@ -165,14 +168,14 @@ class DocumentEngine:
         )
 
     def _orders(self, cand: SetupCandidate, comp: CompiledSymbol) -> tuple[list[Intent], list[str]]:
-        doc, data = self.c.document, comp.data
-        stop = self.c.stop.initial_stop(cand, data)
-        plan = self.c.exit.plan(cand)
+        doc, data = self.compiled.document, comp.data
+        stop = self.compiled.stop.initial_stop(cand, data)
+        plan = self.compiled.exit.plan(cand, data)
         a = float(comp.atr[cand.bar])
         out: list[Intent] = []
         problems: list[str] = []
         k = 0
-        for eidx, ex in self.c.executions:
+        for eidx, ex in self.compiled.executions:
             for spec in ex.orders(cand, data):
                 try:
                     out.append(

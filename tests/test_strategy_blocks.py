@@ -38,9 +38,17 @@ def data() -> StrategyData:
     return StrategyData.build(bars, ROLES, crypto_spec("BTC/USDT"), SessionConfig())
 
 
-def block(btype: str):  # default parameters, but every timeframe role exercised
+def variants(btype: str) -> list[str]:
+    """``type`` plus ``type@role`` for each role a Block's ``timeframe`` parameter can take."""
+    field = REGISTRY[btype].Params.model_fields.get("timeframe")
+    return [btype] + ([f"{btype}@{r}" for r in ROLES] if field is not None else [])
+
+
+def block(spec: str):
+    """A Block with default parameters, or ``type@role`` on another timeframe role."""
+    btype, _, role = spec.partition("@")
     cls = REGISTRY[btype]
-    return cls(cls.Params())
+    return cls(cls.Params(**({"timeframe": role} if role else {})))
 
 
 @cache
@@ -52,9 +60,10 @@ def candidates() -> list[SetupCandidate]:
 
 
 def arrays(out: ContextOutput | SetupOutput) -> dict[str, np.ndarray]:
-    a = {f.name: getattr(out, f.name) for f in fields(out) if f.name != "flags"}
-    if isinstance(out, ContextOutput):
-        a.update({f"flag:{k}": v for k, v in out.flags.items()})
+    """Every published array of a series Block's output, flags and tags flattened."""
+    a = {f.name: getattr(out, f.name) for f in fields(out) if f.name not in ("flags", "tags")}
+    extra = out.flags if isinstance(out, ContextOutput) else out.tags
+    a.update({f"extra:{k}": v for k, v in extra.items()})
     return a
 
 
@@ -62,7 +71,9 @@ def same(a: np.ndarray, b: np.ndarray) -> bool:
     return bool(np.array_equal(a, b, equal_nan=a.dtype.kind == "f"))
 
 
-SERIES = sorted(t for t, c in REGISTRY.items() if issubclass(c, (ContextBlock, SetupBlock)))
+SERIES = sorted(
+    v for t, c in REGISTRY.items() if issubclass(c, (ContextBlock, SetupBlock)) for v in variants(t)
+)
 PER_CANDIDATE = sorted(
     t for t, c in REGISTRY.items() if issubclass(c, (ExecutionBlock, StopBlock, ExitBlock))
 )
@@ -76,7 +87,8 @@ def test_the_registry_holds_the_tracer_blocks_and_gates_cover_all_of_them():
         "structural_stop",
         "fixed_r",
     } <= set(REGISTRY)
-    assert set(SERIES) | set(PER_CANDIDATE) == set(REGISTRY)
+    assert {v.partition("@")[0] for v in SERIES} | set(PER_CANDIDATE) == set(REGISTRY)
+    assert "three_sma_alignment@hwc" in SERIES
     assert len(candidates()) >= 10  # the fixture really produces setups to gate
 
 
@@ -100,6 +112,26 @@ def test_series_blocks_are_deterministic(btype: str):
     assert all(same(a[k], b[k]) for k in a)
 
 
+def digest_all() -> str:
+    """One hash of every series Block's outputs on the fixture."""
+    import hashlib
+
+    h = hashlib.sha256()
+    for spec in SERIES:
+        for name, arr in sorted(arrays(block(spec).compute(data())).items()):
+            h.update(spec.encode() + name.encode() + np.ascontiguousarray(arr).tobytes())
+    return h.hexdigest()
+
+
+def test_series_blocks_are_deterministic_across_processes():
+    import subprocess
+    import sys
+
+    code = "from tests.test_strategy_blocks import digest_all; print(digest_all())"
+    other = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert other.stdout.strip() == digest_all()
+
+
 @pytest.mark.parametrize("btype", SERIES)
 def test_series_blocks_are_price_scale_invariant(btype: str):
     d = data()
@@ -121,7 +153,7 @@ def per_candidate(btype: str, c: SetupCandidate, d: StrategyData) -> tuple[list[
     if isinstance(b, StopBlock):
         return [b.initial_stop(c, d)], None
     assert isinstance(b, ExitBlock)
-    return [], b.plan(c)  # exits are in R: scale-free by construction
+    return [], b.plan(c, d)  # exits are in R: scale-free by construction
 
 
 def scaled(c: SetupCandidate) -> SetupCandidate:

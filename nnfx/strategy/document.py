@@ -16,17 +16,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError
 
 from nnfx.data.bars import BASE_TIMEFRAMES, TIMEFRAMES
+from nnfx.research.logs import canonical_json
 from nnfx.strategy import library as _library  # noqa: F401  (registers the Blocks)
 from nnfx.strategy.blocks import KIND_FA, REGISTRY, Block, BlockKind
 
 REQUIRED_KINDS = (BlockKind.SETUP, BlockKind.EXECUTION, BlockKind.STOP, BlockKind.EXIT)
+SINGLE_KINDS = (BlockKind.STOP, BlockKind.EXIT)  # one enabled Block each decides
 
 
 class _Strict(BaseModel):
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    """Strict: "4" is not a number (an int is accepted for a float)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
 
 
 class Metadata(_Strict):
@@ -41,24 +45,35 @@ class TimeframeRoles(_Strict):
     hwc: str = "D1"
     mwc: str = "H4"
     lwc: str = "M15"
+    # Where open positions are managed (e.g. 4H closes); defaults to the LWC.
+    management: str | None = None
 
     def as_dict(self) -> dict[str, str]:
-        return {"hwc": self.hwc, "mwc": self.mwc, "lwc": self.lwc}
+        out = {"hwc": self.hwc, "mwc": self.mwc, "lwc": self.lwc}
+        if self.management is not None:
+            out["management"] = self.management
+        return out
 
 
-class BlockSpec(_Strict):
+class BlockSpec(BaseModel):
+    # Not strict as a whole: ``kind`` arrives as text and becomes a BlockKind.
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     kind: BlockKind
     type: str
-    enabled: bool = True
+    enabled: StrictBool = True
     params: dict[str, Any] = Field(default_factory=dict)
 
 
 class RiskSection(_Strict):
     risk_per_trade: float = Field(0.005, gt=0, le=0.01)  # the blueprint's 1% ceiling
     max_positions_per_symbol: int = Field(1, ge=1)
+    atr_period: int = Field(14, ge=1)  # the ATR the risk manager's liquidation check uses
 
 
-class StrategyDocument(_Strict):
+class StrategyDocument(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     schema_version: Literal[1] = 1
     metadata: Metadata
     timeframes: TimeframeRoles = TimeframeRoles()
@@ -67,10 +82,11 @@ class StrategyDocument(_Strict):
     risk: RiskSection = RiskSection()
 
     def fingerprint(self) -> str:
-        payload = json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
-        return hashlib.sha256(payload.encode()).hexdigest()[:16]
+        return hashlib.sha256(canonical_json(self.model_dump(mode="json")).encode()).hexdigest()[
+            :16
+        ]
 
-    def instances(self, kind: BlockKind) -> list[tuple[int, Block]]:
+    def instances(self, kind: BlockKind) -> list[tuple[int, Block[Any]]]:
         """The enabled Blocks of ``kind``, with their positions in the document."""
         out = []
         for i, b in enumerate(self.blocks):
@@ -138,11 +154,15 @@ def _check_timeframes(raw: Any, issues: list[ValidationIssue]) -> None:
         return
     roles = {
         **TimeframeRoles().as_dict(),
-        **{k: v for k, v in raw.items() if k in ("hwc", "mwc", "lwc")},
+        **{
+            k: v
+            for k, v in raw.items()
+            if k in ("hwc", "mwc", "lwc", "management") and v is not None
+        },
     }
     bad = False
     for role, tf in roles.items():
-        if tf not in TIMEFRAMES:
+        if not isinstance(tf, str) or tf not in TIMEFRAMES:
             issues.append(
                 ValidationIssue(
                     f"timeframes.{role}",
@@ -166,6 +186,14 @@ def _check_timeframes(raw: Any, issues: list[ValidationIssue]) -> None:
         issues.append(
             ValidationIssue("timeframes", "role_order", "ترتیب نقش‌ها باید HWC ≥ MWC ≥ LWC باشد.")
         )
+    if "management" in d and d["management"] < d["lwc"]:
+        issues.append(
+            ValidationIssue(
+                "timeframes.management",
+                "role_order",
+                "تایم‌فریم مدیریت پوزیشن نمی‌تواند کوچک‌تر از تایم‌فریم اجرا (LWC) باشد.",
+            )
+        )
 
 
 def _check_block(i: int, raw: Any, issues: list[ValidationIssue]) -> dict[str, Any] | None:
@@ -173,6 +201,14 @@ def _check_block(i: int, raw: Any, issues: list[ValidationIssue]) -> dict[str, A
     at = f"blocks[{i}]"
     if not isinstance(raw, dict):
         issues.append(ValidationIssue(at, "bad_value", "هر بلوک باید یک شیء باشد."))
+        return None
+    try:  # the Block's own fields: kind, type, enabled, params (params checked below)
+        BlockSpec.model_validate({**raw, "params": {}, "kind": BlockKind.SETUP, "type": "x"})
+    except ValidationError as exc:
+        for err in exc.errors():
+            issues.append(
+                ValidationIssue(_path(tuple(err["loc"]), at), "bad_value", _fa(dict(err)))
+            )
         return None
     btype, kind = raw.get("type"), raw.get("kind")
     cls = REGISTRY.get(str(btype))
@@ -248,6 +284,22 @@ def validate_document(raw: Any) -> ValidationResult:
             for b in blocks
             if isinstance(b, dict) and b.get("enabled", True) is not False
         }
+        for kind in SINGLE_KINDS:
+            n = sum(
+                1
+                for b in blocks
+                if isinstance(b, dict)
+                and b.get("kind") == kind
+                and b.get("enabled", True) is not False
+            )
+            if n > 1:
+                issues.append(
+                    ValidationIssue(
+                        "blocks",
+                        f"too_many:{kind}",
+                        f"فقط یک بلوک فعالِ «{KIND_FA[kind]}» مجاز است؛ {n} بلوک فعال است.",
+                    )
+                )
         for kind in REQUIRED_KINDS:
             if kind not in present:
                 issues.append(

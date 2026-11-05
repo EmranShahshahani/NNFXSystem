@@ -118,3 +118,64 @@ def test_documents_load_from_json_and_yaml(tmp_path: Path):
     (tmp_path / "bad.json").write_text(json.dumps(bad))
     with pytest.raises(ValueError, match="moon_phase"):
         load_document(tmp_path / "bad.json")
+
+
+# ------------------------------------------------------------ review fixes
+def test_types_are_strict_strings_are_not_numbers():
+    raw = copy.deepcopy(TRACER)
+    raw["blocks"][2]["params"]["expiry_bars"] = "4"
+    raw["risk"]["risk_per_trade"] = "0.005"
+    found = issues(raw)
+    assert ("blocks[2].params.expiry_bars", "bad_param") in found
+    assert ("risk.risk_per_trade", "bad_value") in found
+
+
+def test_errors_in_a_blocks_own_fields_come_back_in_persian():
+    raw = copy.deepcopy(TRACER)
+    raw["blocks"][1]["enabled"] = "abc"
+    raw["blocks"][3]["colour"] = "red"
+    res = validate_document(raw)  # never raises
+    got = {(i.path, i.code): i.message for i in res.issues}
+    assert ("blocks[1].enabled", "bad_value") in got and "درست یا نادرست" in got[
+        ("blocks[1].enabled", "bad_value")
+    ]
+    assert ("blocks[3].colour", "bad_value") in got
+
+
+def test_one_stop_and_one_exit_block_at_most():
+    raw = copy.deepcopy(TRACER)
+    raw["blocks"].append({"kind": "stop", "type": "structural_stop"})
+    raw["blocks"].append({"kind": "exit", "type": "fixed_r", "params": {"r": 3.0}})
+    found = issues(raw)
+    assert ("blocks", "too_many:stop") in found and ("blocks", "too_many:exit") in found
+    raw["blocks"][-1]["enabled"] = False
+    raw["blocks"][-2]["enabled"] = False
+    assert validate_document(raw).ok  # disabled extras are fine
+
+
+def test_a_management_timeframe_role_can_be_set():
+    raw = copy.deepcopy(TRACER)
+    raw["timeframes"]["management"] = "H4"
+    doc = validate_document(raw).document
+    assert doc is not None and doc.timeframes.as_dict()["management"] == "H4"
+    raw["timeframes"]["management"] = "M5"
+    assert ("timeframes.management", "bad_timeframe") in issues(raw)
+
+
+def test_fingerprint_is_the_same_in_another_process():
+    import subprocess
+    import sys
+
+    code = (
+        "import json,sys; from nnfx.strategy import validate_document; "
+        "print(validate_document(json.loads(sys.stdin.read())).document.fingerprint())"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", code],
+        input=json.dumps(TRACER),
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    doc = validate_document(TRACER).document
+    assert doc is not None and out == doc.fingerprint()

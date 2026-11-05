@@ -114,3 +114,33 @@ def test_cli_validates_and_backtests_a_document(tmp_path: Path, dirs: tuple[Path
     out = capsys.readouterr().out
     assert rc == 0 and "trades: 1" in out and "trial s_" in out and "E[R]=+2.000" in out
     assert (tmp_path / "research" / "strategy_trials.jsonl").exists()
+
+
+def test_strategy_endpoints_need_an_account_when_accounts_are_on(
+    tmp_path: Path, dirs: tuple[Path, Path]
+):
+    from nnfx.ui.auth import Auth
+    from tests.test_beta_auth import _call, _client
+
+    auth = Auth(tmp_path / "beta.db")
+    httpd = serve(
+        App(ROOT, auth=auth, data_roots=(str(dirs[0]),), research=str(tmp_path / "r")), port=0
+    )
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{httpd.server_address[1]}"
+    try:
+        anon = _client()
+        assert _call(anon, base + "/api/strategy/blocks")[0] == 401
+        assert _call(anon, base + "/api/strategy/validate", {"document": DOC})[0] == 401
+        assert _call(anon, base + "/api/strategy/backtest", {"document": DOC})[0] == 401
+        auth.signup(auth.create_invites()[0], "trader1", "password-1")
+        me = _client()
+        _call(me, base + "/api/login", {"username": "trader1", "password": "password-1"})
+        code, res = _call(
+            me,
+            base + "/api/strategy/backtest",
+            {"document": DOC, "datasets": [dataset(dirs)], "zero_costs": True},
+        )
+        assert code == 200 and res["ok"] and len(res["trades"]) == 1
+    finally:
+        httpd.shutdown()

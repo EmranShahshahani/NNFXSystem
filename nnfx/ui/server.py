@@ -206,9 +206,12 @@ class App:
         return data
 
     def backtest_limited(self, req: Mapping[str, Any]) -> dict[str, Any]:
-        return self._limited(self.backtest, req)
+        return self.limited(self.backtest, req)
 
-    def _limited(
+    def strategy_backtest_limited(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        return self.limited(self.strategy_backtest, req)
+
+    def limited(
         self, fn: Callable[[Mapping[str, Any]], dict[str, Any]], req: Mapping[str, Any]
     ) -> dict[str, Any]:
         if not self._bt_slots.acquire(timeout=30):
@@ -238,25 +241,25 @@ class App:
 
     def strategy_backtest(self, req: Mapping[str, Any]) -> dict[str, Any]:
         from nnfx.journal.journal import Journal
-        from nnfx.research.metrics import compute_metrics
         from nnfx.research.trials import ResearchState
         from nnfx.strategy import validate_document
-        from nnfx.strategy.run import backtest_document
+        from nnfx.strategy.run import backtest_document, load_frames
 
         res = validate_document(req.get("document"))
         doc = res.document
         if doc is None:
             return {"ok": False, "issues": [asdict(i) for i in res.issues]}
-        reg = InstrumentRegistry.load(self.instruments_path)
-        frames: dict[str, BarFrame] = {}
-        inst = {}
         for ds in req.get("datasets") or []:
-            sym, tf = ds["symbol"], ds.get("timeframe", doc.timeframes.lwc)
-            spec = reg.spec(sym)
-            frames[sym] = read_bars_csv(
-                self._safe_path(ds["path"]), sym, timeframe=tf, volume_kind=spec.volume_kind
-            )
-            inst[sym] = spec
+            if ds.get("timeframe", doc.timeframes.lwc) != doc.timeframes.lwc:
+                raise ValueError(
+                    f"{ds['symbol']}: dataset is {ds.get('timeframe')} but the document's LWC is "
+                    f"{doc.timeframes.lwc}"
+                )
+        frames, inst = load_frames(
+            [(ds["symbol"], self._safe_path(ds["path"])) for ds in req.get("datasets") or []],
+            InstrumentRegistry.load(self.instruments_path),
+            doc.timeframes.lwc,
+        )
         if not frames:
             raise ValueError("pick at least one dataset")
         costs = None if req.get("zero_costs") else CostModel.from_venue(self.venue_path)
@@ -271,7 +274,7 @@ class App:
             stage="strategy/ui",
         )
         r = run.result
-        met = compute_metrics(r.trades, r.equity, volume_flags=r.volume_flags, r_per_entry=1.0)
+        met = run.metrics()
         candidates = [ev for rec in journal.records("cycle") for ev in rec["evaluations"]]
         return _clean_dict(
             {
@@ -515,7 +518,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
             elif path == "/api/strategy/validate":
                 self._dispatch(app.strategy_validate, body)
             elif path == "/api/strategy/backtest":
-                self._dispatch(app._limited, app.strategy_backtest, body)
+                self._dispatch(app.strategy_backtest_limited, body)
             elif path == "/api/feedback":
                 self._dispatch(app.add_feedback, user, body)
             elif path == "/api/admin/invites":

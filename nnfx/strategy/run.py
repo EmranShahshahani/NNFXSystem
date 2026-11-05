@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -11,10 +12,12 @@ import pandas as pd
 from nnfx.brokers.costs import CostModel
 from nnfx.config import Slots, SlotSpec, SystemConfig
 from nnfx.data.bars import BarFrame
+from nnfx.data.feeds import read_bars_csv
 from nnfx.harness.backtest import BacktestHarness, BacktestResult
 from nnfx.indicators.slots import SlotOutputs
-from nnfx.instruments import InstrumentSpec
+from nnfx.instruments import InstrumentRegistry, InstrumentSpec
 from nnfx.journal.journal import Journal
+from nnfx.research.metrics import Metrics, compute_metrics
 from nnfx.research.partition import HoldoutAccessError, Market, Partition, SegmentName
 from nnfx.research.trials import ResearchState
 from nnfx.strategy.document import StrategyDocument
@@ -32,6 +35,31 @@ class DocumentRun:
     fingerprint: str
     result: BacktestResult
     trial_id: str | None
+
+    def metrics(self) -> Metrics:
+        """Performance in R, where one entry risks its whole 1R (ADR 10 §8)."""
+        r = self.result
+        return compute_metrics(r.trades, r.equity, volume_flags=r.volume_flags, r_per_entry=1.0)
+
+
+def market_of(instruments: Mapping[str, InstrumentSpec]) -> Market:
+    """The research market of a run, from its instruments' class."""
+    markets = {"fx" if i.market_class == "fx_spot" else "crypto" for i in instruments.values()}
+    if len(markets) != 1:
+        raise ValueError(f"a run covers one market; got {sorted(markets)}")
+    return "fx" if markets == {"fx"} else "crypto"
+
+
+def load_frames(
+    datasets: Iterable[tuple[str, Path | str]], registry: InstrumentRegistry, timeframe: str
+) -> tuple[dict[str, BarFrame], dict[str, InstrumentSpec]]:
+    """Read (symbol, CSV path) pairs as ``timeframe`` bars with their instruments."""
+    frames, inst = {}, {}
+    for sym, path in datasets:
+        spec = registry.spec(sym)
+        frames[sym] = read_bars_csv(path, sym, timeframe=timeframe, volume_kind=spec.volume_kind)
+        inst[sym] = spec
+    return frames, inst
 
 
 def _unused_outputs(n: int) -> SlotOutputs:
@@ -63,7 +91,6 @@ def backtest_document(
     costs: CostModel | None = None,
     journal: Journal | None = None,
     research: ResearchState | None = None,
-    market: Market = "crypto",
     stage: str = "strategy/backtest",
     config: SystemConfig | None = None,
     start: pd.Timestamp | None = None,
@@ -76,7 +103,9 @@ def backtest_document(
             raise ValueError(
                 f"{sym}: bars are {f.timeframe} but the document's LWC is {doc.timeframes.lwc}"
             )
-    segment = segment_of(market, frames, end) if research is not None else None
+    # Always, logged or not: the holdout is touch-once (doc 03 §3).
+    market = market_of({s: instruments[s] for s in frames})
+    segment = segment_of(market, frames, end)
     cfg = config or SystemConfig(slots=UNUSED_SLOTS)
     compiled = compile_document(doc, frames, instruments, cfg.session)
     result = BacktestHarness(
@@ -93,7 +122,7 @@ def backtest_document(
     fp = doc.fingerprint()
     result = replace(result, config_digest=fp)
     trial = None
-    if research is not None and segment is not None:
+    if research is not None:
         rs = [t.r_multiple for t in result.trades]
         trial = research.record_document_trial(
             fp,
