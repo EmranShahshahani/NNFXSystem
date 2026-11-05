@@ -21,7 +21,7 @@ class Phase(StrEnum):
 
 TRADE_PHASES = frozenset({Phase.IN_TRADE, Phase.RUNNER_BE, Phase.TRAILING})
 EntryType = Literal[
-    "standard", "baseline", "pullback", "one_candle_a", "one_candle_b", "continuation"
+    "standard", "baseline", "pullback", "one_candle_a", "one_candle_b", "continuation", "setup"
 ]
 Leg = Literal["tp1", "runner", "single", "combined"]
 

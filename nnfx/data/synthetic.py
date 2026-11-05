@@ -80,3 +80,38 @@ def hourly_walk(
         index=idx,
     )
     return BarFrame(df, symbol, timeframe="H1", volume_kind="tick")
+
+
+def intraday_walk(
+    n: int,
+    *,
+    minutes: int = 15,
+    seed: int = 0,
+    start: str = "2024-01-01",
+    symbol: str = "SYN",
+    start_price: float = 100.0,
+    vol: float = 0.003,
+    wick: float = 0.004,
+    regime_len: int = 400,
+    drift: float = 0.0006,
+) -> BarFrame:
+    """Intraday bars (default 15m) with trending regimes and wide, uneven wicks.
+
+    The wicks are drawn independently on each side so rejection candles occur,
+    which the Strategy Builder's setup Blocks need to fire in tests.
+    """
+    rng = np.random.default_rng(seed)
+    regimes = np.repeat(rng.choice([-1.0, 0.0, 1.0], size=n // regime_len + 1), regime_len)[:n]
+    close = start_price * np.exp(np.cumsum(rng.normal(0, vol, n) + regimes * drift))
+    open_ = np.r_[start_price, close[:-1]]
+    up, down = np.abs(rng.normal(0, wick, (2, n))) * rng.choice([0.2, 1.0, 3.0], size=(2, n))
+    high = np.maximum(open_, close) * np.exp(up)
+    low = np.minimum(open_, close) * np.exp(-down)
+    step = pd.Timedelta(minutes=minutes)
+    idx = pd.date_range(pd.Timestamp(start) + step, periods=n, freq=step, tz="UTC")
+    df = pd.DataFrame(
+        {"open": open_, "high": high, "low": low, "close": close, "volume": rng.uniform(1, 10, n)},
+        index=idx,
+    )
+    tf = {15: "M15", 60: "H1"}.get(minutes, f"M{minutes}")
+    return BarFrame(df, symbol, timeframe=tf, volume_kind="traded")

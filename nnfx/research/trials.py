@@ -31,6 +31,9 @@ from nnfx.research.logs import (
 from nnfx.research.partition import _HOLDOUT_TOKEN, HoldoutAccessError, Market, SegmentName
 
 THRESHOLDS_FILE = "thresholds.frozen.json"
+# Strategy Document runs are their own hypothesis family (spec, Research integration):
+# they never count toward NNFX's trial total or its deflated Sharpe.
+STRATEGY_TRIALS_LOG = "strategy_trials.jsonl"
 
 
 def trial_id(config: SystemConfig, scope: Mapping[str, Any]) -> str:
@@ -44,6 +47,7 @@ class ResearchState:
         self.trials = AppendOnlyLog(self.root / TRIALS_LOG)
         self.validation = AppendOnlyLog(self.root / VALIDATION_LOG)
         self.holdout = AppendOnlyLog(self.root / HOLDOUT_LOG)
+        self.strategy_trials = AppendOnlyLog(self.root / STRATEGY_TRIALS_LOG)
 
     # ---------------------------------------------------------------- trials
     def record_trial(
@@ -72,6 +76,34 @@ class ResearchState:
             )
         if segment == "validation":
             self.log_validation_pass(tid, stage)
+        return tid
+
+    def record_document_trial(
+        self,
+        fingerprint: str,
+        *,
+        market: Market,
+        segment: SegmentName,
+        symbols: Sequence[str],
+        stage: str,
+        metrics: Mapping[str, Any] | None = None,
+    ) -> str:
+        """Log one backtest of a Strategy Document version; the id is (fingerprint, scope)."""
+        if segment == "holdout":
+            raise HoldoutAccessError("holdout runs are not trials; use HoldoutGuard")
+        scope = {"market": market, "segment": segment, "symbols": sorted(symbols)}
+        payload = canonical_json({"document": fingerprint, "scope": scope})
+        tid = "s_" + hashlib.sha256(payload.encode()).hexdigest()[:20]
+        if tid not in self.strategy_trials.distinct():
+            self.strategy_trials.append(
+                {
+                    "id": tid,
+                    "stage": stage,
+                    "document": fingerprint,
+                    **scope,
+                    "metrics": dict(metrics or {}),
+                }
+            )
         return tid
 
     def trial_count(self) -> int:
