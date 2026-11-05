@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from itertools import pairwise
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -63,6 +64,47 @@ class EngineState(Model):
         return self.symbols.get(symbol, SymbolState())
 
 
+class ExitStep(Model):
+    """Close ``fraction`` of the original size when price reaches ``r`` R from entry.
+
+    R is the planned stop distance. ``stop_to_r``, when set, is the conditional
+    stop move this step triggers: once it fills, the stop goes to entry +
+    ``stop_to_r`` R (0 = breakeven), and only ever tighter.
+    """
+
+    r: float = Field(gt=0)
+    fraction: float = Field(gt=0, le=1)
+    stop_to_r: float | None = None
+
+
+class ExitPlan(Model):
+    """A position's exit steps plus the remainder left to the stop (ADR 09 §5).
+
+    Step fractions and the remainder sum to 1. The remainder exits only at the
+    stop, which the engine may trail with a ``ModifyIntent`` (the trailing hook;
+    ``PositionView.steps_filled`` tells it how far the plan has run).
+    """
+
+    steps: tuple[ExitStep, ...] = ()
+    remainder: float = Field(default=0.0, ge=0)
+
+    @model_validator(mode="after")
+    def _check(self) -> ExitPlan:
+        rs = [s.r for s in self.steps]
+        if any(b <= a for a, b in pairwise(rs)):
+            raise ValueError(f"exit steps must have increasing R levels, got {rs}")
+        total = sum(s.fraction for s in self.steps) + self.remainder
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError(f"exit fractions and remainder must sum to 1, got {total:.6g}")
+        return self
+
+
+class ExitStepView(Model):
+    price: float
+    fraction: float
+    done: bool
+
+
 class PositionView(Model):
     """An open position as reported by a broker."""
 
@@ -80,6 +122,8 @@ class PositionView(Model):
     signal_time: str
     entry_type: EntryType
     scaled_out: bool = False
+    exit_steps: tuple[ExitStepView, ...] = ()
+    steps_filled: int = 0
 
 
 class PendingOrderView(Model):
@@ -130,6 +174,8 @@ class EntryIntent(Model):
     target_fraction: float = 1.0
     risk_fraction: float
     idempotency_key: str
+    # Fractional exit steps; replaces the single target when given.
+    exit_plan: ExitPlan | None = None
 
 
 class OpenIntent(EntryIntent):
@@ -138,6 +184,12 @@ class OpenIntent(EntryIntent):
     kind: Literal["open"] = "open"
     stop_distance: float
     target_distance: float | None
+
+    @model_validator(mode="after")
+    def _check(self) -> OpenIntent:
+        if self.exit_plan is not None and self.target_distance is not None:
+            raise ValueError("give an exit plan or a target, not both")
+        return self
 
 
 class PendingOrderIntent(EntryIntent):
@@ -172,6 +224,8 @@ class PendingOrderIntent(EntryIntent):
             raise ValueError(f"target {self.target} must be beyond the entry {self.trigger}")
         if self.expires_after_bars < 1:
             raise ValueError("expires_after_bars must be at least 1")
+        if self.exit_plan is not None and self.target is not None:
+            raise ValueError("give an exit plan or a target, not both")
         return self
 
     @property

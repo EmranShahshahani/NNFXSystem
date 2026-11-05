@@ -205,6 +205,7 @@ class TradingLoop:
             target_distance=intent.target_distance,
             target_fraction=intent.target_fraction,
             risk_cash=o.realized_risk,
+            exit_plan=intent.exit_plan,
         )
         if isinstance(intent, PendingOrderIntent):
             spec = PendingSpec(

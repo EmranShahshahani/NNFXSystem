@@ -35,6 +35,8 @@ from nnfx.brokers.costs import CostModel
 from nnfx.engine.types import (
     AccountState,
     EntryType,
+    ExitPlan,
+    ExitStepView,
     Leg,
     PendingOrderView,
     PositionView,
@@ -76,11 +78,19 @@ class Order:
     risk_cash: float
     # Set for a pending stop-market order (a Trigger); None for a market order.
     pending: PendingSpec | None = None
+    # Fractional exit steps; None means the single target above (or none).
+    exit_plan: ExitPlan | None = None
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Order:
-        spec = d.get("pending")
-        return cls(**{**d, "pending": None if spec is None else PendingSpec(**spec)})
+        spec, plan = d.get("pending"), d.get("exit_plan")
+        return cls(
+            **{
+                **d,
+                "pending": None if spec is None else PendingSpec(**spec),
+                "exit_plan": None if plan is None else ExitPlan.model_validate(plan),
+            }
+        )
 
 
 @dataclass(frozen=True)
@@ -104,6 +114,17 @@ class Broker(Protocol):
 
 
 @dataclass
+class ExitLevel:
+    """One exit step at an absolute price: close ``fraction`` of the original size."""
+
+    price: float
+    fraction: float
+    # Absolute stop to move to once this step fills (never loosening), if any.
+    stop_to: float | None = None
+    done: bool = False
+
+
+@dataclass
 class SimPosition:
     id: str
     symbol: str
@@ -113,15 +134,15 @@ class SimPosition:
     entry_time: str
     stop: float
     initial_stop: float
-    target: float | None
-    target_fraction: float
     leg: Leg
     entry_atr: float
     signal_time: str
     entry_type: EntryType
     risk_cash: float
     order_key: str
-    scaled_out: bool = False
+    original_units: float
+    # The exit plan in prices, in order; units left after all steps are the remainder.
+    exits: list[ExitLevel] = field(default_factory=list)
     commission: float = 0.0
     spread_cost: float = 0.0
     slippage_cost: float = 0.0
@@ -129,7 +150,16 @@ class SimPosition:
     carry_kind: str = "none"
     bars_held: int = 0
 
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> SimPosition:
+        return cls(**{**d, "exits": [ExitLevel(**e) for e in d.get("exits", [])]})
+
+    @property
+    def next_exit(self) -> ExitLevel | None:
+        return next((e for e in self.exits if not e.done), None)
+
     def view(self) -> PositionView:
+        nxt = self.next_exit
         return PositionView(
             id=self.id,
             symbol=self.symbol,
@@ -138,13 +168,17 @@ class SimPosition:
             entry_price=self.entry_price,
             entry_time=self.entry_time,
             stop=self.stop,
-            target=self.target,
-            target_fraction=self.target_fraction,
+            target=None if nxt is None else nxt.price,
+            target_fraction=1.0 if nxt is None else nxt.fraction,
             leg=self.leg,
             entry_atr=self.entry_atr,
             signal_time=self.signal_time,
             entry_type=self.entry_type,
-            scaled_out=self.scaled_out,
+            scaled_out=any(e.done for e in self.exits),
+            exit_steps=tuple(
+                ExitStepView(price=e.price, fraction=e.fraction, done=e.done) for e in self.exits
+            ),
+            steps_filled=sum(e.done for e in self.exits),
         )
 
 
@@ -325,8 +359,9 @@ class SimBroker:
         if p is None:
             return
         p.stop = new_stop
-        if new_target is not None and p.target is not None:
-            p.target = new_target
+        nxt = p.next_exit
+        if new_target is not None and nxt is not None:
+            nxt.price = new_target
 
     def close(self, position_id: str, fraction: float = 1.0, reason: str = "") -> None:
         if position_id in self.s.positions:
@@ -358,6 +393,21 @@ class SimBroker:
         else:
             stop = px - od.direction * od.stop_distance
             target = None if od.target_distance is None else px + od.direction * od.target_distance
+        d = od.direction
+        if od.exit_plan is not None:
+            # Steps sit at R multiples of the planned stop distance, from the actual entry.
+            r_unit = od.stop_distance
+            exits = [
+                ExitLevel(
+                    price=px + d * st.r * r_unit,
+                    fraction=st.fraction,
+                    stop_to=None if st.stop_to_r is None else px + d * st.stop_to_r * r_unit,
+                )
+                for st in od.exit_plan.steps
+            ]
+        else:
+            # The single target: one step of target_fraction, the rest a remainder.
+            exits = [] if target is None else [ExitLevel(target, od.target_fraction)]
         p = SimPosition(
             id=oid,
             symbol=od.symbol,
@@ -367,14 +417,14 @@ class SimBroker:
             entry_time=ts.isoformat(),
             stop=stop,
             initial_stop=stop,
-            target=target,
-            target_fraction=od.target_fraction,
             leg=od.leg,
             entry_atr=od.atr,
             signal_time=od.signal_time,
             entry_type=od.entry_type,
             risk_cash=od.risk_cash,
             order_key=key,
+            original_units=od.units,
+            exits=exits,
             commission=self.costs.commission(inst, od.units, px, conv),
             spread_cost=hs * od.units * vp,
             slippage_cost=sl * od.units * vp,
@@ -549,9 +599,13 @@ class SimBroker:
             if (o - p.stop) * p.direction <= 0:
                 px, hs, sl = self._exit_fill(p, o, stop=True, at_open=True)
                 self._close_leg(p, px, ts, "stop_gap", conv, spread=hs, slip=sl)
-            elif p.target is not None and (o - p.target) * p.direction >= 0:
-                px, hs, sl = self._exit_fill(p, o, stop=False, at_open=True)
-                self._target(p, px, ts, conv, hs, sl)
+            else:
+                # Every step the open gapped through fills at the open, in order.
+                while p.id in self.s.positions and (nxt := p.next_exit) is not None:
+                    if (o - nxt.price) * p.direction < 0:
+                        break
+                    px, hs, sl = self._exit_fill(p, o, stop=False, at_open=True)
+                    self._step(p, nxt, px, ts, conv, hs, sl)
 
         # 1c. market orders at the open
         keepq: list[_Queued] = []
@@ -579,19 +633,18 @@ class SimBroker:
         trig_lo = mark_low if use_mark and mark_low is not None else lo
         trig_hi = mark_high if use_mark and mark_high is not None else h
         for p in mine():
-            stop_hit = (trig_lo <= p.stop) if p.direction > 0 else (trig_hi >= p.stop)
-            tgt_hit = p.target is not None and (
-                (h >= p.target) if p.direction > 0 else (lo <= p.target)
-            )
-            if stop_hit:
-                px, hs, sl = self._exit_fill(p, p.stop, stop=True, at_open=False)
-                reason = (
-                    "stop" if (p.stop - p.initial_stop) * p.direction <= 1e-12 else "trailing_stop"
-                )
-                self._close_leg(p, px, ts, reason, conv, spread=hs, slip=sl)
-            elif tgt_hit and p.target is not None:
-                px, hs, sl = self._exit_fill(p, p.target, stop=False, at_open=False)
-                self._target(p, px, ts, conv, hs, sl)
+            if self._stop_hit(p, trig_lo, trig_hi):
+                self._stop_out(p, ts, conv)
+                continue
+            moved = False
+            while p.id in self.s.positions and (nxt := p.next_exit) is not None:
+                if not ((h >= nxt.price) if p.direction > 0 else (lo <= nxt.price)):
+                    break
+                px, hs, sl = self._exit_fill(p, nxt.price, stop=False, at_open=False)
+                moved |= self._step(p, nxt, px, ts, conv, hs, sl)
+            # Conservative: a stop the steps just tightened is hit if this bar reached it.
+            if moved and p.id in self.s.positions and self._stop_hit(p, trig_lo, trig_hi):
+                self._stop_out(p, ts, conv)
 
         # 3. pending orders still resting: invalidation and expiry at the close
         self._age_pending(symbol, ts, c)
@@ -609,17 +662,38 @@ class SimBroker:
         self.s.last_conv[symbol] = conv
         self.s.peak_equity = max(self.s.peak_equity, self.equity())
 
-    def _target(
-        self, p: SimPosition, px: float, ts: pd.Timestamp, conv: float, hs: float, sl: float
-    ) -> None:
-        if p.target_fraction < 1.0 and not p.scaled_out:
-            self._close_leg(
-                p, px, ts, "target_partial", conv, p.target_fraction, spread=hs, slip=sl
-            )
-            p.scaled_out = True
-            p.target = None
-        else:
+    @staticmethod
+    def _stop_hit(p: SimPosition, trig_lo: float, trig_hi: float) -> bool:
+        return (trig_lo <= p.stop) if p.direction > 0 else (trig_hi >= p.stop)
+
+    def _stop_out(self, p: SimPosition, ts: pd.Timestamp, conv: float) -> None:
+        px, hs, sl = self._exit_fill(p, p.stop, stop=True, at_open=False)
+        reason = "stop" if (p.stop - p.initial_stop) * p.direction <= 1e-12 else "trailing_stop"
+        self._close_leg(p, px, ts, reason, conv, spread=hs, slip=sl)
+
+    def _step(
+        self,
+        p: SimPosition,
+        ex: ExitLevel,
+        px: float,
+        ts: pd.Timestamp,
+        conv: float,
+        hs: float,
+        sl: float,
+    ) -> bool:
+        """Close one exit step at ``px``; True if it tightened the stop."""
+        ex.done = True
+        units = ex.fraction * p.original_units
+        if p.units - units <= 1e-9 * p.original_units:
             self._close_leg(p, px, ts, "target", conv, spread=hs, slip=sl)
+            return False
+        # Fractions are of the original size; _close_leg takes a share of what is left.
+        share = ex.fraction if p.units == p.original_units else units / p.units
+        self._close_leg(p, px, ts, "target_partial", conv, share, spread=hs, slip=sl)
+        if ex.stop_to is not None and (ex.stop_to - p.stop) * p.direction > 0:
+            p.stop = ex.stop_to
+            return True
+        return False
 
     def force_close(self, symbol: str, price: float, ts: pd.Timestamp, reason: str) -> None:
         """Immediate close at ``price`` - delisting (last valid price) or end of data."""
@@ -636,7 +710,7 @@ class SimBroker:
     def dump_state(self) -> str:
         d = asdict(self.s)
         d["trades"] = [asdict(t) for t in self.trades]
-        return json.dumps(d, sort_keys=True)
+        return json.dumps(d, sort_keys=True, default=_jsonable)
 
     def load_state(self, raw: str) -> None:
         d: dict[str, Any] = json.loads(raw)
@@ -645,7 +719,7 @@ class SimBroker:
             balance=d["balance"],
             peak_equity=d["peak_equity"],
             seq=d["seq"],
-            positions={k: SimPosition(**v) for k, v in d["positions"].items()},
+            positions={k: SimPosition.from_dict(v) for k, v in d["positions"].items()},
             queued=[
                 _Queued(q["key"], q["order_id"], Order.from_dict(q["order"])) for q in d["queued"]
             ],
@@ -668,6 +742,14 @@ class SimBroker:
             exit_bar=d.get("exit_bar", {}),
         )
         self.trades = [Trade(**t) for t in trades]
+
+
+def _jsonable(o: object) -> Any:
+    """JSON for the pydantic models an Order carries (its exit plan)."""
+    dump = getattr(o, "model_dump", None)
+    if dump is None:
+        raise TypeError(f"not JSON serialisable: {type(o).__name__}")
+    return dump(mode="json")
 
 
 class BacktestBroker(SimBroker):
