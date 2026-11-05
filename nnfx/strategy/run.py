@@ -30,6 +30,12 @@ UNUSED_SLOTS = Slots(
 )
 
 
+def document_config(doc: StrategyDocument, base: SystemConfig | None = None) -> SystemConfig:
+    """The harness config for a document: its leverage reaches the risk manager and broker."""
+    cfg = base or SystemConfig(slots=UNUSED_SLOTS)
+    return cfg.with_overrides({"risk.leverage": doc.risk.leverage.leverage})
+
+
 @dataclass(frozen=True)
 class DocumentRun:
     fingerprint: str
@@ -106,7 +112,7 @@ def backtest_document(
     # Always, logged or not: the holdout is touch-once (doc 03 §3).
     market = market_of({s: instruments[s] for s in frames})
     segment = segment_of(market, frames, end)
-    cfg = config or SystemConfig(slots=UNUSED_SLOTS)
+    cfg = document_config(doc, config)
     compiled = compile_document(doc, frames, instruments, cfg.session)
     result = BacktestHarness(
         cfg,

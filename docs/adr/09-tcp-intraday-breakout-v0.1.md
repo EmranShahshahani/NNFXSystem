@@ -46,8 +46,8 @@ must not change behaviour while this is added.
    fills first (a bar cannot tell which intrabar level came first);
    (d) a close strictly beyond the invalidation price, or `expires_after_bars`
    rested bars, cancels at that bar's close, after the fill attempt;
-   (e) resting orders are not yet counted by the risk manager's exposure
-   caps; ticket 06 adds them to the open-risk budget.
+   (e) resting orders count against the risk manager's exposure caps and the
+   Strategy Document open-risk cap (done in ticket 06).
 5. **Legs generalise to fractions.** A position is a list of exit fractions
    (e.g. 0.30 at 2R with breakeven, 0.40 at 5R, 0.10 runner, remainder at the
    runner rule). Fractions must sum to 1; total initial risk equals the
@@ -74,7 +74,12 @@ must not change behaviour while this is added.
    NNFX legs map onto plans: tp1 = one full step, combined = 0.5 step +
    0.5 Runner, runner/single = empty plan; the hedged pair stays two
    positions. All six NNFX leg shapes reproduce byte-identical backtests.
-6. **Risk manager extensions.** Tiered risk from flags, a shared open-risk
+6. *Superseded for Strategy Documents by ADR 10 §10 (ticket 06):* tiers,
+   governors and loss limits live in the document's risk governor, not the
+   risk manager; the daily limit halts for 24 h from the breach (the
+   blueprint's wording) rather than resetting at 00:00 UTC. The risk manager
+   keeps its portfolio caps, which now include resting orders.
+   **Risk manager extensions.** Tiered risk from flags, a shared open-risk
    budget that releases positions at breakeven, max open positions, a daily
    loss limit reset at 00:00 UTC, and cooldowns. Every rejection is journaled
    with its reason.

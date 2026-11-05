@@ -57,8 +57,21 @@ class SymbolState(Model):
     last_exit_time: str | None = None
 
 
+class GovernorState(Model):
+    """What the Strategy Builder's risk governor must remember between bars (ADR 10 §10).
+
+    Journaled with the engine state every cycle, so a restarted run resumes it.
+    """
+
+    risk_base: float | None = None  # equity risk is sized on; moves on +/-10% steps
+    halted_until: str | None = None  # a loss-limit halt (ISO, UTC)
+    halt_reason: str | None = None
+    performance_cut: bool = False  # until a new equity high
+
+
 class EngineState(Model):
     symbols: dict[str, SymbolState] = Field(default_factory=dict)
+    governor: GovernorState = GovernorState()
 
     def get(self, symbol: str) -> SymbolState:
         return self.symbols.get(symbol, SymbolState())
@@ -138,6 +151,11 @@ class PositionView(Model):
     exit_steps: tuple[ExitStepView, ...] = ()
     steps_filled: int = 0
     risk_cash: float = 0.0  # the risk still assigned to the open units
+
+    @property
+    def at_risk(self) -> bool:
+        """The stop is still on the losing side of entry (breakeven releases risk)."""
+        return (self.entry_price - self.stop) * self.direction > 0
 
 
 class TradeOutcome(Model):

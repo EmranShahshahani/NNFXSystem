@@ -91,7 +91,7 @@ class PerformanceGovernor(_Strict):
     """Degradation shrinks risk until it recovers."""
 
     enabled: bool = True
-    window: int = Field(50, ge=1)
+    window: int = Field(50, ge=1, le=500)  # the broker reports the last 500 closed positions
     min_win_rate: float = Field(0.40, ge=0, le=1)
     max_drawdown: float = Field(0.06, gt=0, lt=1)  # until a new equity high
     reduced_risk: float = Field(0.0025, gt=0, le=CEILING)
@@ -108,9 +108,10 @@ class RiskSection(_Strict):
     # "fixed": risk_per_trade (video 75); "tiered": tiers[Confluence Score] (video 7).
     sizing: Literal["fixed", "tiered"] = "fixed"
     risk_per_trade: float = Field(0.005, gt=0, le=CEILING)
-    tiers: tuple[float, ...] = (0.0025, 0.005, 0.0075, 0.01)
+    tiers: list[float] = Field(default_factory=lambda: [0.0025, 0.005, 0.0075, 0.01])
     milestone_pct: float | None = Field(0.10, gt=0, lt=1)  # resize risk only at +/-10% equity
-    max_open_risk: float | None = Field(None, gt=0, le=0.2)  # open + resting risk, all symbols
+    # Open + resting risk across all symbols (a portfolio cap, not a per-trade risk).
+    max_open_risk: float | None = Field(None, gt=0, le=0.2)
     max_positions_per_symbol: int = Field(1, ge=1)
     atr_period: int = Field(14, ge=1)  # the ATR the risk manager's liquidation check uses
     streak: StreakGovernor = StreakGovernor()
@@ -120,11 +121,11 @@ class RiskSection(_Strict):
 
     @field_validator("tiers")
     @classmethod
-    def _tiers(cls, v: tuple[float, ...]) -> tuple[float, ...]:
+    def _tiers(cls, v: list[float]) -> list[float]:
         if not v or any(not 0 < t <= CEILING for t in v):
-            raise ValueError(f"every tier must be in (0, {CEILING}]")
+            raise ValueError(f"هر سطح ریسک باید بیشتر از صفر و حداکثر {CEILING:.0%} باشد.")
         if any(b < a for a, b in pairwise(v)):
-            raise ValueError("tiers must not fall as the Confluence Score rises")
+            raise ValueError("سطح‌های ریسک باید با افزایش امتیاز هم‌گرایی افزایش یابند (نه کاهش).")
         return v
 
 
@@ -203,6 +204,8 @@ def _fa(err: dict[str, Any]) -> str:
         return "نباید خالی باشد."
     if t == "extra_forbidden":
         return "این فیلد در طرح سند وجود ندارد."
+    if t == "value_error" and ctx.get("error") is not None:
+        return str(ctx["error"])  # our own validators write Persian
     return f"مقدار نامعتبر است ({err.get('msg', t)})."
 
 

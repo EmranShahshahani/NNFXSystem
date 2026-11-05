@@ -1,18 +1,22 @@
-"""The risk governor of Strategy Documents (Strategy Builder ticket 06).
+"""The risk governor of Strategy Documents (Strategy Builder ticket 06, ADR 10 §10).
 
-Pure functions of the document's Risk section, the account the broker
-reports, and the bar's time; no hidden state, so a restarted run governs
-exactly like an uninterrupted one. In order:
+Two steps per bar. ``update_state`` advances what must be remembered (the
+sizing base, a loss-limit halt, the performance cut) from the account the
+broker reports; the state travels in ``EngineState`` and is journaled, so a
+restarted run resumes it exactly. ``govern`` then decides each candidate:
 
-1. base risk: ``risk_per_trade`` (fixed) or ``tiers[score]`` (tiered), capped at 1%;
-2. halts (refuse the entry): five losses in a row (48 h), the daily loss limit
-   (24 h from the breach), the weekly loss limit (until Monday 00:00 UTC);
-3. cuts (the lowest applies): three losses in a row, a rolling win rate below
-   40% over 50 trades, a drawdown deeper than 6% (until a new equity high);
-4. size on equity resized only at +/-10% milestones.
+1. base risk: ``risk_per_trade`` (fixed) or ``tiers[score]`` (tiered), <= 1%;
+2. halts refuse the entry: five losses in a row (48 h from the latest), the
+   daily loss limit (24 h from the bar it is reached, open losses included),
+   the weekly loss limit (until Monday 00:00 UTC);
+3. cuts lower its risk (the lowest applies): three losses in a row, and the
+   performance cut (rolling win rate below 40% over 50 trades, or drawdown
+   beyond 6%), which holds until equity makes a new high;
+4. risk is sized on the base, which moves only when equity moves +/-10% from
+   it, and never on more than the equity the account has.
 
-Losses and wins are closed positions (all their exits, after costs);
-a scratch trade (net zero) neither extends nor breaks a streak.
+Losses and wins are closed positions (all their exits, after costs); a
+scratch trade (net zero) neither extends nor breaks a streak.
 """
 
 from __future__ import annotations
@@ -22,52 +26,48 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from nnfx.engine.types import AccountState, TradeOutcome
+from nnfx.engine.types import AccountState, GovernorState, TradeOutcome
 from nnfx.instruments import InstrumentSpec
-from nnfx.strategy.document import CEILING, RiskSection
+from nnfx.strategy.document import RiskSection
 
 
 @dataclass(frozen=True)
 class RiskDecision:
-    allowed: bool
-    risk: float  # fraction of the sizing equity
-    risk_fraction: float  # fraction of current equity (what the broker sizes on)
-    tier: float  # the base risk before governors
+    base_risk: float  # the tier (or fixed risk) before cuts
+    risk: float  # after cuts, as a fraction of the sizing equity
+    risk_fraction: float  # the same risk as a fraction of current equity (the broker sizes on it)
     sizing_equity: float
-    blocked: list[str] = field(default_factory=list)
-    notes: list[str] = field(default_factory=list)  # cuts that applied
+    blocked: list[str] = field(default_factory=list)  # halts
+    cuts: list[str] = field(default_factory=list)  # cuts that lowered the risk
+
+    @property
+    def allowed(self) -> bool:
+        return not self.blocked
 
     def record(self) -> dict[str, object]:
         return {
-            "tier": self.tier,
+            "base_risk": self.base_risk,
             "risk": self.risk,
             "risk_fraction": self.risk_fraction,
             "sizing_equity": self.sizing_equity,
-            "notes": list(self.notes),
+            "cuts": list(self.cuts),
         }
 
 
-def sizing_equity(equity: float, initial: float | None, pct: float | None) -> float:
-    """The milestone risk is sized on: it moves only when equity crosses +/-``pct`` steps.
-
-    Milestones sit at initial x (1 + pct)^k above and initial x (1 - pct)^k below;
-    the base is the last one crossed on the way out from the initial equity, so
-    a small loss or gain does not resize anything.
-    """
-    if pct is None or not initial or equity <= 0:
+def next_base(base: float, equity: float, step: float | None) -> float:
+    """The sizing base after this bar: it follows equity only on moves of +/-``step``."""
+    if step is None or base <= 0:
         return equity
-    if equity >= initial:
-        k = math.floor(math.log(equity / initial) / math.log(1 + pct) + 1e-9)
-        return initial * (1 + pct) ** k
-    k = math.floor(math.log(equity / initial) / math.log(1 - pct) + 1e-9)
-    return initial * (1 - pct) ** k
+    if equity >= base * (1 + step) or equity <= base * (1 - step):
+        return equity
+    return base
 
 
-def _t(o: TradeOutcome) -> pd.Timestamp:
+def _exit_time(o: TradeOutcome) -> pd.Timestamp:
     return pd.Timestamp(o.exit_time)
 
 
-def _streak(outcomes: tuple[TradeOutcome, ...]) -> list[TradeOutcome]:
+def loss_streak(outcomes: tuple[TradeOutcome, ...]) -> list[TradeOutcome]:
     """The current run of losses, oldest first (scratch trades skipped)."""
     run: list[TradeOutcome] = []
     for o in reversed(outcomes):
@@ -78,98 +78,114 @@ def _streak(outcomes: tuple[TradeOutcome, ...]) -> list[TradeOutcome]:
     return run[::-1]
 
 
-def _breach(
-    outcomes: tuple[TradeOutcome, ...], start: pd.Timestamp, balance: float, limit: float
-) -> pd.Timestamp | None:
-    """When realised losses since ``start`` first reached ``limit`` of that period's start balance."""
-    period = [o for o in outcomes if _t(o) >= start]
-    start_balance = balance - sum(o.net_pnl for o in period)
-    if start_balance <= 0:
-        return None
-    running = 0.0
-    for o in period:
-        running += o.net_pnl
-        if running <= -limit * start_balance:
-            return _t(o)
-    return None
+def _period_loss(account: AccountState, start: pd.Timestamp) -> float:
+    """Loss since ``start`` (closed and open) as a fraction of that period's starting balance."""
+    closed = sum(o.net_pnl for o in account.recent_outcomes if _exit_time(o) >= start)
+    start_balance = account.balance - closed
+    return (account.equity - start_balance) / start_balance if start_balance > 0 else 0.0
 
 
-def govern(risk: RiskSection, account: AccountState, now: pd.Timestamp, score: int) -> RiskDecision:
-    tier = (
+def _poor_win_rate(risk: RiskSection, account: AccountState) -> bool:
+    pg = risk.performance
+    decided = [o for o in account.recent_outcomes if o.net_pnl != 0][-pg.window :]
+    return (
+        len(decided) >= pg.window
+        and sum(o.net_pnl > 0 for o in decided) / len(decided) < pg.min_win_rate
+    )
+
+
+def update_state(
+    risk: RiskSection, account: AccountState, now: pd.Timestamp, g: GovernorState
+) -> GovernorState:
+    """Advance the governor's memory by one bar."""
+    base = g.risk_base if g.risk_base is not None else (account.initial_equity or account.equity)
+    base = next_base(base, account.equity, risk.milestone_pct)
+
+    halted_until, reason = g.halted_until, g.halt_reason
+    if halted_until is not None and now >= pd.Timestamp(halted_until):
+        halted_until = reason = None
+    ll = risk.loss_limits
+    if (
+        halted_until is None
+        and ll.daily is not None
+        and _period_loss(account, now.floor("D")) <= -ll.daily
+    ):
+        halted_until = (now + pd.Timedelta(hours=ll.daily_halt_hours)).isoformat()
+        reason = "daily_loss_limit"
+    if halted_until is None and ll.weekly is not None:
+        week = now.floor("D") - pd.Timedelta(days=now.weekday())
+        if _period_loss(account, week) <= -ll.weekly:
+            halted_until, reason = (week + pd.Timedelta(days=7)).isoformat(), "weekly_loss_limit"
+
+    pg = risk.performance
+    cut = g.performance_cut
+    if pg.enabled:
+        if _poor_win_rate(risk, account) or account.drawdown_from_peak > pg.max_drawdown:
+            cut = True
+        elif account.equity >= account.peak_equity:
+            cut = False  # equity recovered to a new high
+    else:
+        cut = False
+    return GovernorState(
+        risk_base=base, halted_until=halted_until, halt_reason=reason, performance_cut=cut
+    )
+
+
+def govern(
+    risk: RiskSection, account: AccountState, now: pd.Timestamp, score: int, g: GovernorState
+) -> RiskDecision:
+    """The risk for one candidate, or why it is refused."""
+    base_risk = (
         risk.risk_per_trade
         if risk.sizing == "fixed"
         else risk.tiers[min(score, len(risk.tiers) - 1)]
     )
-    used = min(tier, CEILING)
-    blocked: list[str] = []
-    notes: list[str] = []
-    outs = account.recent_outcomes
+    applied, blocked, cuts = base_risk, [], []
 
     st = risk.streak
     if st.enabled:
-        run = _streak(outs)
-        if len(run) >= st.halt_after:
-            until = _t(run[st.halt_after - 1]) + pd.Timedelta(hours=st.halt_hours)
-            if now < until:
-                blocked.append("streak_halt")
-        if len(run) >= st.reduce_after and st.reduced_risk < used:
-            used, notes = st.reduced_risk, [*notes, "streak_reduced"]
+        run = loss_streak(account.recent_outcomes)
+        if len(run) >= st.halt_after and now < _exit_time(run[-1]) + pd.Timedelta(
+            hours=st.halt_hours
+        ):
+            blocked.append("streak_halt")
+        if len(run) >= st.reduce_after and st.reduced_risk < applied:
+            applied = st.reduced_risk
+            cuts.append("streak")
+    if g.halted_until is not None and now < pd.Timestamp(g.halted_until) and g.halt_reason:
+        blocked.append(g.halt_reason)
+    if g.performance_cut and risk.performance.reduced_risk < applied:
+        applied = risk.performance.reduced_risk
+        cuts.append("performance")
 
-    ll = risk.loss_limits
-    if ll.daily is not None:
-        # The breach may be yesterday's: a 24 h halt crosses midnight.
-        for day in (now.floor("D") - pd.Timedelta(days=1), now.floor("D")):
-            hit = _breach(
-                tuple(o for o in outs if _t(o) < day + pd.Timedelta(days=1)),
-                day,
-                account.balance
-                - sum(o.net_pnl for o in outs if _t(o) >= day + pd.Timedelta(days=1)),
-                ll.daily,
-            )
-            if hit is not None and now < hit + pd.Timedelta(hours=ll.daily_halt_hours):
-                blocked.append("daily_loss_limit")
-                break
-    if ll.weekly is not None:
-        week = now.floor("D") - pd.Timedelta(days=now.weekday())
-        if _breach(outs, week, account.balance, ll.weekly) is not None:
-            blocked.append("weekly_loss_limit")
-
-    pg = risk.performance
-    if pg.enabled:
-        decided = [o for o in outs if o.net_pnl != 0][-pg.window :]
-        poor = (
-            len(decided) >= pg.window
-            and sum(o.net_pnl > 0 for o in decided) / len(decided) < pg.min_win_rate
-        )
-        deep = account.drawdown_from_peak > pg.max_drawdown
-        if (poor or deep) and pg.reduced_risk < used:
-            used = pg.reduced_risk
-        if poor:
-            notes.append("performance_win_rate")
-        if deep:
-            notes.append("performance_drawdown")
-
-    base = sizing_equity(account.equity, account.initial_equity, risk.milestone_pct)
-    fraction = used * base / account.equity if account.equity > 0 else 0.0
-    return RiskDecision(not blocked, used, fraction, tier, base, blocked, notes)
+    base = g.risk_base if g.risk_base is not None else account.equity
+    sizing = min(base, account.equity)  # never size on equity the account no longer has
+    fraction = applied * sizing / account.equity if account.equity > 0 else 0.0
+    return RiskDecision(base_risk, applied, fraction, sizing, blocked, cuts)
 
 
 def leverage_problem(
     risk: RiskSection, inst: InstrumentSpec, entry: float, stop: float
-) -> str | None:
-    """Why the Leverage Governor refuses this entry, or None (spot instruments are exempt)."""
+) -> tuple[str, str] | None:
+    """(reason code, detail) if the Leverage Governor refuses; None if fine or spot."""
     if inst.max_leverage <= 1.0:
         return None
-    lev = risk.leverage.leverage
+    lev, safety = risk.leverage.leverage, risk.leverage.safety
     stop_pct = abs(entry - stop) / entry
-    cap = 1.0 / (stop_pct * risk.leverage.safety) if stop_pct > 0 else math.inf
+    cap = 1.0 / (stop_pct * safety) if stop_pct > 0 else math.inf
     if lev >= cap:
-        return f"leverage_governor: {lev:g}x >= 1 / ({stop_pct:.2%} x {risk.leverage.safety:g}) = {cap:.1f}x"
+        return "leverage_governor", f"{lev:g}x >= 1 / ({stop_pct:.2%} x {safety:g}) = {cap:.1f}x"
     if lev > inst.max_leverage:
-        return f"leverage_governor: {lev:g}x above the venue's {inst.max_leverage:g}x"
+        return "leverage_governor", f"{lev:g}x above the venue's {inst.max_leverage:g}x"
     long_ = stop < entry
     gap = 1.0 / lev - inst.maintenance_margin_rate
     liq = entry * (1 - gap) if long_ else entry * (1 + gap)
     if (long_ and liq >= stop) or (not long_ and liq <= stop):
-        return f"liquidation_before_stop: liquidation {liq:.6g} comes before the stop {stop:.6g}"
+        return "liquidation_before_stop", f"liquidation {liq:.6g} comes before the stop {stop:.6g}"
     return None
+
+
+def margin(risk: RiskSection, risk_cash: float, entry: float, stop: float) -> float:
+    """Margin the position ties up: notional / leverage (leverage never changes risk)."""
+    stop_pct = abs(entry - stop) / entry
+    return risk_cash / stop_pct / risk.leverage.leverage if stop_pct > 0 else 0.0

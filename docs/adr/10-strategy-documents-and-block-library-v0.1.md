@@ -43,8 +43,9 @@ and honest trial counting.
    - Stop: candidate → initial stop.
    - Exit: candidate (with the data) → an Exit Plan in R.
 
-   Confirmation, Risk and Market Filter get their contracts with their first
-   Block (tickets 06-08 and 20). A Block declares:
+   Confirmation and Market Filter get their contracts with their first Block
+   (tickets 08 and 20); account-wide risk is the document's Risk section
+   (§10), and the Risk kind is reserved for per-candidate sizing Blocks. A Block declares:
    - a registry name;
    - a Persian title;
    - the blueprint sources it comes from;
@@ -107,21 +108,47 @@ and honest trial counting.
    exists for a period, they report not-applicable and the result is flagged
    as incomplete.
 
-10. **The risk governor is pure (ticket 06).** The Risk section configures
-    sizing (fixed, or tiered by Confluence Score), the Streak Governor, daily
-    and weekly loss limits, the performance governor, equity-milestone
-    resizing, an open-risk cap and the Leverage Governor. All of these are
-    capped at 1% and every number is a parameter. They are pure functions of
-    the Risk section, the bar time, and the account the broker reports: recent
-    closed-position outcomes, drawdown from the last equity high and initial
-    equity. A restarted paper run therefore governs exactly like an
-    uninterrupted one, with no engine state to lose.
-    - Halts refuse the entry; cuts lower its risk.
-    - Every refusal and every cut is journaled per candidate.
-    - Resting orders count against the open-risk cap and the risk manager's
-      exposure caps.
-    - Until ticket 08's checklist supplies the Confluence Score, tiered
-      sizing uses score 0.
+10. **The risk governor (ticket 06).** Risk is a document section, not a Risk
+    Block. It is account-wide, it is not a per-candidate rule, and it is one
+    per document. The Risk kind stays reserved for later per-candidate sizing
+    Blocks.
+
+    **What the section configures:**
+    - sizing: fixed, or tiered by Confluence Score;
+    - the Streak Governor;
+    - daily and weekly loss limits;
+    - the performance governor;
+    - equity-milestone sizing;
+    - an open-risk cap (a portfolio cap of up to 20%);
+    - the Leverage Governor.
+
+    Per-trade risk never exceeds 1%, and every number is a parameter.
+
+    **How it is computed.** Each bar, `update_state` advances a small
+    `GovernorState` from the account the broker reports: recent closed
+    positions, drawdown from the last equity high, and initial equity. The
+    state holds:
+    - the sizing base, which follows equity only on ±10% moves;
+    - any loss-limit halt, which counts open losses too;
+    - the performance cut, which holds until a new equity high.
+
+    It travels in `EngineState` and is journaled every cycle, so a restarted
+    paper run governs exactly like an uninterrupted one. This is tested by
+    restarting from disk on every bar.
+
+    **What happens to a candidate:**
+    - Halts refuse it: five losses (48 h from the latest), the daily limit
+      (24 h), and the weekly limit (until Monday).
+    - Cuts lower its risk.
+    - Risk is never sized on more equity than the account has.
+    - Every refusal and cut is journaled per candidate, together with the
+      leverage and the margin it implies.
+    - Leverage only sets margin, and the document's leverage reaches the
+      broker and the risk manager.
+    - Resting orders count against the open-risk cap and the exposure caps.
+
+    Until ticket 08's checklist supplies the Confluence Score, tiered sizing
+    uses score 0.
 
 ## Consequences
 

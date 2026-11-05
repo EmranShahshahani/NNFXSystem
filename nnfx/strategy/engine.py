@@ -32,6 +32,7 @@ from nnfx.engine.history import SymbolHistory
 from nnfx.engine.types import (
     AccountState,
     EngineState,
+    GovernorState,
     PendingOrderIntent,
     PositionView,
     SymbolState,
@@ -50,7 +51,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
 )
 from nnfx.strategy.document import StrategyDocument
-from nnfx.strategy.risk import govern, leverage_problem
+from nnfx.strategy.risk import govern, leverage_problem, margin, update_state
 from nnfx.strategy.series import atr
 
 
@@ -125,9 +126,19 @@ class DocumentEngine:
         limit = self.compiled.document.risk.max_positions_per_symbol
         # Risk already committed: open positions not yet at breakeven, resting orders,
         # and orders placed earlier in this cycle (ADR 09 §6: breakeven releases risk).
-        committed = sum(
-            p.risk_cash for p in open_positions if (p.entry_price - p.stop) * p.direction > 0
-        ) + sum(o.risk_cash for o in account_state.pending_orders)
+        committed = sum(p.risk_cash for p in open_positions if p.at_risk) + sum(
+            o.risk_cash for o in account_state.pending_orders
+        )
+        # The governor's memory advances once per bar, candidates or not.
+        if history:
+            now = max(h.index[h.end] for h in history.values())
+            state = state.model_copy(
+                update={
+                    "governor": update_state(
+                        self.compiled.document.risk, account_state, now, state.governor
+                    )
+                }
+            )
         for sym in sorted(history):
             comp = self.compiled.symbols.get(sym)
             if comp is None:
@@ -144,7 +155,9 @@ class DocumentEngine:
                 cand = SetupCandidate.at(out, comp.data, stype, bidx, i)
                 if cand is None:
                     continue
-                ev, risk_cash = self._evaluate(cand, comp, busy >= limit, account_state, committed)
+                ev, risk_cash = self._evaluate(
+                    cand, comp, busy >= limit, account_state, committed, state.governor
+                )
                 if ev.intents:
                     busy += 1
                     committed += risk_cash
@@ -159,6 +172,7 @@ class DocumentEngine:
         full: bool,
         account: AccountState,
         committed: float,
+        governor: GovernorState,
     ) -> tuple[Evaluation, float]:
         """Every check on one candidate, in order; returns its evaluation and its risk cash."""
         doc = self.compiled.document
@@ -169,21 +183,25 @@ class DocumentEngine:
         if full:
             blocked.append("position_limit")
         # Ticket 08's checklist supplies the Confluence Score; until then it is 0.
-        risk = govern(doc.risk, account, pd.Timestamp(cand.time), score=0)
+        risk = govern(doc.risk, account, pd.Timestamp(cand.time), 0, governor)
         blocked += risk.blocked
         risk_cash = risk.risk_fraction * account.equity
         cap = doc.risk.max_open_risk
         if cap is not None and committed + risk_cash > cap * account.equity * (1 + 1e-9):
             blocked.append("open_risk_cap")
         intents: list[Intent] = []
+        record = risk.record()
         if not blocked:
             stop = self.compiled.stop.initial_stop(cand, comp.data)
             if not np.isfinite(stop) or (cand.trigger - stop) * cand.direction <= 0:
                 blocked.append("no_stop")  # an entry without a stop is never placed
             else:
+                record["leverage"] = doc.risk.leverage.leverage
+                record["margin"] = margin(doc.risk, risk_cash, cand.trigger, stop)
                 problem = leverage_problem(doc.risk, comp.data.instrument, cand.trigger, stop)
                 if problem is not None:
-                    blocked.append(problem)
+                    blocked.append(problem[0])
+                    record["leverage_detail"] = problem[1]
                 else:
                     intents, problems = self._orders(cand, comp, stop, risk.risk_fraction)
                     blocked += problems
@@ -191,7 +209,7 @@ class DocumentEngine:
             symbol=cand.symbol,
             time=cand.time,
             inputs={"bar": cand.bar},
-            values={**cand.record(), "risk": risk.record()},
+            values={**cand.record(), "risk": record},
             state_before=SymbolState(),
             state_after=SymbolState(),
             intents=intents if not blocked else [],

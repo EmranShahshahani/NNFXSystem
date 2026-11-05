@@ -818,7 +818,9 @@ class SimBroker:
             events=d.get("events", []),
             last_bar=d.get("last_bar", {}),
             exit_bar=d.get("exit_bar", {}),
-            initial_equity=d.get("initial_equity", 0.0),
+            # A state file from before governors: its first balance is unknown; the
+            # earliest equity it knew (the peak) is the safest stand-in.
+            initial_equity=d.get("initial_equity", d["peak_equity"]),
             trough_equity=d.get("trough_equity", d["peak_equity"]),
             outcomes=d.get("outcomes", []),
         )

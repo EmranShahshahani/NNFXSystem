@@ -112,19 +112,7 @@ class RiskManager:
                     f"liquidation_inside_{cfg.min_liquidation_atr:g}xATR: sizing bug "
                     f"(liq distance {liq_distance:.6g} <= {need:.6g})",
                 )
-        exposures = self._exposures(open_positions, instruments, approved_this_cycle)
-        # Resting pending orders are exposure-in-waiting: they count against the caps
-        # (ADR 09 §4 amendment (e)).
-        exposures += [
-            _Exposure(
-                o.symbol,
-                o.direction,
-                o.risk_cash / account.equity if account.equity > 0 else 0.0,
-                instruments[o.symbol],
-            )
-            for o in account.pending_orders
-            if o.symbol in instruments
-        ]
+        exposures = self._exposures(open_positions, instruments, approved_this_cycle, account)
         new = _Exposure(intent.symbol, intent.direction, intent.risk_fraction, inst)
         # The legs of one entry share a signal; count entries, not legs.
         if cfg.max_positions_per_ccy is not None:
@@ -169,6 +157,7 @@ class RiskManager:
         positions: Sequence[PositionView],
         instruments: dict[str, InstrumentSpec],
         approved: Iterable[SizedOrder],
+        account: AccountState | None = None,
     ) -> list[_Exposure]:
         out = [
             _Exposure(p.symbol, p.direction, self.cfg.risk_per_position, instruments[p.symbol])
@@ -184,4 +173,16 @@ class RiskManager:
             )
             for o in approved
         ]
+        if account is not None:
+            # Resting pending orders are exposure-in-waiting (ADR 09 §4 amendment (e)).
+            out += [
+                _Exposure(
+                    o.symbol,
+                    o.direction,
+                    o.risk_cash / account.equity if account.equity > 0 else 0.0,
+                    instruments[o.symbol],
+                )
+                for o in account.pending_orders
+                if o.symbol in instruments
+            ]
         return out
