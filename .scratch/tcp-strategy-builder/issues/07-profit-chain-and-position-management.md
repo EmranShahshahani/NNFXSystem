@@ -10,7 +10,7 @@
 - [x] No exit rule may close the whole position below 2R
 - [x] Conditional breakeven moves the stop only when a new confirmed pivot exists after entry
 - [x] The Runner trails behind confirmed swing points of the management timeframe
-- [x] Counter-trend mode disables the Runner and closes 100% at 2R or the first structural boundary
+- [x] Counter-trend mode disables the Runner and closes 100% at 2R or the first structural boundary (`tagged` mode waits on ticket 09 for the tag)
 - [x] Optional recycling record moves realised profit to a spot ledger on +5R..10R closes
 - [x] Harness-level tests reproduce a full ladder-out and a trailing exit
 

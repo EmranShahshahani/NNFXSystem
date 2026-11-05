@@ -202,3 +202,5 @@ def test_the_backtest_reports_the_spot_recycling_record(base: str, dirs: tuple[P
     assert code == 200 and res["ok"], res
     (t,) = res["spot_transfers"]
     assert t["r"] == pytest.approx(2.0) and res["spot_balance"] == pytest.approx(t["amount"])
+    last = res["equity_trading"][-1][1]
+    assert last == pytest.approx(res["equity"][-1][1] - t["amount"])

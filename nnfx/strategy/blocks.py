@@ -150,11 +150,16 @@ class StrategyData:
         out: tuple[np.ndarray, np.ndarray] = self._cache[key]
         return out
 
-    def bar_at(self, time: str) -> int:
-        """The LWC bar labelled ``time`` (or the latest before it)."""
-        return (
-            int(np.searchsorted(ns(self.base.index), ns(pd.DatetimeIndex([time]))[0], "right")) - 1
-        )
+    def bar_containing(self, role: str, time: str) -> int:
+        """The ``role`` bar that the LWC bar labelled ``time`` belongs to.
+
+        Bars are labelled at their close, so it is the first ``role`` bar
+        closing at or after ``time``. Refuses a time before the data.
+        """
+        at = ns(pd.DatetimeIndex([time]))[0]
+        if at < ns(self.base.index)[0]:
+            raise ValueError(f"{self.symbol}: {time} is before the data starts")
+        return int(np.searchsorted(ns(self.frames[role].index), at, "left"))
 
     def head(self, n: int) -> StrategyData:
         """The data as it stood at the close of LWC bar ``n - 1``."""

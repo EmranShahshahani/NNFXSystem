@@ -241,3 +241,66 @@ def test_recycling_records_big_winners_as_moved_to_spot():
     assert run(ladder_rows(), chain())[0].spot_transfers == []
     small = [*RISE, SETUP, FILL, *TO_TARGET, *TO_STOP]
     assert run(small, chain(recycle_to_spot=True))[0].spot_transfers == []
+
+
+# ------------------------------------------------------ review follow-ups
+def _hourly(lows: list[float]) -> list[Row]:
+    """Four 15m bars per hour; hour ``h`` dips to ``lows[h]`` on its second bar."""
+    rows: list[Row] = []
+    for lo in lows:
+        rows += [(110.0, 110.5, 109.5, 110.0), (110.0, 110.5, lo, 110.0)]
+        rows += [(110.0, 110.5, 109.5, 110.0)] * 2
+    return rows
+
+
+def _held(data: StrategyData, entry_bar: int, filled: int = 1):
+    from nnfx.engine.types import ExitStepView, PositionView
+
+    return PositionView(
+        id="p", symbol=SYM, direction=1, units=1.0, entry_price=110.0,
+        entry_time=data.base.index[entry_bar].isoformat(), stop=100.0, leg="single",
+        entry_atr=0.0, signal_time="", entry_type="setup", steps_filled=filled,
+        exit_steps=(
+            ExitStepView(price=130.0, fraction=0.5, done=filled >= 1),
+            ExitStepView(price=160.0, fraction=0.4, done=filled >= 2),
+        ),
+    )  # fmt: skip
+
+
+def test_a_swing_in_the_entrys_own_management_bar_is_not_new():
+    # Hourly management; hour 1 holds the swing low (confirmed at hour 2's close).
+    roles = {"hwc": "D1", "mwc": "H4", "lwc": "M15", "management": "H1"}
+    data = StrategyData.build(frame(_hourly([108, 105, 108, 108])), roles, BTC, _session())
+    block = ProfitChain(ProfitChainParams(pivot_bars=1))
+    at = 11  # hour 2's last 15m bar: its close confirms the swing
+    assert block.manage(_held(data, entry_bar=5), data, at) is None  # entered inside hour 1
+    mv = block.manage(_held(data, entry_bar=2), data, at)  # entered in hour 0
+    assert mv is not None and mv.reason == "breakeven_after_pivot" and mv.stop == 110.0
+    assert block.manage(_held(data, entry_bar=2), data, at - 1) is None  # not a close
+
+
+def test_the_trail_can_start_after_an_earlier_step():
+    roles = {"hwc": "D1", "mwc": "H4", "lwc": "M15", "management": "H1"}
+    data = StrategyData.build(frame(_hourly([108, 105, 108, 108])), roles, BTC, _session())
+    late = ProfitChain(ProfitChainParams(pivot_bars=1, breakeven="off"))
+    early = ProfitChain(ProfitChainParams(pivot_bars=1, breakeven="off", trail_after_step=1))
+    pv = _held(data, entry_bar=2, filled=1)
+    assert late.manage(pv, data, 11) is None
+    mv = early.manage(pv, data, 11)
+    assert mv is not None and mv.reason == "runner_trail" and mv.stop < 105.0
+
+
+def test_the_default_management_runs_on_4h_closes_in_a_full_run():
+    up, c = [], FILL[3]
+    while c < TRIGGER + 10.5 * R:  # slow 4H swings: +24 over 12h, -12 over 6h
+        up += leg(c, 0.5, 48)
+        c = up[-1][3]
+        up += leg(c, -0.5, 24)
+        c = up[-1][3]
+    raw = chain(pivot_bars=1)
+    del raw["timeframes"]["management"]  # unset: the MWC, H4
+    out, journal = run([*RISE, SETUP, FILL, *up, *leg(c, -1.0, 60)], raw)
+    ms = moves(journal)
+    assert ms and {m["reason"] for m in ms} == {"breakeven_after_pivot", "runner_trail"}
+    assert all((t := pd.Timestamp(m["time"])).minute == 0 and t.hour % 4 == 0 for m in ms)
+    assert out.result.trades[-1].exit_reason == "trailing_stop"

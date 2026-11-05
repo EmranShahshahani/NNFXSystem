@@ -217,7 +217,7 @@ def _candidates_and_labels(
     candidates, justified_by_key, position_key = [], {}, {}
     for rec in journal.records("cycle"):
         for ev in rec["evaluations"]:
-            if "checklist" not in ev["values"]:
+            if ev["values"].get("event") == "stop_move":
                 continue  # a position-management event, not a Setup Candidate
             candidates.append({"symbol": ev["symbol"], "time": ev["time"], **ev["values"]})
             for intent in ev["intents"]:

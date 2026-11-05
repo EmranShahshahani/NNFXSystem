@@ -295,6 +295,19 @@ class App:
                 # Futures-to-spot recycling record (Profit Chain option); empty when off.
                 "spot_transfers": [asdict(t) for t in run.spot_transfers],
                 "spot_balance": run.spot_balance(),
+                # The equity curve less the profit recorded as moved to spot.
+                "equity_trading": (
+                    [
+                        [t.isoformat(), float(v)]
+                        for t, v in zip(
+                            pd.DatetimeIndex(r.equity.index),
+                            run.split_equity()["trading"].to_numpy(),
+                            strict=True,
+                        )
+                    ]
+                    if run.spot_transfers
+                    else []
+                ),
                 "blocked": dict(r.blocked),
                 "rejected": dict(r.rejected),
                 "equity": [

@@ -43,9 +43,9 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Profit Chain** ("zanjire-ye sood"): the partial take-profit ladder (default 35% at 2R, 40% at 5R, 15% at 10R, 10% runner).
 - **Runner**: the last fraction of a position, trailed behind higher-timeframe swings.
 - **Management timeframe**: the timeframe role whose closes drive position management (conditional breakeven, the Runner trail); the MWC unless the document sets `timeframes.management`.
-- **Conditional breakeven**: once the first Profit Chain step has filled, the stop moves to entry only when a new swing has been confirmed on the management timeframe since the entry.
+- **Conditional breakeven**: once the first Profit Chain step has filled, the stop moves to the entry fill at the first management close where a swing has been confirmed on a management bar after the one the entry happened in.
 - **Swing (pivot)**: a bar whose low (high) is strictly below (above) the `pivot_bars` bars on each side; it is confirmed, and readable, only `pivot_bars` bars later.
-- **Counter-trend mode**: a Profit Chain mode with no Runner: the whole position closes at 2R, or at the first structural boundary between 2R and `counter_trend_max_r`.
+- **Counter-trend mode**: a Profit Chain mode with no Runner: the whole position closes at 2R, or at the first structural boundary clamped to [2R, `counter_trend_max_r`].
 - **Spot recycling record**: the Capital Recycling rule as a ledger: when a whole position closes at `recycle_min_r` R or more, its net profit is recorded as moved from futures to spot. Sizing is unchanged; the equity curve is split into trading and spot.
 - **Exit Plan**: a position's exit steps, each closing a fraction of the original size at an R multiple, plus the Runner fraction; together they sum to 1. The Profit Chain is one Exit Plan.
 - **R**: the planned stop distance (planned entry to stop). Exit steps and results are measured in R.

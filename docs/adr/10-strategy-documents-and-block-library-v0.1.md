@@ -201,12 +201,20 @@ and honest trial counting.
     The Profit Chain manages on the management timeframe
     (`timeframes.management`, the MWC unless set, so 4H by default) and acts
     only on its closes:
-    - **Conditional breakeven.** Once the first step has filled, the stop
-      goes to entry only if a swing low (shorts: high) has been confirmed
-      since the entry. `breakeven: always` puts the move on the step itself;
-      `off` never moves it.
-    - **Runner trail.** Once every step has filled, the stop trails just
-      behind the latest confirmed swing.
+    - **Conditional breakeven.** After the first step has filled, the stop
+      goes to the entry fill at the first management close where a swing low
+      (shorts: high) has been confirmed on a management bar *after* the one
+      the entry happened in. That bar's low is mostly the setup itself, so it
+      does not count. The move can therefore come well after 2R.
+      `breakeven: always` moves the stop to the fill on the bar after the
+      first step fills; `off` never moves it. Both modes anchor on the fill,
+      the price `at_risk` is measured from.
+    - **Runner trail.** Once `trail_after_step` steps have filled, the stop
+      trails just behind the latest confirmed swing. The default is all of
+      them, so only the Runner trails. The blueprint does not say when the
+      trail starts, and between 5R and 10R the 25% still open sits at
+      breakeven. Setting 1 or 2 trails the ladder's remainder too, and a
+      trail can then stop out a step before it fills.
 
     A swing at bar *k* has `pivot_bars` strictly higher lows (lower highs) on
     each side. It is readable only from bar *k* + `pivot_bars`. The exit gates
@@ -216,16 +224,21 @@ and honest trial counting.
     **Counter-trend mode.** `always`, or `tagged` for candidates tagged
     `counter_trend`, drops the Runner and closes everything at 2R. With
     `counter_trend_exit: boundary` it closes at the first structural boundary
-    instead: the nearest confirmed management swing beyond the trigger,
-    clamped to [2R, `counter_trend_max_r` = 3R], since secondary-wave trades
-    target 1:2 or 1:3. No Block sets the tag yet; market structure (ticket 09)
+    instead: the nearest confirmed management swing beyond the trigger at the
+    time of the setup, clamped to [2R, `counter_trend_max_r` = 3R], since
+    secondary-wave trades target 1:2 or 1:3. A boundary at 1.2R becomes 2R
+    (the floor) and one at 6R becomes 3R. "2R or the boundary" is the user's
+    choice, not whichever comes first. No Block sets the tag yet; market structure (ticket 09)
     will.
 
     **Spot recycling.** With `recycle_to_spot`, a whole position closing at
     `recycle_min_r` (5R) or more records its net profit as moved from futures
-    to spot. It is a record, not a cash flow: sizing still uses the broker's
-    equity. The run splits the equity curve into trading and spot, and the
-    API returns the transfers and the spot balance.
+    to spot, dated at the position's last exit. It does not force a full
+    close at 5R–10R (the blueprint's futures contract closing); the ladder
+    exits as configured. It is a record, not a cash flow: sizing still uses
+    the broker's equity. The run splits the equity curve into trading and
+    spot, and the API returns the transfers, the spot balance and the
+    trading equity curve.
 
 ## Consequences
 

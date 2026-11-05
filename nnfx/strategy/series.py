@@ -70,5 +70,5 @@ def pivots(
             ok[left : n - right] &= v[left : n - right] < v[left + j : n - right + j]
         return np.flatnonzero(ok)
 
-    with np.errstate(invalid="ignore"):
-        return find(low, 1.0), find(high, -1.0)
+    # Comparisons with NaN are False: a NaN bar, or one next to it, is never a pivot.
+    return find(low, 1.0), find(high, -1.0)
