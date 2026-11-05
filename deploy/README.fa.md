@@ -56,6 +56,16 @@ sudo -u nnfx /opt/nnfx/.venv/bin/nnfx beta --db /opt/nnfx/runs/beta/beta.db crea
 ```
 برای HTTPS، Caddy را نصب کنید و فایل `deploy/Caddyfile` را با `reverse_proxy 127.0.0.1:8765` به‌کار ببرید.
 
+## ضبط اردربوک
+
+قوانین اردربوک (دیوار، اسپوف) فقط با دادهٔ زنده کار می‌کنند، چون نوبیتکس تاریخچهٔ اردربوک نمی‌دهد. سرویس `orderbook` در Docker هر `NNFX_ORDERBOOK_INTERVAL` ثانیه اردربوک نمادهای `NNFX_ORDERBOOK_SYMBOLS` را می‌گیرد و در volume با نام `orderbook-data` ذخیره می‌کند. هرچه زودتر روشن شود، بک‌تست قوانین اردربوک روی بازهٔ بلندتری ممکن می‌شود. بدون Docker:
+
+```bash
+uv run nnfx orderbook record --symbols BTC/IRT USDT/IRT --interval 10 --root data/orderbook
+```
+
+اگر یک درخواست خطا بدهد، ضبط‌کننده خطا را چاپ می‌کند و ادامه می‌دهد.
+
 ## دعوت از دوستان
 
 * از تب «مدیریت» در سایت: یادداشت (مثلاً اسم دوست) بنویسید و «ساخت کد دعوت» را بزنید.

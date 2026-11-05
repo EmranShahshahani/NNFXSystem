@@ -16,7 +16,7 @@ COPY research ./research
 COPY data/sample ./data/sample
 RUN uv sync --frozen --no-dev
 
-RUN useradd --create-home --uid 10001 nnfx && mkdir -p /app/runs/beta /app/data/cache && chown -R nnfx /app/runs /app/data/cache
+RUN useradd --create-home --uid 10001 nnfx && mkdir -p /app/runs/beta /app/data/cache /app/data/orderbook && chown -R nnfx /app/runs /app/data/cache /app/data/orderbook
 USER nnfx
 EXPOSE 8765
 CMD ["/app/.venv/bin/nnfx", "ui", "--host", "0.0.0.0", "--port", "8765", "--auth-db", "/app/runs/beta/beta.db", "--secure-cookies", "--trust-proxy"]

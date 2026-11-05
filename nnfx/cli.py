@@ -229,6 +229,23 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_orderbook_record(args: argparse.Namespace) -> int:
+    import sys
+
+    from nnfx.orderbook import NobitexOrderBook, record
+
+    n = record(
+        NobitexOrderBook(),
+        args.symbols,
+        Path(args.root),
+        interval_s=args.interval,
+        iterations=args.iterations,
+        on_error=lambda msg: print(msg, file=sys.stderr, flush=True),
+    )
+    print(f"stored {n} order-book snapshot(s) under {args.root}")
+    return 0
+
+
 def cmd_import_tv(args: argparse.Namespace) -> int:
     from nnfx.data.feeds import write_bars_csv
     from nnfx.data.manifest import record_or_verify
@@ -640,6 +657,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     p = sub.add_parser("determinism", help="reproduce the committed reference run")
     p.add_argument("--write-reference", action="store_true")
     p.set_defaults(fn=cmd_determinism)
+
+    ob = sub.add_parser("orderbook", help="order-book snapshots (live Nobitex, recorded)")
+    obsub = ob.add_subparsers(dest="obcmd", required=True)
+    p = obsub.add_parser(
+        "record", help="poll Nobitex order books and store snapshots for later backtests"
+    )
+    p.add_argument("--symbols", nargs="+", required=True, help="e.g. BTC/IRT USDT/IRT")
+    p.add_argument(
+        "--interval", type=float, default=10.0, help="seconds between polls (Nobitex asks >= 1)"
+    )
+    p.add_argument("--iterations", type=int, help="stop after this many polls (default: forever)")
+    p.add_argument("--root", default="data/orderbook")
+    p.set_defaults(fn=cmd_orderbook_record)
 
     r = sub.add_parser("research", help="research-state utilities")
     rsub = r.add_subparsers(dest="rcmd", required=True)

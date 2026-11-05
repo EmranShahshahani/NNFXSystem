@@ -18,6 +18,8 @@ build/
 # Market data: the bar cache is gigabytes and is re-fetched per workstation.
 data/cache/
 data/raw/
+# Recorded order-book snapshots: large, recorded per server (deploy service "orderbook").
+data/orderbook/
 *.bi5
 *.parquet
 

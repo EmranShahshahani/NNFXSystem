@@ -1,4 +1,5 @@
-# Beta stack: the NNFX web app behind Caddy (automatic HTTPS), plus an hourly data refresh.
+# Beta stack: the NNFX web app behind Caddy (automatic HTTPS), an hourly data refresh,
+# and the order-book recorder (Nobitex books every NNFX_ORDERBOOK_INTERVAL seconds).
 #   cp deploy/.env.example deploy/.env   # set NNFX_DOMAIN
 #   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
 services:
@@ -21,6 +22,17 @@ services:
       - ./refresh-data.sh:/app/deploy-refresh.sh:ro
     entrypoint: ["/bin/sh", "-c", "while true; do /bin/sh /app/deploy-refresh.sh; sleep 3600; done"]
 
+  orderbook:
+    image: nnfx-beta
+    restart: unless-stopped
+    environment:
+      NNFX_ORDERBOOK_SYMBOLS: ${NNFX_ORDERBOOK_SYMBOLS:-BTC/IRT USDT/IRT}
+      NNFX_ORDERBOOK_INTERVAL: ${NNFX_ORDERBOOK_INTERVAL:-10}
+    volumes:
+      - orderbook-data:/app/data/orderbook
+    # Word splitting of the symbol list is intended.
+    entrypoint: ["/bin/sh", "-c", "exec /app/.venv/bin/nnfx orderbook record --symbols $$NNFX_ORDERBOOK_SYMBOLS --interval $$NNFX_ORDERBOOK_INTERVAL --root /app/data/orderbook"]
+
   caddy:
     image: caddy:2
     restart: unless-stopped
@@ -35,4 +47,5 @@ services:
 volumes:
   beta-db:
   market-data:
+  orderbook-data:
   caddy-data:
