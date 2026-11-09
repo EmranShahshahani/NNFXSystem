@@ -72,6 +72,9 @@ class GovernorState(Model):
 class EngineState(Model):
     symbols: dict[str, SymbolState] = Field(default_factory=dict)
     governor: GovernorState = GovernorState()
+    # Breakouts the Strategy Engine has already placed an order for ("symbol|block|anchor"),
+    # oldest first and bounded: one order per breakout, whatever happens to it.
+    placed_breakouts: tuple[str, ...] = ()
 
     def get(self, symbol: str) -> SymbolState:
         return self.symbols.get(symbol, SymbolState())

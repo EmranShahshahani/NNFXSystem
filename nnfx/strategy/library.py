@@ -721,8 +721,9 @@ class BoxExtremes(SetupBlock[BoxExtremesParams]):
 
     Use one instance per side. A long's trigger is the top edge and its stop and
     invalidation the bottom edge; a short mirrors it. A fresh candidate stands every
-    ``refresh_bars`` bars of the box's life, so a resting pair is replaced as it
-    expires. Pair it with ``wave_cycles`` (``two_way_box``) to trade it only while the
+    ``refresh_bars`` bars of the box's life (bars of ``timeframe``). The Execution
+    Block's ``expiry_bars`` counts LWC bars: size it to the refresh interval, or the
+    pair rests only for part of it. Pair it with ``wave_cycles`` (``two_way_box``) to trade it only while the
     HWC and MWC range, give the Execution Block ``oco`` so one fill cancels the other,
     and allow two positions per symbol.
     """
@@ -864,8 +865,8 @@ class TouchCount(ConfirmationBlock[TouchCountParams]):
             trend = int(data.dow(p.confluence_timeframe, p.confluence_pivot_bars)[j])
         if trend == candidate.direction:
             return CheckResult("pass", f"second touch with the {p.confluence_timeframe} trend")
-        r, a = int(data.positions[p.timeframe][candidate.bar]), candidate.fact("anchor")
-        if a is not None and r >= 0:
+        a = candidate.fact("anchor")
+        if a is not None:
             f = data.frames[p.timeframe]
             ai = int(a)
             body = abs(f.close[ai] - f.open[ai])

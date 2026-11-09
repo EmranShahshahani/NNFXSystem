@@ -391,9 +391,13 @@ and honest trial counting.
     a breakout on the first attempt and is refused. Two need another factor:
     the `confluence_timeframe` trend running the trade's way, or an
     absorption wick on the breakout candle. Three or four are the best
-    window. All hard by default except the volume one. With the default
-    `min_touches` of 3 a box always has three, so the tiers apply to boxes
-    built with fewer.
+    window. All hard by default except the volume one. A touch is a
+    confirmed swing whose body price lies within the tolerance of the level;
+    a test that makes no swing is not counted. With the default
+    `min_touches` of 3 an upward break has at least three touches, so the
+    tiers apply to boxes built with fewer. A downward break reports the
+    bottom edge's touches, whose default minimum is 2, so it can land on
+    the second-touch tier and need the extra factor.
 
     **The two-way box** (`box_extremes`, one instance per side). While price
     is inside a detected box it stands every `refresh_bars` bars with the
@@ -401,7 +405,26 @@ and honest trial counting.
     (`two_way_box`), the Execution Block's `oco` (one fill cancels its twin),
     and `max_positions_per_symbol` 2, it is the blueprint's pair of
     stop-buy and stop-sell triggers at the box extremes; trades are tagged
-    `counter_trend`, so the Profit Chain takes 2R-3R.
+    `counter_trend`, so the Profit Chain takes 2R-3R. The stop is the whole
+    box, not a tight one. With one position or order already open, a refresh
+    places only the side that registers first (the position limit counts
+    both), and `expiry_bars` counts LWC bars while `refresh_bars` counts the
+    box timeframe's, so size them together. The volume and RSI conditions of
+    the blueprint's binary scenario are Confirmation Blocks attached to the
+    document, not part of the box Blocks.
+
+    **One order per breakout.** A breakout candidate stands for `window`
+    bars, so the engine remembers each breakout it has placed an order for
+    (`placed_breakouts` in the engine state, the symbol, Block and breakout
+    bar, journaled and bounded to 500). Later candidates of the same breakout
+    are refused (`already_placed`) even if the trade has closed. `window`
+    must be at least the longest `consecutive_closes` count, or that check
+    can never pass.
+
+    **Where recency and polarity count.** `box_breakout` finds its edges
+    from unweighted swing clusters. The recency weights and the polarity flip
+    feed `level_location`, the key-level location check, and are there for
+    Blocks that need a level book.
 
 ## Consequences
 

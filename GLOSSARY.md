@@ -44,7 +44,7 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Invalidation**: the price at which the setup's thesis is dead; a close beyond it cancels a pending Trigger and anchors the stop.
 - **Box**: a horizontal consolidation range with counted touches on its edges.
 - **Level**: a single horizontal price calibrated to candle bodies (not a zone), built from the swings that touched it. Recent touches weigh more; a level touched as both resistance and support has flipped polarity. It belongs to the timeframe it was drawn on.
-- **Touch count**: how many swings have tested a level. A breakout on the first touch is refused; the second needs another factor; the third and fourth are the best window.
+- **Touch count**: how many confirmed swings have tested a level (within the tolerance of its price). A breakout on the first touch is refused; the second needs another factor; the third and fourth are the best window.
 - **Sweep**: a wick that pierces a level and falls back inside. It is a liquidity test, not a breakout.
 - **Consecutive closes**: the number of the level's-timeframe bars that have closed beyond a broken level (8 on 15m, 4 on 4H, 2 on daily).
 - **Touch**: a test of a level that does not close beyond it. 1st touch: no breakout trade; 3rd–4th: preferred.

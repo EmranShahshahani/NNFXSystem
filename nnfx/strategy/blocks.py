@@ -196,9 +196,25 @@ class StrategyData:
         out: LevelBook = self._cache[key]
         return out
 
-    def boxes(self, role: str, **params: float) -> BoxTrack:
+    def boxes(
+        self,
+        role: str,
+        *,
+        pivot_bars: int,
+        lookback: int,
+        tolerance_atr: float,
+        min_top: int,
+        min_bottom: int,
+        min_height_atr: float,
+        max_height_atr: float,
+        min_bars: int,
+        window: int,
+    ) -> BoxTrack:
         """Boxes and their breakouts on ``role``'s bars (``levels.track_boxes``), cached."""
-        key = ("boxes", role, tuple(sorted(params.items())))
+        key = (
+            *("boxes", role, pivot_bars, lookback, tolerance_atr, min_top, min_bottom),
+            *(min_height_atr, max_height_atr, min_bars, window),
+        )
         if key not in self._cache:
             f = self.frames[role]
             self._cache[key] = track_boxes(
@@ -207,7 +223,15 @@ class StrategyData:
                 f.low,
                 f.close,
                 self.atr(role),
-                **params,  # type: ignore[arg-type]
+                pivot_bars=pivot_bars,
+                lookback=lookback,
+                tolerance_atr=tolerance_atr,
+                min_top=min_top,
+                min_bottom=min_bottom,
+                min_height_atr=min_height_atr,
+                max_height_atr=max_height_atr,
+                min_bars=min_bars,
+                window=window,
             )
         out: BoxTrack = self._cache[key]
         return out

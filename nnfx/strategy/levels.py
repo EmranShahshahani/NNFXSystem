@@ -70,8 +70,10 @@ class LevelBook:
         max_age: int,
     ) -> None:
         self.half_life, self.max_age = half_life, max_age
-        # Per level: its touches as (confirmed bar, swing bar, body price, kind).
+        # Per level: its touches as (confirmed bar, swing bar, body price, kind) and its
+        # current price (the median of the touches), kept up to date as swings join.
         self._levels: list[list[tuple[int, int, float, int]]] = []
+        prices: dict[int, float] = {}
         active: list[list[tuple[int, int, float, int]]] = []
         n = len(close)
         for bar, price, kind in swings(open_, high, low, close, pivot_bars):
@@ -90,7 +92,7 @@ class LevelBook:
             active = [lv for lv in active if confirm - lv[-1][0] <= max_age]
             best, gap = None, np.inf
             for lv in active:
-                d = abs(float(np.median([t[2] for t in lv])) - price)
+                d = abs(prices[id(lv)] - price)
                 if d <= tol and d < gap:
                     best, gap = lv, d
             if best is None:
@@ -98,6 +100,7 @@ class LevelBook:
                 self._levels.append(best)
                 active.append(best)
             best.append((confirm, bar, price, kind))
+            prices[id(best)] = float(np.median([t[2] for t in best]))
 
     def at(self, i: int, *, min_weight: float = 0.0) -> list[LevelView]:
         """The levels known at the close of bar ``i`` and touched within ``max_age`` bars."""
@@ -229,18 +232,20 @@ def track_boxes(
         tol = tolerance_atr * a if np.isfinite(a) else 0.0
         c = float(close[j])
 
-        if brk is None and (fresh or box is None) and np.isfinite(a) and a > 0:
-            box = _detect(
-                highs, lows, close, j, a, tol, lookback, min_top, min_bottom,
-                min_height_atr, max_height_atr, min_bars,
-            )  # fmt: skip
         if brk is None and box is not None:
+            # The standing box is tested first: a breakout on the very bar a swing is
+            # confirmed must not be lost to the box being detected again.
             if c > box.top + tol:
                 brk = (1, j, box.top, box.bottom, box.start, box.top_touches)
                 box = None
             elif c < box.bottom - tol:
                 brk = (-1, j, box.bottom, box.top, box.start, box.bottom_touches)
                 box = None
+        if brk is None and (fresh or box is None) and np.isfinite(a) and a > 0:
+            box = _detect(
+                highs, lows, close, j, a, tol, lookback, min_top, min_bottom,
+                min_height_atr, max_height_atr, min_bars,
+            )  # fmt: skip
         if brk is not None:
             sign, first, level, far, st, k = brk
             if (c - level) * sign > 0 and j - first < window:
@@ -272,6 +277,8 @@ def _detect(
     min_bars: int,
 ) -> _Box | None:
     h, lo = _recent(highs, j - lookback), _recent(lows, j - lookback)
+    if len(h) < min_top or len(lo) < min_bottom:
+        return None  # too few swings to hold the touches: skip the clustering
     top, bottom = _cluster(h, tol, min_top), _cluster(lo, tol, min_bottom)
     if top is None or bottom is None or top[0] - bottom[0] < min_height_atr * a:
         return None

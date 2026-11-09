@@ -131,6 +131,8 @@ def compile_document(
 class DocumentEngine:
     """A pure engine over a compiled Strategy Document (same contract as StrategyEngine)."""
 
+    PLACED_KEPT = 500  # breakouts remembered in the state
+
     def __init__(self, compiled: CompiledDocument) -> None:
         self.compiled = compiled
 
@@ -146,6 +148,7 @@ class DocumentEngine:
         intents: list[Intent] = []
         evaluations: list[Evaluation] = []
         limit = self.compiled.document.risk.max_positions_per_symbol
+        placed = dict.fromkeys(state.placed_breakouts)  # insertion-ordered set
         # Risk already committed: open positions not yet at breakeven, resting orders,
         # and orders placed earlier in this cycle (ADR 09 §6: breakeven releases risk).
         committed = sum(p.risk_cash for p in open_positions if p.at_risk) + sum(
@@ -197,14 +200,25 @@ class DocumentEngine:
                 extra = set().union(*(c.tags_for(i, cand.direction) for _, c in comp.contexts))
                 if extra - set(cand.tags):  # e.g. counter_trend from the wave cycles
                     cand = replace(cand, tags=tuple(sorted(set(cand.tags) | extra)))
+                anchor = cand.fact("anchor")
+                breakout = None if anchor is None else f"{sym}|{bidx}|{int(anchor)}"
                 ev, risk_cash = self._evaluate(
-                    cand, comp, busy >= limit, account_state, committed, state.governor
+                    cand,
+                    comp,
+                    busy >= limit,
+                    account_state,
+                    committed,
+                    state.governor,
+                    repeat=breakout in placed,
                 )
                 if ev.intents:
                     busy += 1
                     committed += risk_cash
+                    if breakout is not None:
+                        placed[breakout] = None
                 intents += ev.intents
                 evaluations.append(ev)
+        state = state.model_copy(update={"placed_breakouts": tuple(placed)[-self.PLACED_KEPT :]})
         return Decision(intents, state, evaluations)
 
     def _cancel_orders(self, sym: str, comp: CompiledSymbol, i: int, keys: list[str]) -> Evaluation:
@@ -292,6 +306,7 @@ class DocumentEngine:
         account: AccountState,
         committed: float,
         governor: GovernorState,
+        repeat: bool = False,
     ) -> tuple[Evaluation, float]:
         """The Pre-Trade Checklist, then risk, stop and order; returns the evaluation and risk cash.
 
@@ -311,6 +326,8 @@ class DocumentEngine:
             risk_refusals.append("cannot_short")
         if full:
             risk_refusals.append("position_limit")
+        if repeat:
+            risk_refusals.append("already_placed")  # one order per breakout
         risk_refusals += risk.blocked
         cap = doc.risk.max_open_risk
         if cap is not None and committed + risk_cash > cap * account.equity * (1 + 1e-9):

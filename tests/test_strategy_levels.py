@@ -587,3 +587,33 @@ def test_the_confirmations_never_look_ahead_on_box_candidates():
             outcomes.add((chk.type, now.outcome))
     assert ("touch_count", "pass") in outcomes and ("consecutive_closes", "fail") in outcomes
     assert ("consecutive_closes", "pass") in outcomes and ("breakout_range", "fail") in outcomes
+
+
+# ------------------------------------------------------ review follow-ups
+def test_a_breakout_on_the_bar_a_swing_is_confirmed_is_not_lost():
+    # The swing low at bar 33 confirms at bar 35, the first close beyond the top.
+    rows = [*box(4), *leg(100, 125, 3), *leg(125, 126, 6)]
+    t = tracked(rows)
+    close = np.asarray(rows)[:, 3]
+    first = int(np.argmax(close > 110.0 + 0.5 * 2))
+    assert t.direction[first] == 1 and t.anchor[first] == first
+    assert not tracked(rows[:first]).direction.any()
+
+
+def test_one_order_per_breakout_even_after_the_trade_closes_inside_the_window():
+    rows = [*UP_BREAK, *leg(118, 170, 6), *leg(170, 175, 10)]
+    raw = doc(window=12)
+    out = run(rows, raw)
+    placed = [c for c in out.candidates if c["decision"] == "placed"]
+    assert len(placed) == 1 and len(out.result.trades) == 1
+    assert out.result.trades[0].exit_reason == "target"  # closed within the window
+    later = [c for c in out.candidates if c["decision"] == "refused"]
+    assert later and all("already_placed" in c["reasons"] for c in later)
+
+
+def test_the_placed_breakouts_survive_in_the_engine_state():
+    journal = Journal()
+    rows = [*UP_BREAK, *leg(118, 125, 6)]
+    run(rows, doc(), journal=journal)
+    state = list(journal.records("cycle"))[-1]["state"]
+    assert state["placed_breakouts"] == ["BTC/USDT|0|30"]
