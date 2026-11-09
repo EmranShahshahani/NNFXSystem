@@ -38,6 +38,8 @@ from nnfx.engine.core import Decision, Evaluation, Intent
 from nnfx.engine.history import SymbolHistory
 from nnfx.engine.types import (
     AccountState,
+    CancelIntent,
+    CloseIntent,
     EngineState,
     GovernorState,
     ModifyIntent,
@@ -50,6 +52,7 @@ from nnfx.strategy.blocks import (
     MIN_FULL_CLOSE_R,
     BlockKind,
     ChecklistItem,
+    CloseMove,
     ConfirmationBlock,
     ContextBlock,
     ContextOutput,
@@ -173,6 +176,13 @@ class DocumentEngine:
                     if ev is not None:
                         intents += ev.intents
                         evaluations.append(ev)
+            if any(
+                out.cancels_orders is not None and out.cancels_orders[i] for _, out in comp.contexts
+            ):
+                keys = [o.key for o in account_state.pending_orders if o.symbol == sym]
+                if keys:
+                    evaluations.append(self._cancel_orders(sym, comp, i, keys))
+                    intents += evaluations[-1].intents
             busy = sum(p.symbol == sym for p in open_positions) + sum(
                 o.symbol == sym for o in account_state.pending_orders
             )
@@ -193,29 +203,49 @@ class DocumentEngine:
                 evaluations.append(ev)
         return Decision(intents, state, evaluations)
 
-    def _manage(self, pv: PositionView, comp: CompiledSymbol, i: int) -> Evaluation | None:
-        """The Exit Block's stop move for an open position, if it tightens the stop."""
-        move = self.compiled.exit.manage(pv, comp.data, i)
-        if move is None or not np.isfinite(move.stop):
-            return None
-        d, close = pv.direction, float(comp.data.base.close[i])
-        if (move.stop - pv.stop) * d <= 1e-12 or (close - move.stop) * d <= 0:
-            return None  # never looser, and never through the price
-        intent = ModifyIntent(
-            symbol=pv.symbol, position_id=pv.id, stop=move.stop, reason=move.reason
+    def _cancel_orders(self, sym: str, comp: CompiledSymbol, i: int, keys: list[str]) -> Evaluation:
+        """A Context (e.g. the Choppy Regime) disables breakout orders: cancel the resting ones."""
+        return Evaluation(
+            symbol=sym,
+            time=comp.data.base.index[i].isoformat(),
+            inputs={"bar": i},
+            values={"event": "cancel_orders", "reason": "context_disabled_orders", "keys": keys},
+            state_before=SymbolState(),
+            state_after=SymbolState(),
+            intents=[
+                CancelIntent(symbol=sym, order_key=k, reason="context_disabled_orders")
+                for k in keys
+            ],
+            conditions={},
+            blocked=[],
         )
+
+    def _manage(self, pv: PositionView, comp: CompiledSymbol, i: int) -> Evaluation | None:
+        """The Exit Block's stop move (if it tightens the stop) or close for an open position."""
+        move = self.compiled.exit.manage(pv, comp.data, i)
+        intent: ModifyIntent | CloseIntent
+        if move is None:
+            return None
+        if isinstance(move, CloseMove):
+            if pv.steps_filled < 1:  # the 2R floor: only profit already taken may be closed out
+                return None
+            intent = CloseIntent(symbol=pv.symbol, position_id=pv.id, reason=move.reason)
+            values: dict[str, Any] = {"event": "close", "reason": move.reason}
+        else:
+            if not np.isfinite(move.stop):
+                return None
+            d, close = pv.direction, float(comp.data.base.close[i])
+            if (move.stop - pv.stop) * d <= 1e-12 or (close - move.stop) * d <= 0:
+                return None  # never looser, and never through the price
+            intent = ModifyIntent(
+                symbol=pv.symbol, position_id=pv.id, stop=move.stop, reason=move.reason
+            )
+            values = {"event": "stop_move", "from": pv.stop, "to": move.stop, "reason": move.reason}
         return Evaluation(
             symbol=pv.symbol,
             time=comp.data.base.index[i].isoformat(),
             inputs={"bar": i},
-            values={
-                "event": "stop_move",
-                "position_id": pv.id,
-                "from": pv.stop,
-                "to": move.stop,
-                "reason": move.reason,
-                "steps_filled": pv.steps_filled,
-            },
+            values={**values, "position_id": pv.id, "steps_filled": pv.steps_filled},
             state_before=SymbolState(),
             state_after=SymbolState(),
             intents=[intent],

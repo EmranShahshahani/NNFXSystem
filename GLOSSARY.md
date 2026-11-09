@@ -36,7 +36,9 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Primary / secondary wave**: the primary wave is the HWC's trend; a trade against it (a correction or an early reversal) is a secondary wave, tagged `counter_trend`, and takes only 2R-3R.
 - **Bottom-up reversal**: the HWC is treated as flat only after the LWC and then the MWC turn away from its trend; one LWC breakdown never flips the bias.
 - **Two-way box**: when the HWC is flat and the MWC ranges, both directions are allowed on the LWC (opt-in), tagged `counter_trend` so the Profit Chain takes 2R-3R.
-- **Second Wave**: the continuation impulse after the first breakout leg; the preferred place for setups.
+- **Second Wave**: the continuation impulse after the first breakout leg; the preferred place for setups. In code, wave 2 of a Dow trend: the leg after the first leg and a confirmed pullback.
+- **Choppy Regime**: the three SMAs have flattened and crossed repeatedly. Entries are refused and resting breakout orders cancelled until separation resumes.
+- **Overextension**: price stretched far (in ATR) from the 99 SMA; new trades in the direction of the stretch are refused.
 - **Candle Setup**: TCP's flagship 15m entry candle: long rejection wick, small opposite wick, 7 SMA behind the wick and never through the body.
 - **Trigger**: a pending stop-market order just beyond a level (setup high/low or box edge). Price must come to it.
 - **Invalidation**: the price at which the setup's thesis is dead; a close beyond it cancels a pending Trigger and anchors the stop.

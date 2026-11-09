@@ -217,8 +217,8 @@ def _candidates_and_labels(
     candidates, justified_by_key, position_key = [], {}, {}
     for rec in journal.records("cycle"):
         for ev in rec["evaluations"]:
-            if ev["values"].get("event") == "stop_move":
-                continue  # a position-management event, not a Setup Candidate
+            if "event" in ev["values"]:
+                continue  # a management event (stop move, close, cancel), not a Setup Candidate
             candidates.append({"symbol": ev["symbol"], "time": ev["time"], **ev["values"]})
             for intent in ev["intents"]:
                 justified_by_key[intent["idempotency_key"]] = ev["values"].get("justified") is True

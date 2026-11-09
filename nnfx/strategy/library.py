@@ -10,6 +10,7 @@ from itertools import pairwise
 from typing import Literal
 
 import numpy as np
+import pandas as pd
 from pydantic import Field, model_validator
 
 from nnfx.engine.types import ExitPlan, ExitStep, PositionView
@@ -18,6 +19,7 @@ from nnfx.strategy.blocks import (
     BlockKind,
     BlockParams,
     CheckResult,
+    CloseMove,
     ConfirmationBlock,
     ConfirmationParams,
     ContextBlock,
@@ -173,6 +175,186 @@ class WaveCycles(ContextBlock[WaveCyclesParams]):
         )
 
 
+# ---------------------------------------------------------- 3-SMA rules
+class SmaPeriods(BlockParams):
+    fast: int = Field(7, gt=0, description="SMA کوتاه (مومنتوم)")
+    mid: int = Field(25, gt=0, description="SMA میانی (ساختار)")
+    slow: int = Field(99, gt=0, description="SMA بلند (مبنای کلان)")
+    timeframe: Role = Field("mwc", description="تایم‌فریمی که سه میانگین روی آن سنجیده می‌شوند")
+
+    @model_validator(mode="after")
+    def _ordered(self) -> SmaPeriods:
+        if not self.fast < self.mid < self.slow:
+            raise ValueError("fast < mid < slow لازم است")
+        return self
+
+
+class ChoppyRegimeParams(SmaPeriods):
+    lookback: int = Field(20, ge=2, description="پنجرهٔ شمارش تقاطع‌ها، تعداد کندل")
+    min_crosses: int = Field(3, ge=1, description="دست‌کم این تعداد تقاطع بین سه میانگین")
+    flat_atr: float = Field(
+        1.0, ge=0, description="SMA میانی در پنجره کمتر از این (ATR) جابه‌جا شده باشد"
+    )
+    separation_atr: float = Field(
+        0.5, ge=0, description="جدایی دوباره: فاصلهٔ هر دو میانگین کنار هم دست‌کم این (ATR)"
+    )
+    cancel_orders: bool = Field(True, description="سفارش‌های منتظر در رژیم چرت لغو شوند")
+
+
+@register
+class ChoppyRegime(ContextBlock[ChoppyRegimeParams]):
+    """The Choppy Regime ("bazare chert"): the three SMAs flatten and cross repeatedly.
+
+    Chop starts when the SMAs have crossed each other ``min_crosses`` times in
+    ``lookback`` bars while the middle one has hardly moved (``flat_atr``), and
+    lasts until separation resumes: the SMAs ordered one way with every gap at
+    least ``separation_atr`` ATR. While it lasts no entry is allowed and
+    resting breakout orders are cancelled (blueprint 10: breakout orders are
+    disabled until clear separation resumes). The numbers are not the
+    blueprint's; they are the knobs.
+    """
+
+    kind = BlockKind.CONTEXT
+    type = "choppy_regime"
+    title_fa = "رژیم چرت (درهم‌تنیدگی میانگین‌ها)"
+    sources = (
+        "tcp-blueprint 01: 3-SMA entanglement filter",
+        "tcp-blueprint 03: video 27 (Choppy Regime State)",
+        "tcp-blueprint 10: the entanglement / choppy market filter",
+    )
+    Params = ChoppyRegimeParams
+
+    def compute(self, data: StrategyData) -> ContextOutput:
+        p, role = self.p, self.p.timeframe
+        a, b, s = (data.sma(role, k) for k in (p.fast, p.mid, p.slow))
+        rng = data.atr(role)
+        n = len(a)
+
+        def sign(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+            d = x - y
+            return np.where(np.isfinite(d), np.sign(d), 0)
+
+        cross = np.zeros(n)
+        for sg in (sign(a, b), sign(b, s), sign(a, s)):
+            prev = np.r_[0.0, sg[:-1]]
+            cross += (sg != 0) & (prev != 0) & (sg != prev)
+        crosses = pd.Series(cross).rolling(p.lookback, min_periods=1).sum().to_numpy()
+        back = np.r_[np.full(p.lookback, np.nan), b[: -p.lookback]] if p.lookback < n else None
+        with np.errstate(invalid="ignore", divide="ignore"):
+            moved = np.abs(b - back) / rng if back is not None else np.full(n, np.nan)
+            gap = np.minimum(np.abs(a - b), np.abs(b - s))
+            ordered = ((a > b) & (b > s)) | ((a < b) & (b < s))
+            separated = ordered & (gap >= p.separation_atr * rng)
+            start = (crosses >= p.min_crosses) & (moved <= p.flat_atr) & ~separated
+        chop = np.zeros(n, dtype=bool)
+        on = False
+        for j in range(n):
+            on = (not separated[j]) if on else bool(start[j])
+            chop[j] = on
+        at = data.aligned(role, chop, False)
+        return ContextOutput(
+            ~at,
+            ~at,
+            {"choppy": at},
+            cancels_orders=at if p.cancel_orders else None,
+        )
+
+
+class BaselineParams(BlockParams):
+    period: int = Field(99, gt=1, description="دورهٔ SMA مبنای کلان")
+    timeframe: Role = Field("mwc", description="تایم‌فریمی که قیمت و SMA روی آن سنجیده می‌شوند")
+
+
+@register
+class SmaBaselineFilter(ContextBlock[BaselineParams]):
+    """The 99 SMA direction filter: no longs below it, no shorts above it (video 37)."""
+
+    kind = BlockKind.CONTEXT
+    type = "sma_baseline_filter"
+    title_fa = "فیلتر جهت SMA 99"
+    sources = ("tcp-blueprint 04: video 37 (macro 99 SMA filter)",)
+    Params = BaselineParams
+
+    def compute(self, data: StrategyData) -> ContextOutput:
+        p = self.p
+        c, line = data.frames[p.timeframe].close, data.sma(p.timeframe, p.period)
+        with np.errstate(invalid="ignore"):
+            up, dn = c >= line, c <= line
+        return ContextOutput(
+            data.aligned(p.timeframe, up, False), data.aligned(p.timeframe, dn, False)
+        )
+
+
+class OverextensionParams(BaselineParams):
+    max_atr: float = Field(
+        6.0, gt=0, description="بیشینهٔ فاصلهٔ قیمت از SMA مبنا (ATR) برای معامله هم‌جهت کشیدگی"
+    )
+
+
+@register
+class OverextensionGuard(ContextBlock[OverextensionParams]):
+    """No new breakout in the direction of a stretch from the 99 SMA (video 34).
+
+    The distance is in ATR, so it is scale-free. Longs are refused when price is
+    more than ``max_atr`` ATR above the SMA, shorts when more than that below;
+    it lifts when price pulls back or the SMA catches up. The number is not the
+    blueprint's.
+    """
+
+    kind = BlockKind.CONTEXT
+    type = "overextension_guard"
+    title_fa = "محافظ کشیدگی از SMA 99"
+    sources = ("tcp-blueprint 04: video 34 (99 SMA gravity filter)",)
+    Params = OverextensionParams
+
+    def compute(self, data: StrategyData) -> ContextOutput:
+        p = self.p
+        c, line = data.frames[p.timeframe].close, data.sma(p.timeframe, p.period)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            dist = (c - line) / data.atr(p.timeframe)
+            up, dn = dist <= p.max_atr, dist >= -p.max_atr
+        return ContextOutput(
+            data.aligned(p.timeframe, up, False),
+            data.aligned(p.timeframe, dn, False),
+            {"extension_atr": data.aligned(p.timeframe, np.round(np.nan_to_num(dist), 9), 0.0)},
+        )
+
+
+class SlopeGateParams(BlockParams):
+    period: int = Field(7, gt=1, description="دورهٔ SMA")
+    timeframe: Role = Field("lwc", description="تایم‌فریمی که شیب روی آن سنجیده می‌شود")
+    slope_bars: int = Field(3, ge=1, description="شیب نسبت به چند کندل قبل")
+    min_slope_atr: float = Field(
+        0.02, ge=0, description="کمینهٔ شیب هم‌جهت معامله (ATR در هر کندل)؛ کمتر یعنی تخت"
+    )
+
+
+@register
+class SmaSlopeGate(ContextBlock[SlopeGateParams]):
+    """A flattening SMA 7 stops new entries (video 34: slope degradation).
+
+    Entries need the SMA to slope with the trade by more than ``min_slope_atr``
+    ATR per bar over ``slope_bars`` bars; exactly flat never qualifies.
+    """
+
+    kind = BlockKind.CONTEXT
+    type = "sma_slope_gate"
+    title_fa = "شیب SMA 7 (توقف ورود با تخت‌شدن)"
+    sources = ("tcp-blueprint 04: video 34 (slope degradation governor)",)
+    Params = SlopeGateParams
+
+    def compute(self, data: StrategyData) -> ContextOutput:
+        p = self.p
+        line, k = data.sma(p.timeframe, p.period), p.slope_bars
+        prev = np.r_[np.full(k, np.nan), line[:-k]]
+        with np.errstate(invalid="ignore", divide="ignore"):
+            slope = (line - prev) / (k * data.atr(p.timeframe))
+            up, dn = slope > p.min_slope_atr, slope < -p.min_slope_atr
+        return ContextOutput(
+            data.aligned(p.timeframe, up, False), data.aligned(p.timeframe, dn, False)
+        )
+
+
 # ------------------------------------------------------------------ setup
 class CandleSetupParams(BlockParams):
     sma: int = Field(7, gt=0, description="SMA که باید پشت سایه باشد")
@@ -180,6 +362,8 @@ class CandleSetupParams(BlockParams):
         1.5, gt=0, description="سایهٔ ردکننده دست‌کم چند برابر بدنه (۱٫۵ تا ۲)"
     )
     opposite_to_body: float = Field(1.0, gt=0, description="سایهٔ مخالف کمتر از این ضریبِ بدنه")
+    sma_slope: bool = Field(True, description="SMA کوتاه باید هم‌جهت معامله شیب داشته باشد")
+    slope_bars: int = Field(1, ge=1, description="شیب SMA نسبت به چند کندل قبل سنجیده شود")
 
 
 @register
@@ -190,7 +374,10 @@ class CandleSetup(SetupBlock[CandleSetupParams]):
     an upper wick smaller than ``opposite_to_body`` x the body, and the SMA
     between the low and the body (behind the wick, never through the body).
     Trigger at the high; invalidation and proposed stop at the low. Shorts
-    mirrored. The full Candle Setup (context, location, size) is ticket 10.
+    mirrored. The SMA must slope with the trade (video 35). The Second Wave, RSI and
+    volume conditions are Confirmation Blocks (``second_wave``, ``rsi_momentum``,
+    ``volume_expansion``, ``volume_continuation``); the location at a key level
+    comes with levels (ticket 11).
     """
 
     kind = BlockKind.SETUP
@@ -212,6 +399,9 @@ class CandleSetup(SetupBlock[CandleSetupParams]):
             long_ &= (lower > 0) & (lo <= m) & (m <= body_lo)
             short = (upper >= p.wick_to_body * body) & (lower < p.opposite_to_body * body)
             short &= (upper > 0) & (body_hi <= m) & (m <= h)
+        if p.sma_slope:
+            long_ &= rising(m, p.slope_bars)
+            short &= falling(m, p.slope_bars)
         d = np.where(long_, 1, np.where(short, -1, 0)).astype("int8")
         nan = np.full(len(f), np.nan)
         trigger = np.where(d > 0, h, np.where(d < 0, lo, nan))
@@ -314,6 +504,123 @@ class VolumeExpansion(ConfirmationBlock[VolumeExpansionParams]):
         )
 
 
+class SecondWaveParams(ConfirmationParams):
+    hard: bool = Field(True, description="خارج از موج دوم، ستاپ کامل رد شود")
+    timeframe: Role = Field("mwc", description="تایم‌فریمی که موج‌ها روی آن شمرده می‌شوند")
+    pivot_bars: int = Field(2, ge=1, description="پیوت: تعداد کندل‌های دو طرف")
+    min_wave: int = Field(2, ge=1, description="کمترین شمارهٔ موج (۲: موج دوم)")
+    max_wave: int = Field(0, ge=0, description="بیشترین شمارهٔ موج (۰: بدون سقف)")
+
+
+@register
+class SecondWave(ConfirmationBlock[SecondWaveParams]):
+    """The setup is in the trend's Second Wave: the leg after the first leg and a pullback.
+
+    Waves come from confirmed structure (``structure.waves``): the trend must
+    run the trade's way, and its wave number must lie in ``min_wave`` ..
+    ``max_wave``. The first leg is allowed to escape; the entry is on the
+    continuation leg (video 35). Not applicable before any structure exists.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "second_wave"
+    title_fa = "موج دوم"
+    sources = (
+        "tcp-blueprint 01: the Primary Candle Setup (Second Wave)",
+        "tcp-blueprint 04: video 35 (second wave constraint)",
+    )
+    Params = SecondWaveParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p = self.p
+        i = int(data.positions[p.timeframe][candidate.bar])
+        if i < 0:
+            return CheckResult("na", f"no closed {p.timeframe} bar yet")
+        state, wave = data.waves(p.timeframe, p.pivot_bars)
+        st, w = int(state[i]), int(wave[i])
+        if st != candidate.direction:
+            return CheckResult(
+                "fail", f"no {'up' if candidate.direction > 0 else 'down'}trend on {p.timeframe}"
+            )
+        if w < p.min_wave or (p.max_wave and w > p.max_wave):
+            return CheckResult("fail", f"wave {w}, needs {p.min_wave}..{p.max_wave or 'any'}")
+        return CheckResult("pass", f"wave {w} of the trend on {p.timeframe}")
+
+
+class VolumeContinuationParams(ConfirmationParams):
+    impulse_bars: int = Field(10, ge=1, description="تعداد کندل‌های ضربهٔ قبلی برای میانگین حجم")
+    factor: float = Field(1.0, gt=0, description="حجم ستاپ کمتر از این ضریبِ میانگین ضربه")
+
+
+@register
+class VolumeContinuation(ConfirmationBlock[VolumeContinuationParams]):
+    """A continuation setup trades quieter than the impulse before it (video 35).
+
+    Passes when the setup candle's volume is strictly below ``factor`` x the
+    average of the ``impulse_bars`` bars before it: the selling (buying) pressure
+    has dried up before the next surge. The counterpart of ``volume_expansion``
+    for a new leg. Not applicable without venue volume or history.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "volume_continuation"
+    title_fa = "حجم کمتر از ضربه (ادامه)"
+    sources = ("tcp-blueprint 01: Candle Setup volume condition (continuation)",)
+    Params = VolumeContinuationParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p, f, i = self.p, data.base, candidate.bar
+        if f.volume_kind == "none":
+            return CheckResult("na", "the venue reports no volume")
+        if i < p.impulse_bars:
+            return CheckResult("na", f"needs {p.impulse_bars} bars before the setup, {i} so far")
+        avg = float(np.mean(f.volume[i - p.impulse_bars : i]))
+        ratio = float(f.volume[i]) / avg if avg > 0 else float("inf")
+        return CheckResult(
+            "pass" if ratio < p.factor else "fail",
+            f"volume {ratio:.2f}x the {p.impulse_bars}-bar impulse (needs under {p.factor:g}x)",
+        )
+
+
+class SmaCrossoverParams(ConfirmationParams, SmaPeriods):
+    pairs: Literal["fast_mid", "mid_slow", "both"] = Field(
+        "fast_mid", description="کدام جفت: 7 بالای 25، 25 بالای 99، یا هر دو"
+    )
+
+
+@register
+class SmaCrossover(ConfirmationBlock[SmaCrossoverParams]):
+    """Crossovers confirm; they never enter (blueprint 10: lag rule).
+
+    Passes when the faster SMA is on the trade's side of the slower one (7 over
+    25, 25 over 99 for longs): sustained acceleration, a reason to hold for a
+    bigger target. It is a Confirmation Block only: no Setup Block reads
+    crossovers, so no crossover can start a trade.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "sma_crossover"
+    title_fa = "تقاطع میانگین‌ها (فقط تأیید)"
+    sources = ("tcp-blueprint 10: crossover dynamics (confirmation, not entry)",)
+    Params = SmaCrossoverParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p, role = self.p, self.p.timeframe
+        i = int(data.positions[role][candidate.bar])
+        if i < 0:
+            return CheckResult("na", f"no closed {role} bar yet")
+        a, b, s = (data.sma(role, k)[i] for k in (p.fast, p.mid, p.slow))
+        if not (np.isfinite(a) and np.isfinite(b) and np.isfinite(s)):
+            return CheckResult("na", f"SMA {p.slow} needs more history")
+        d = candidate.direction
+        fast_mid, mid_slow = (a - b) * d > 0, (b - s) * d > 0
+        ok = {"fast_mid": fast_mid, "mid_slow": mid_slow, "both": fast_mid and mid_slow}[p.pairs]
+        return CheckResult(
+            "pass" if ok else "fail",
+            f"SMA {p.fast}/{p.mid}/{p.slow}: fast over mid {fast_mid}, mid over slow {mid_slow}",
+        )
+
+
 # -------------------------------------------------------------- execution
 class StopMarketParams(BlockParams):
     buffer_pct: float = Field(0.05, ge=0, description="فاصلهٔ تریگر از سطح، درصد قیمت")
@@ -398,6 +705,14 @@ class ProfitChainParams(BlockParams):
         description="ریسک‌فری پس از پلهٔ اول: فقط با پیوت ساختاری تازه، همیشه، یا هرگز",
     )
     pivot_bars: int = Field(2, ge=1, description="پیوت: تعداد کندل‌های دو طرف روی تایم‌فریم مدیریت")
+    sma_flatten_exit: bool = Field(
+        False, description="سود را بگیر وقتی SMA بلندتر تخت می‌شود (پس از پلهٔ اول)"
+    )
+    sma_period: int = Field(25, ge=2, description="دورهٔ SMA برای خروج با تخت‌شدن")
+    sma_slope_bars: int = Field(3, ge=1, description="شیب SMA نسبت به چند کندل مدیریت قبل")
+    sma_flat_atr: float = Field(
+        0.02, ge=0, description="شیب هم‌جهت معامله کمتر از این (ATR در هر کندل) یعنی تخت"
+    )
     trail_after_step: int = Field(
         3, ge=1, le=3, description="تریل حد ضرر پس از پر شدن این تعداد پله (۳: فقط رانر)"
     )
@@ -450,6 +765,10 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
     - **Runner trail.** Once ``trail_after_step`` steps have filled (default:
       all, so only the Runner trails), the stop trails just behind the latest
       confirmed swing.
+    - **SMA flattening** (optional, ``sma_flatten_exit``). After the first step,
+      when the SMA 25 on the management timeframe stops sloping with the trade,
+      what remains is closed (blueprint: the 25 SMA flattening triggers
+      profit-taking). The 2R floor holds: a step has already filled.
     - **Counter-trend mode.** No Runner: everything closes at 2R, or at the
       first structural boundary (the nearest confirmed swing beyond the
       trigger), never below 2R and at most ``counter_trend_max_r``
@@ -515,7 +834,9 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             return None
         return float(beyond.min() if d > 0 else beyond.max())
 
-    def manage(self, position: PositionView, data: StrategyData, bar: int) -> StopMove | None:
+    def manage(
+        self, position: PositionView, data: StrategyData, bar: int
+    ) -> StopMove | CloseMove | None:
         p, d = self.p, position.direction
         moves: list[StopMove] = []
         first_done = position.steps_filled >= 1 and position.at_risk
@@ -525,6 +846,13 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
         m = int(pos[bar])
         if m < 0 or (bar > 0 and int(pos[bar - 1]) == m):
             return moves[0] if moves else None  # the rest acts on management closes only
+        if p.sma_flatten_exit and position.steps_filled >= 1:
+            k = p.sma_slope_bars
+            line, rng = data.sma(self.ROLE, p.sma_period), data.atr(self.ROLE)
+            if m >= k and np.isfinite(line[m]) and np.isfinite(line[m - k]) and rng[m] > 0:
+                slope = d * (line[m] - line[m - k]) / (k * rng[m])
+                if slope < p.sma_flat_atr:  # the trend's pace has gone: take the profit
+                    return CloseMove(f"sma{p.sma_period}_flatten")
         swings = self._swings(data, bar, d)
         if p.breakeven == "pivot" and first_done:
             # A swing on a management bar after the one the entry happened in.

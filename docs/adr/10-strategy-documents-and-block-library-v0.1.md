@@ -36,14 +36,16 @@ and honest trial counting.
 3. **Blocks are registry-resolved and typed by kind.** The kinds are Context,
    Setup, Confirmation, Execution, Stop, Exit, Risk and Market Filter. Each
    kind has one contract:
-   - Context: per-bar allowed directions, flags, and candidate tags by
-     direction (merged into each candidate, e.g. `counter_trend`, §13).
+   - Context: per-bar allowed directions, flags, candidate tags by
+     direction (merged into each candidate, e.g. `counter_trend`, §13) and,
+     optionally, bars where resting orders are cancelled (§14).
    - Setup: per-bar Setup Candidates (direction, trigger, invalidation,
      proposed stop, tags).
    - Execution: candidate → stop-market orders.
    - Stop: candidate → initial stop.
    - Exit: candidate (with the data and the stop) → an Exit Plan in R; then,
-     on every bar a position is open, position → an optional stop move (§12).
+     on every bar a position is open, position → an optional stop move or
+     profit-taking close (§12, §14).
 
    Confirmation: candidate → pass / fail / n/a with a reason, a weight toward
    the Confluence Score and a hard flag (ticket 08). Market Filter gets its
@@ -288,6 +290,52 @@ and honest trial counting.
     each candidate's journaled decision and tags against the rules. Hand-built
     harness fixtures cover the box, the range refusal and the failed peak;
     the pure functions are unit-tested rule by rule.
+
+14. **The 3-SMA system and the full Candle Setup (ticket 10).** Each rule is
+    its own switchable Block. The numbers the blueprint does not give are
+    parameters, marked as such in each Block's docstring.
+
+    Context Blocks:
+    - `choppy_regime` (the entanglement filter): chop starts when the three
+      SMAs have crossed each other `min_crosses` times in `lookback` bars
+      while the middle one has hardly moved (`flat_atr`), and lasts until
+      separation resumes: the SMAs ordered one way with every gap at least
+      `separation_atr` ATR. While it lasts it refuses every candidate and
+      cancels the resting orders (a `cancel_orders` journal event per
+      symbol, `context_disabled_orders` on each broker cancel).
+    - `sma_baseline_filter`: no longs below the 99 SMA, no shorts above it.
+    - `overextension_guard`: no trade in the direction of a stretch beyond
+      `max_atr` ATR from the 99 SMA; it lifts as price returns or the SMA
+      catches up.
+    - `sma_slope_gate`: a flattening SMA 7 stops new entries (the slope must
+      exceed `min_slope_atr`; exactly flat never qualifies).
+
+    The Candle Setup now requires the SMA 7 to slope with the trade
+    (`sma_slope`, on by default; the other geometry rules stand). Its other
+    conditions are Confirmation Blocks you attach (the UI sample attaches
+    them): `second_wave`, `rsi_momentum`, `volume_expansion`, and
+    `volume_continuation` (the setup candle quieter than the impulse before
+    it), plus `sma_crossover`. A key-level location comes with levels
+    (ticket 11).
+
+    **Second Wave.** `structure.waves` numbers the legs of a Dow trend from
+    confirmed swings. A trend starts in wave 1; a leg ends with a confirmed
+    swing in the trend's direction, and the pullback after it ends with the
+    next confirmed counter-swing, which starts the next wave. `second_wave`
+    passes when the trend runs the trade's way and its wave number is within
+    `min_wave`..`max_wave` (2..any). It is a hard check by default.
+
+    **Crossovers confirm, never enter.** `sma_crossover` is only a
+    Confirmation (the faster SMA on the trade's side of the slower one).
+    No Setup Block reads crossovers, and a golden cross with no Candle Setup
+    places nothing.
+
+    **SMA 25 flattening takes profit.** The Profit Chain's optional
+    `sma_flatten_exit` closes what remains once the first step has filled
+    and the SMA on the management timeframe no longer slopes with the trade
+    (`sma_flat_atr`). Exit Blocks may now return a close as well as a stop
+    move (`CloseMove`); the engine ignores one before the first step, so the
+    2R floor stands.
 
 ## Consequences
 

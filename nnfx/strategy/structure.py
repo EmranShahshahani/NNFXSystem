@@ -17,7 +17,14 @@ UP, RANGE, DOWN = 1, 0, -1
 
 
 def dow_states(low: np.ndarray, high: np.ndarray, close: np.ndarray, pivot_bars: int) -> np.ndarray:
-    """The Dow trend state (1 up, 0 range, -1 down) at each bar's close.
+    """The Dow trend state (1 up, 0 range, -1 down) at each bar's close (see ``waves``)."""
+    return waves(low, high, close, pivot_bars)[0]
+
+
+def waves(
+    low: np.ndarray, high: np.ndarray, close: np.ndarray, pivot_bars: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """The Dow trend state (1 up, 0 range, -1 down) and the wave number at each close.
 
     - **Range to up:** a close above the latest confirmed swing high while the
       latest confirmed swing low is above the one before (a higher low).
@@ -31,6 +38,13 @@ def dow_states(low: np.ndarray, high: np.ndarray, close: np.ndarray, pivot_bars:
       turns down on a later close below the latest swing low (usually the
       very next one); after an equal high it stays in range.
 
+    **Wave number.** 0 outside a trend. A trend starts in wave 1, its first
+    leg. A leg ends with a confirmed swing high made in the trend (a swing
+    low in a downtrend), and the pullback after it ends with the next
+    confirmed swing low (high), which starts the next wave. The Second Wave,
+    the continuation leg after the first breakout and its pullback, is wave 2
+    (blueprint 04: video 35).
+
     A NaN bar is never a swing; neckline extremes skip NaN.
     """
     if pivot_bars < 1:
@@ -38,34 +52,47 @@ def dow_states(low: np.ndarray, high: np.ndarray, close: np.ndarray, pivot_bars:
     n = len(close)
     lows, highs = pivots(low, high, pivot_bars, pivot_bars)
     out = np.zeros(n, dtype="int8")
+    wave_out = np.zeros(n, dtype="int16")
     hs: list[int] = []
     ls: list[int] = []
     hp = lp = 0
     s = RANGE
+    start = -1  # the bar the current trend began on
+    wave = 0
+    leg_done = False  # the trend's current leg has made its extreme swing
     for j in range(n):
         while hp < len(highs) and highs[hp] + pivot_bars <= j:
             hs.append(int(highs[hp]))
             hp += 1
+            if s == UP and hs[-1] > start:
+                leg_done = True
+            elif s == DOWN and leg_done and ls and hs[-1] > ls[-1]:
+                wave, leg_done = wave + 1, False  # the pullback ended: the next leg
         while lp < len(lows) and lows[lp] + pivot_bars <= j:
             ls.append(int(lows[lp]))
             lp += 1
+            if s == DOWN and ls[-1] > start:
+                leg_done = True
+            elif s == UP and leg_done and hs and ls[-1] > hs[-1]:
+                wave, leg_done = wave + 1, False
         c = close[j]
         if s == UP:
             if len(hs) >= 2 and high[hs[-1]] <= high[hs[-2]]:
                 neck = np.nanmin(low[hs[-2] + 1 : hs[-1]])  # never empty: swings are 2+ apart
                 if c < neck:
-                    s = RANGE
+                    s, wave = RANGE, 0
         elif s == DOWN:
             if len(ls) >= 2 and low[ls[-1]] >= low[ls[-2]]:
                 neck = np.nanmax(high[ls[-2] + 1 : ls[-1]])
                 if c > neck:
-                    s = RANGE
+                    s, wave = RANGE, 0
         elif hs and len(ls) >= 2 and c > high[hs[-1]] and low[ls[-1]] > low[ls[-2]]:
-            s = UP
+            s, wave, start, leg_done = UP, 1, j, False
         elif ls and len(hs) >= 2 and c < low[ls[-1]] and high[hs[-1]] < high[hs[-2]]:
-            s = DOWN
+            s, wave, start, leg_done = DOWN, 1, j, False
         out[j] = s
-    return out
+        wave_out[j] = wave
+    return out, wave_out
 
 
 @dataclass(frozen=True)

@@ -39,8 +39,8 @@ from nnfx.data.bars import BarFrame, ns
 from nnfx.data.timeframes import TimeframeViews
 from nnfx.engine.types import ExitPlan, PositionView
 from nnfx.instruments import InstrumentSpec
-from nnfx.strategy.series import pivots
-from nnfx.strategy.structure import dow_states
+from nnfx.strategy.series import atr, pivots, sma
+from nnfx.strategy.structure import waves
 
 Role = Literal["hwc", "mwc", "lwc"]
 
@@ -151,12 +151,33 @@ class StrategyData:
         out: tuple[np.ndarray, np.ndarray] = self._cache[key]
         return out
 
-    def dow(self, role: str, pivot_bars: int) -> np.ndarray:
-        """The Dow trend state of each ``role`` bar (``structure.dow_states``), cached."""
-        key = ("dow", role, pivot_bars)
+    def waves(self, role: str, pivot_bars: int) -> tuple[np.ndarray, np.ndarray]:
+        """Dow state and wave number of each ``role`` bar (``structure.waves``), cached."""
+        key = ("waves", role, pivot_bars)
         if key not in self._cache:
             f = self.frames[role]
-            self._cache[key] = dow_states(f.low, f.high, f.close, pivot_bars)
+            self._cache[key] = waves(f.low, f.high, f.close, pivot_bars)
+        out: tuple[np.ndarray, np.ndarray] = self._cache[key]
+        return out
+
+    def dow(self, role: str, pivot_bars: int) -> np.ndarray:
+        """The Dow trend state of each ``role`` bar (``structure.dow_states``), cached."""
+        return self.waves(role, pivot_bars)[0]
+
+    def sma(self, role: str, period: int) -> np.ndarray:
+        """The simple moving average of each ``role`` bar's close, cached."""
+        key = ("sma", role, period)
+        if key not in self._cache:
+            self._cache[key] = sma(self.frames[role].close, period)
+        out: np.ndarray = self._cache[key]
+        return out
+
+    def atr(self, role: str, period: int = 14) -> np.ndarray:
+        """Wilder's ATR of each ``role`` bar, cached."""
+        key = ("atr", role, period)
+        if key not in self._cache:
+            f = self.frames[role]
+            self._cache[key] = atr(f.high, f.low, f.close, period)
         out: np.ndarray = self._cache[key]
         return out
 
@@ -189,6 +210,9 @@ class ContextOutput:
     flags: dict[str, np.ndarray] = field(default_factory=dict)  # per-bar states, for the record
     # Candidate tags by direction: tag -> (bool per bar for longs, for shorts).
     tags: dict[str, tuple[np.ndarray, np.ndarray]] = field(default_factory=dict)
+    # Bars where resting breakout orders are cancelled and none are placed (e.g. a
+    # Choppy Regime). None: the Block never cancels orders.
+    cancels_orders: np.ndarray | None = None
 
     def allows(self, i: int, direction: int) -> bool:
         return bool(self.long_ok[i] if direction > 0 else self.short_ok[i])
@@ -302,6 +326,13 @@ class StopMove:
 
 
 @dataclass(frozen=True)
+class CloseMove:
+    """An Exit Block's request to close what remains of an open position (profit-taking)."""
+
+    reason: str  # e.g. "sma25_flatten"
+
+
+@dataclass(frozen=True)
 class OrderSpec:
     """A stop-market entry an Execution Block asks for (sized and stopped later)."""
 
@@ -362,12 +393,15 @@ class ExitBlock[P: BlockParams](Block[P]):
         """The exit steps in R, R being the distance from the trigger to ``stop``."""
         raise NotImplementedError
 
-    def manage(self, position: PositionView, data: StrategyData, bar: int) -> StopMove | None:
-        """At the close of LWC ``bar``: a stop move for an open position, if any.
+    def manage(
+        self, position: PositionView, data: StrategyData, bar: int
+    ) -> StopMove | CloseMove | None:
+        """At the close of LWC ``bar``: a stop move or a profit-taking close, if any.
 
         Causal like every Block: it reads only what was known at that close.
-        The engine applies a move only when it tightens the stop and leaves it
-        on the right side of the close.
+        The engine applies a stop move only when it tightens the stop and
+        leaves it on the right side of the close. A close may follow only
+        profit already taken (``steps_filled`` >= 1): the 2R floor stands.
         """
         return None
 

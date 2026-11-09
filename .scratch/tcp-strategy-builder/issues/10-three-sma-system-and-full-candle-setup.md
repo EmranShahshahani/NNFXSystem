@@ -4,13 +4,13 @@
 
 **Blocked by:** 09 (Market structure and wave cycles)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Each 3-SMA rule is its own Block or parameter, switchable
-- [ ] Choppy Regime disables breakout orders until separation resumes
-- [ ] Candle Setup geometry and SMA 7 placement rules match the blueprint defaults
-- [ ] Second Wave detection uses confirmed structure from ticket 09
-- [ ] RSI and volume conditions are Confirmation Blocks attached by default
-- [ ] Fixtures where each rule makes the setup fire and not fire
+- [x] Each 3-SMA rule is its own Block or parameter, switchable
+- [x] Choppy Regime disables breakout orders until separation resumes
+- [x] Candle Setup geometry and SMA 7 placement rules match the blueprint defaults
+- [x] Second Wave detection uses confirmed structure from ticket 09
+- [x] RSI and volume conditions are Confirmation Blocks attached by default (the UI sample document attaches them; the Template, ticket 12, will too)
+- [x] Fixtures where each rule makes the setup fire and not fire
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

@@ -63,7 +63,11 @@ def candidates() -> list[SetupCandidate]:
 
 def arrays(out: ContextOutput | SetupOutput) -> dict[str, np.ndarray]:
     """Every published array of a series Block's output, flags and tags flattened."""
-    a = {f.name: getattr(out, f.name) for f in fields(out) if f.name not in ("flags", "tags")}
+    a = {
+        f.name: getattr(out, f.name)
+        for f in fields(out)
+        if f.name not in ("flags", "tags") and getattr(out, f.name) is not None
+    }
     if isinstance(out, ContextOutput):
         a.update({f"extra:{k}": v for k, v in out.flags.items()})
         for k, (lo, sh) in out.tags.items():
@@ -203,6 +207,7 @@ def exit_variants() -> list[ExitBlock]:
         ProfitChain(ProfitChainParams(counter_trend="always", counter_trend_exit="boundary"))
     )
     out.append(ProfitChain(ProfitChainParams(pivot_bars=1)))
+    out.append(ProfitChain(ProfitChainParams(sma_flatten_exit=True, sma_period=5)))
     return out
 
 
@@ -243,7 +248,9 @@ def management_closes(d: StrategyData, after: int, n: int = 3) -> list[int]:
 
 def managed(b: ExitBlock, c: SetupCandidate, d: StrategyData, j: int, filled: int):
     mv = b.manage(position(b, c, d, filled), d, j)
-    return None if mv is None else (mv.stop, mv.reason)
+    if mv is None:
+        return None
+    return (getattr(mv, "stop", None), mv.reason)  # a close move has no stop
 
 
 @pytest.mark.parametrize("b", exit_variants(), ids=lambda b: repr(b.p))
@@ -256,7 +263,7 @@ def test_exit_blocks_manage_without_lookahead(b: ExitBlock):
                 now = managed(b, c, d.head(j + 1), j, filled)
                 assert now == managed(b, c, d, j, filled), (c.bar, j, filled)
                 seen += now is not None
-    if isinstance(b, ProfitChain) and b.p.counter_trend == "off":
+    if isinstance(b, ProfitChain) and b.p.counter_trend != "always":
         assert seen  # the fixture really produces stop moves to gate
 
 
@@ -270,4 +277,7 @@ def test_exit_blocks_manage_scale_free(b: ExitBlock):
                 a, z = managed(b, c, d, j, filled), managed(b, scaled(c), ds, j, filled)
                 assert (a is None) == (z is None)
                 if a is not None and z is not None:
-                    assert z[0] == pytest.approx(a[0] * SCALE, rel=1e-9) and z[1] == a[1]
+                    assert z[1] == a[1]
+                    assert (z[0] is None) == (a[0] is None)
+                    if a[0] is not None:
+                        assert z[0] == pytest.approx(a[0] * SCALE, rel=1e-9)

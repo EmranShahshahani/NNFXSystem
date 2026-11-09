@@ -67,7 +67,9 @@ def doc(
     *confirmations: dict[str, Any], checklist: dict[str, Any] | None = None, **risk: Any
 ) -> dict[str, Any]:
     raw = copy.deepcopy(DOC)
-    raw["blocks"] = [raw["blocks"][0], raw["blocks"][1], *confirmations, *raw["blocks"][2:]]
+    # The pullback scenarios have a still-falling SMA 7 at the setup: slope is tested elsewhere.
+    setup = {"kind": "setup", "type": "candle_setup", "params": {"sma_slope": False}}
+    raw["blocks"] = [raw["blocks"][0], setup, *confirmations, *raw["blocks"][2:]]
     raw["risk"] = {"risk_per_trade": 0.005, **risk}
     if checklist is not None:
         raw["checklist"] = checklist

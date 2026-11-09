@@ -496,6 +496,9 @@ const SAMPLE_DOC = {
   blocks: [
     { kind: "context", type: "three_sma_alignment", params: { timeframe: "mwc" } },
     { kind: "setup", type: "candle_setup" },
+    { kind: "confirmation", type: "second_wave", params: { timeframe: "mwc" } },
+    { kind: "confirmation", type: "rsi_momentum" },
+    { kind: "confirmation", type: "volume_expansion" },
     { kind: "execution", type: "stop_market", params: { expiry_bars: 4 } },
     { kind: "stop", type: "structural_stop" },
     { kind: "exit", type: "profit_chain" },
