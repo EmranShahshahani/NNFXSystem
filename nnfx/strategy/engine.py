@@ -179,12 +179,16 @@ class DocumentEngine:
             if any(
                 out.cancels_orders is not None and out.cancels_orders[i] for _, out in comp.contexts
             ):
-                keys = [o.key for o in account_state.pending_orders if o.symbol == sym]
-                if keys:
-                    evaluations.append(self._cancel_orders(sym, comp, i, keys))
+                gone = [o for o in account_state.pending_orders if o.symbol == sym]
+                if gone:
+                    evaluations.append(self._cancel_orders(sym, comp, i, [o.key for o in gone]))
                     intents += evaluations[-1].intents
+                    committed -= sum(o.risk_cash for o in gone)  # the cancelled orders free it
+                cancelled = {o.key for o in gone}
+            else:
+                cancelled = set()
             busy = sum(p.symbol == sym for p in open_positions) + sum(
-                o.symbol == sym for o in account_state.pending_orders
+                o.symbol == sym and o.key not in cancelled for o in account_state.pending_orders
             )
             for bidx, stype, out in comp.setups:
                 cand = SetupCandidate.at(out, comp.data, stype, bidx, i)

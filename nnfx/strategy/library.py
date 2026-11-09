@@ -417,6 +417,9 @@ class RsiMomentumParams(ConfirmationParams):
     fresh_bars: int = Field(
         3, ge=0, description="RSI باید در این تعداد کندل اخیر وارد ناحیه شده باشد (۰: فقط سطح)"
     )
+    verge: float = Field(
+        0.0, ge=0, lt=50, description="ورود را از این مقدار پیش از سطح هم بپذیر («در آستانهٔ ۷۰»)"
+    )
 
 
 @register
@@ -445,7 +448,7 @@ class RsiMomentum(ConfirmationBlock[RsiMomentumParams]):
             )
         series = rsi(close, p.period)
         sign = 1.0 if candidate.direction > 0 else -1.0
-        level = p.long_above if sign > 0 else p.short_below
+        level = (p.long_above if sign > 0 else p.short_below) - sign * p.verge
         word = "above" if sign > 0 else "below"
         now = float(series[-1])
         if not (now - level) * sign > 0:
@@ -466,6 +469,9 @@ class RsiMomentum(ConfirmationBlock[RsiMomentumParams]):
 class VolumeExpansionParams(ConfirmationParams):
     lookback: int = Field(20, ge=1, description="تعداد کندل‌های میانگین حجم")
     factor: float = Field(1.0, gt=0, description="حجم کندل ستاپ دست‌کم این ضریبِ میانگین")
+    max_factor: float = Field(
+        0.0, ge=0, description="سقف حجم (ضریب میانگین) تا کندل اوج‌گیری نباشد (۰: بدون سقف)"
+    )
 
 
 @register
@@ -498,9 +504,16 @@ class VolumeExpansion(ConfirmationBlock[VolumeExpansionParams]):
         avg = float(np.mean(v[i - p.lookback : i]))
         ratio = float(v[i]) / avg if avg > 0 else float("inf")
         ok = ratio > p.factor  # expansion: strictly above the average
+        word = f"needs more than {p.factor:g}x"
+        if ok and p.max_factor and ratio > p.max_factor:  # a climax is exhaustion, not a surge
+            return CheckResult(
+                "fail", f"volume {ratio:.2f}x is a climax (over {p.max_factor:g}x the average)"
+            )
+        if p.max_factor:
+            word += f", up to {p.max_factor:g}x"
         return CheckResult(
             "pass" if ok else "fail",
-            f"volume {ratio:.2f}x its {p.lookback}-bar average (needs more than {p.factor:g}x)",
+            f"volume {ratio:.2f}x its {p.lookback}-bar average ({word})",
         )
 
 
@@ -519,7 +532,9 @@ class SecondWave(ConfirmationBlock[SecondWaveParams]):
     Waves come from confirmed structure (``structure.waves``): the trend must
     run the trade's way, and its wave number must lie in ``min_wave`` ..
     ``max_wave``. The first leg is allowed to escape; the entry is on the
-    continuation leg (video 35). Not applicable before any structure exists.
+    continuation leg (video 35). With no trend, or one against the trade, it fails
+    (a hard refusal by default); not applicable only before any ``timeframe`` bar
+    has closed.
     """
 
     kind = BlockKind.CONFIRMATION

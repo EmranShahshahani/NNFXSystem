@@ -255,7 +255,7 @@ def managed(b: ExitBlock, c: SetupCandidate, d: StrategyData, j: int, filled: in
 
 @pytest.mark.parametrize("b", exit_variants(), ids=lambda b: repr(b.p))
 def test_exit_blocks_manage_without_lookahead(b: ExitBlock):
-    d, seen = data(), 0
+    d, seen, closes = data(), 0, 0
     for c in spread():
         assert b.plan(c, d.head(c.bar + 1), c.stop) == b.plan(c, d, c.stop)
         for j in management_closes(d, c.bar):
@@ -263,8 +263,11 @@ def test_exit_blocks_manage_without_lookahead(b: ExitBlock):
                 now = managed(b, c, d.head(j + 1), j, filled)
                 assert now == managed(b, c, d, j, filled), (c.bar, j, filled)
                 seen += now is not None
+                closes += now is not None and now[0] is None
     if isinstance(b, ProfitChain) and b.p.counter_trend != "always":
         assert seen  # the fixture really produces stop moves to gate
+    if isinstance(b, ProfitChain) and b.p.sma_flatten_exit:
+        assert closes  # and profit-taking closes
 
 
 @pytest.mark.parametrize("b", exit_variants(), ids=lambda b: repr(b.p))

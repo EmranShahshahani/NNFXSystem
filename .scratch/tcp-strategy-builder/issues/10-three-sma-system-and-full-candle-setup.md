@@ -11,6 +11,6 @@
 - [x] Candle Setup geometry and SMA 7 placement rules match the blueprint defaults
 - [x] Second Wave detection uses confirmed structure from ticket 09
 - [x] RSI and volume conditions are Confirmation Blocks attached by default (the UI sample document attaches them; the Template, ticket 12, will too)
-- [x] Fixtures where each rule makes the setup fire and not fire
+- [x] Fixtures where each rule makes the setup fire and not fire (every Block rule has a fire/not-fire fixture; the harness-level ones are the Second Wave, Choppy Regime, 99 SMA filter, overextension guard, SMA slope gate, crossover and the SMA 25 exit, the rest are on Block output)
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

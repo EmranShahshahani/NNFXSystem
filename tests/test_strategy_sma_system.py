@@ -8,30 +8,37 @@ read a Block's output on hand-built 15m bars.
 from __future__ import annotations
 
 import copy
-from dataclasses import replace
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 from nnfx.config import SessionConfig
+from nnfx.data.bars import BarFrame
 from nnfx.journal.journal import Journal
 from nnfx.strategy import REGISTRY, StrategyData, validate_document
 from nnfx.strategy.blocks import SetupBlock, SetupCandidate
 from nnfx.strategy.library import (
+    BaselineParams,
     CandleSetup,
     CandleSetupParams,
     ChoppyRegime,
     ChoppyRegimeParams,
     OverextensionGuard,
     OverextensionParams,
+    RsiMomentum,
+    RsiMomentumParams,
     SecondWave,
     SecondWaveParams,
+    SlopeGateParams,
     SmaBaselineFilter,
     SmaCrossover,
     SmaCrossoverParams,
     SmaSlopeGate,
     VolumeContinuation,
     VolumeContinuationParams,
+    VolumeExpansion,
+    VolumeExpansionParams,
 )
 from nnfx.strategy.run import backtest_document
 from nnfx.strategy.structure import waves
@@ -40,6 +47,7 @@ from tests.test_strategy_structure import path
 
 Row = tuple[float, float, float, float]
 ROLES = {"hwc": "M15", "mwc": "M15", "lwc": "M15", "management": "M15"}
+LONG_RISE: list[Row] = [(100.0 + k, 101.1 + k, 99.9 + k, 101.0 + k) for k in range(30)]
 
 
 def data(rows: list[Row]) -> StrategyData:
@@ -77,10 +85,9 @@ def test_the_candle_setup_needs_the_sma_to_slope_with_the_trade():
 def test_the_candle_setup_placement_and_geometry_rules_still_hold():
     wick_through_body: Row = (111.0, 111.3, 106.0, 107.0)  # SMA 7 (~108) cuts the body
     assert fire([*RISE, wick_through_body]) == 0
-    short_wick: Row = (111.0, 111.3, 109.0, 111.2)  # lower wick 2.0 vs body 0.2: fires...
-    assert fire([*RISE, short_wick]) == 0  # ...but the SMA is not inside the wick
-    small: Row = (111.0, 111.3, 110.5, 111.2)  # wick 0.5 < 1.5 x body 0.2? no: 0.5 >= 0.3
-    assert fire([*RISE, small], wick_to_body=3.0) == 0  # a stricter ratio refuses it
+    ratio_15: Row = (111.0, 111.3, 107.9, 111.2)  # lower wick 3.1 = 15.5 x the 0.2 body
+    assert fire([*RISE, ratio_15]) == 1
+    assert fire([*RISE, ratio_15], wick_to_body=20.0) == 0  # a stricter ratio refuses it
 
 
 # -------------------------------------------------------------- slope gate
@@ -90,9 +97,7 @@ def slope_gate(rows: list[Row], **kw: Any) -> tuple[bool, bool]:
     return bool(out.long_ok[-1]), bool(out.short_ok[-1])
 
 
-def replace_params(**kw: Any):
-    from nnfx.strategy.library import SlopeGateParams
-
+def replace_params(**kw: Any) -> SlopeGateParams:
     return SlopeGateParams(timeframe="lwc", **kw)
 
 
@@ -109,19 +114,13 @@ def test_a_flattening_sma_7_stops_new_entries():
 
 # ---------------------------------------------------------- 99 SMA filter
 def test_the_baseline_filter_blocks_longs_below_and_shorts_above_the_sma():
-    below = SmaBaselineFilter(BaselineParams_(period=5, timeframe="lwc")).compute(data(slow_fall()))
+    below = SmaBaselineFilter(BaselineParams(period=5, timeframe="lwc")).compute(data(slow_fall()))
     assert (bool(below.long_ok[-1]), bool(below.short_ok[-1])) == (False, True)
-    above = SmaBaselineFilter(BaselineParams_(period=5, timeframe="lwc")).compute(data(RISE))
+    above = SmaBaselineFilter(BaselineParams(period=5, timeframe="lwc")).compute(data(RISE))
     assert (bool(above.long_ok[-1]), bool(above.short_ok[-1])) == (True, False)
     # Before the SMA exists nothing is allowed (it cannot be judged).
-    warm = SmaBaselineFilter(BaselineParams_(period=50, timeframe="lwc")).compute(data(RISE))
+    warm = SmaBaselineFilter(BaselineParams(period=50, timeframe="lwc")).compute(data(RISE))
     assert not warm.long_ok.any() and not warm.short_ok.any()
-
-
-def BaselineParams_(**kw: Any):
-    from nnfx.strategy.library import BaselineParams
-
-    return BaselineParams(**kw)
 
 
 # ------------------------------------------------------ overextension guard
@@ -173,7 +172,6 @@ def test_volume_continuation_wants_a_quieter_setup_than_the_impulse():
     block = VolumeContinuation(VolumeContinuationParams(impulse_bars=5))
     f = d.base
     v = np.asarray(f.volume).copy()
-    quiet = StrategyData.build(_with_volume(f, v * 1.0), ROLES, BTC, SessionConfig())
     v[i] = 0.4
     quiet = StrategyData.build(_with_volume(f, v), ROLES, BTC, SessionConfig())
     assert block.check(candidate(quiet), quiet).outcome == "pass"
@@ -187,10 +185,6 @@ def test_volume_continuation_wants_a_quieter_setup_than_the_impulse():
 
 
 def _with_volume(f, v):
-    import pandas as pd
-
-    from nnfx.data.bars import BarFrame
-
     df = pd.DataFrame(
         {"open": f.open, "high": f.high, "low": f.low, "close": f.close, "volume": v},
         index=f.index,
@@ -199,7 +193,6 @@ def _with_volume(f, v):
 
 
 # -------------------------------------------------------------- Second Wave
-LONG_RISE: list[Row] = [(100.0 + k, 101.1 + k, 99.9 + k, 101.0 + k) for k in range(30)]
 LEG_ONE = path(110, 105, 115, 110, 120)  # first leg, a pullback to 110, then 120...
 
 
@@ -376,7 +369,6 @@ def test_every_new_block_is_a_registered_switchable_rule():
         "volume_continuation",
     }
     assert names <= set(REGISTRY)
-    assert replace(candidate(data([*RISE, SETUP])), tags=("x",)).tags == ("x",)
 
 
 def test_the_second_wave_rule_through_the_harness():
@@ -401,3 +393,116 @@ def test_the_second_wave_rule_through_the_harness():
     assert early["checklist"][1]["outcome"] == "fail" and early["decision"] == "refused"
     assert early["reasons"] == ["confirmation:second_wave#2"]
     assert late["checklist"][1]["outcome"] == "pass" and late["decision"] == "placed"
+
+
+# ------------------------------------------- rules through the harness (fire / not)
+def candle_at(rows: list[Row]) -> Row:
+    """A long Candle Setup after ``rows``: a lower wick down past the SMA 7, which sits
+    behind the body (the body is lifted above the SMA when price is below it)."""
+    closes = [r[3] for r in rows[-6:]]
+    m = sum(closes) / 6
+    o = max(rows[-1][3], m + 0.6)
+    return (o, o + 0.25, min(m, o) - 1.5, o + 0.2)
+
+
+def decide_with(rows: list[Row], *extra: dict[str, Any], setup: dict[str, Any] | None = None):
+    raw = copy.deepcopy(DOC)
+    raw["blocks"][0] = {
+        "kind": "context",
+        "type": "dow_trend",
+        "params": {"timeframe": "lwc", "in_range": "both"},
+    }
+    if setup is not None:
+        raw["blocks"][1] = {"kind": "setup", "type": "candle_setup", "params": setup}
+    raw["blocks"][1:1] = list(extra)
+    res = validate_document(raw)
+    assert res.document is not None, res.render()
+    out = backtest_document(res.document, {SYM: frame([*rows, candle_at(rows)])}, {SYM: BTC})
+    return out.candidates[-1]
+
+
+def ctx(btype: str, **params: Any) -> dict[str, Any]:
+    return {"kind": "context", "type": btype, "params": {"timeframe": "lwc", **params}}
+
+
+def test_the_99_sma_filter_refuses_a_long_below_the_baseline_through_the_harness():
+    drop = path(85.0, start=LONG_RISE[-1][3], per=3.0)
+    rebound = path(94.0, start=drop[-1][3], per=3.0)
+    rows = [*LONG_RISE, *drop, *rebound]
+    setup = {"sma_slope": True}
+    free = decide_with(rows, setup=setup)
+    assert free["direction"] == 1 and free["decision"] == "placed"
+    cut = decide_with(rows, ctx("sma_baseline_filter", period=20), setup=setup)
+    assert cut["decision"] == "refused" and cut["reasons"] == ["context:sma_baseline_filter#1"]
+
+
+def test_the_overextension_guard_refuses_a_stretched_breakout_through_the_harness():
+    stretched = [*LONG_RISE, *path(190.0, start=LONG_RISE[-1][3], per=10.0)]
+    guard = ctx("overextension_guard", period=5, max_atr=2.0)
+    assert decide_with(stretched)["decision"] == "placed"
+    assert decide_with(stretched, guard)["reasons"] == ["context:overextension_guard#1"]
+    assert decide_with(LONG_RISE, guard)["decision"] == "placed"  # not stretched: allowed
+
+
+def test_a_flat_sma_7_refuses_the_entry_through_the_harness():
+    slow = [*LONG_RISE, *path(131.0, start=LONG_RISE[-1][3], per=0.1)]
+    gate = ctx("sma_slope_gate", period=7, slope_bars=3, min_slope_atr=0.2)
+    steep = decide_with(LONG_RISE, gate)
+    assert steep["decision"] == "placed"
+    flat = decide_with(slow, gate, setup={"sma_slope": False})
+    assert flat["decision"] == "refused" and flat["reasons"] == ["context:sma_slope_gate#1"]
+
+
+def test_chop_refuses_a_new_setup_through_the_harness():
+    chop = ctx("choppy_regime", fast=2, mid=3, slow=4, lookback=6, min_crosses=2, flat_atr=5.0)
+    rows = [*LONG_RISE, *weave(16, centre=LONG_RISE[-1][3])]
+    clear = decide_with(LONG_RISE, chop)
+    assert clear["decision"] == "placed"
+    cand = decide_with(rows, chop, setup={"sma_slope": False})
+    assert cand["decision"] == "refused" and cand["reasons"] == ["context:choppy_regime#1"]
+
+
+def test_a_crossover_confirmation_flips_the_candidate_score():
+    cross = {
+        "kind": "confirmation",
+        "type": "sma_crossover",
+        "params": {"fast": 2, "mid": 3, "slow": 4, "timeframe": "lwc", "pairs": "both"},
+    }
+    up = decide_with(LONG_RISE, cross)
+    assert up["checklist"][1]["outcome"] == "pass" and up["score"] == 1.0
+    base = [*LONG_RISE, *path(110.0, start=LONG_RISE[-1][3], per=3.0)]
+    down = decide_with(base, cross, setup={"sma_slope": False})
+    assert down["checklist"][1]["outcome"] != "pass" or down["direction"] != 1
+
+
+# ------------------------------------------------ geometry and condition edges
+def test_the_opposite_wick_must_stay_below_its_limit():
+    both: Row = (111.0, 111.9, 106.0, 111.2)  # body 0.2, upper wick 0.7: too big for 1.0 x body
+    assert fire([*RISE, both]) == 0
+    assert fire([*RISE, both], opposite_to_body=4.0) == 1  # the knob loosens it
+
+
+def test_rsi_may_count_a_move_on_the_verge_of_the_level():
+    rows = [*LONG_RISE, *path(139.0, start=LONG_RISE[-1][3], per=0.5), (139.0, 139.2, 138.0, 138.2)]
+    d = data(rows)
+    c = candidate(d)
+    strict = RsiMomentum(RsiMomentumParams(long_above=99.9999, fresh_bars=0)).check(c, d)
+    assert strict.outcome == "fail"
+    near = RsiMomentum(RsiMomentumParams(long_above=99.9999, fresh_bars=0, verge=45.0)).check(c, d)
+    assert near.outcome == "pass"
+
+
+def test_volume_expansion_can_refuse_a_climax():
+    d = data([*RISE, *RISE, SETUP])
+    i = len(d) - 1
+    v = np.ones(len(d))
+    v[i] = 3.0
+    dv = StrategyData.build(_with_volume(d.base, v), ROLES, BTC, SessionConfig())
+    plain = VolumeExpansion(VolumeExpansionParams(lookback=5))
+    assert plain.check(candidate(dv), dv).outcome == "pass"
+    capped = VolumeExpansion(VolumeExpansionParams(lookback=5, max_factor=2.0))
+    r = capped.check(candidate(dv), dv)
+    assert r.outcome == "fail" and "climax" in r.reason
+    v[i] = 1.5
+    ok = StrategyData.build(_with_volume(d.base, v), ROLES, BTC, SessionConfig())
+    assert capped.check(candidate(ok), ok).outcome == "pass"

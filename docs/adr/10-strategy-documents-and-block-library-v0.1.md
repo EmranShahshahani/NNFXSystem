@@ -316,14 +316,24 @@ and honest trial counting.
     them): `second_wave`, `rsi_momentum`, `volume_expansion`, and
     `volume_continuation` (the setup candle quieter than the impulse before
     it), plus `sma_crossover`. A key-level location comes with levels
-    (ticket 11).
+    (ticket 11). Two blueprint details are parameters of existing Blocks:
+    `volume_expansion.max_factor` caps the setup candle's volume so a climax
+    is not taken for a surge ("moderate, not exhaustion"), and
+    `rsi_momentum.verge` accepts an RSI that is within that many points of
+    its level ("on the verge of 70"). Both are off by default, so the
+    default checks stay as strict as before.
 
     **Second Wave.** `structure.waves` numbers the legs of a Dow trend from
     confirmed swings. A trend starts in wave 1; a leg ends with a confirmed
     swing in the trend's direction, and the pullback after it ends with the
     next confirmed counter-swing, which starts the next wave. `second_wave`
     passes when the trend runs the trade's way and its wave number is within
-    `min_wave`..`max_wave` (2..any). It is a hard check by default.
+    `min_wave`..`max_wave` (2..any). It is a hard check by default, and
+    with no trend or one against the trade it fails.
+
+    **Cancelled orders free their room.** When a Context cancels the
+    resting orders of a symbol, those orders no longer count toward the
+    position limit or the open-risk cap in the same cycle.
 
     **Crossovers confirm, never enter.** `sma_crossover` is only a
     Confirmation (the faster SMA on the trade's side of the slower one).
