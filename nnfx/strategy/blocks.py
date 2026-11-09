@@ -39,6 +39,7 @@ from nnfx.data.bars import BarFrame, ns
 from nnfx.data.timeframes import TimeframeViews
 from nnfx.engine.types import ExitPlan, PositionView
 from nnfx.instruments import InstrumentSpec
+from nnfx.strategy.levels import BoxTrack, LevelBook, track_boxes
 from nnfx.strategy.series import atr, pivots, sma
 from nnfx.strategy.structure import waves
 
@@ -181,6 +182,47 @@ class StrategyData:
         out: np.ndarray = self._cache[key]
         return out
 
+    def levels(
+        self, role: str, *, pivot_bars: int, tolerance_atr: float, half_life: float, max_age: int
+    ) -> LevelBook:
+        """The horizontal levels of ``role``'s bars (``levels.LevelBook``), cached."""
+        key = ("levels", role, pivot_bars, tolerance_atr, half_life, max_age)
+        if key not in self._cache:
+            f = self.frames[role]
+            self._cache[key] = LevelBook(
+                f.open, f.high, f.low, f.close, self.atr(role), pivot_bars=pivot_bars,
+                tolerance_atr=tolerance_atr, half_life=half_life, max_age=max_age,
+            )  # fmt: skip
+        out: LevelBook = self._cache[key]
+        return out
+
+    def boxes(self, role: str, **params: float) -> BoxTrack:
+        """Boxes and their breakouts on ``role``'s bars (``levels.track_boxes``), cached."""
+        key = ("boxes", role, tuple(sorted(params.items())))
+        if key not in self._cache:
+            f = self.frames[role]
+            self._cache[key] = track_boxes(
+                f.open,
+                f.high,
+                f.low,
+                f.close,
+                self.atr(role),
+                **params,  # type: ignore[arg-type]
+            )
+        out: BoxTrack = self._cache[key]
+        return out
+
+    def on_close(self, role: str, values: np.ndarray, fill: Any) -> np.ndarray:
+        """``role``-bar ``values`` placed on the LWC bar where each ``role`` bar closes.
+
+        Everywhere else ``fill``: a role bar's news arrives once, when it closes.
+        """
+        pos = self.positions[role]
+        mask = (pos >= 0) & (pos != np.r_[-1, pos[:-1]])
+        out = np.full(len(pos), fill, dtype=values.dtype)
+        out[mask] = values[pos[mask]]
+        return out
+
     def bar_containing(self, role: str, time: str) -> int:
         """The ``role`` bar that the LWC bar labelled ``time`` belongs to.
 
@@ -229,8 +271,13 @@ class SetupOutput:
     invalidation: np.ndarray
     stop: np.ndarray  # the setup's proposed stop
     tags: dict[str, np.ndarray] = field(default_factory=dict)  # tag -> bool per bar
+    # Facts the Confirmation Blocks read (NaN where there is no candidate): e.g. the
+    # broken ``level``, the ``anchor`` bar of a breakout (a bar index of the Block's
+    # own timeframe), the edge's ``touches``.
+    meta: dict[str, np.ndarray] = field(default_factory=dict)
 
     PRICE_FIELDS: ClassVar[tuple[str, ...]] = ("trigger", "invalidation", "stop")
+    PRICE_META: ClassVar[tuple[str, ...]] = ("level",)
 
 
 @dataclass(frozen=True)
@@ -245,6 +292,10 @@ class SetupCandidate:
     invalidation: float
     stop: float
     tags: tuple[str, ...] = ()
+    meta: tuple[tuple[str, float], ...] = ()  # see SetupOutput.meta
+
+    def fact(self, name: str) -> float | None:
+        return next((v for k, v in self.meta if k == name), None)
 
     @classmethod
     def at(
@@ -264,6 +315,7 @@ class SetupCandidate:
             float(out.invalidation[i]),
             float(out.stop[i]),
             tuple(sorted(t for t, on in out.tags.items() if on[i])),
+            tuple(sorted((k, float(v[i])) for k, v in out.meta.items() if np.isfinite(v[i]))),
         )
 
     def record(self) -> dict[str, Any]:
@@ -275,6 +327,7 @@ class SetupCandidate:
             "invalidation": self.invalidation,
             "stop": self.stop,
             "tags": list(self.tags),
+            "meta": dict(self.meta),
         }
 
 

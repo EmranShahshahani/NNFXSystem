@@ -4,14 +4,14 @@
 
 **Blocked by:** 09 (Market structure and wave cycles)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Levels and boxes are causal and pass the gates
-- [ ] A 15m close beyond a 4H level does not count as a 4H breakout
-- [ ] Touch-count rule enforced with parameters
-- [ ] Box Breakout setup emits a candidate with trigger beyond the edge and stop per blueprint
-- [ ] Each breakout confirmation is a separate Confirmation Block
-- [ ] Two-way box mode (ticket 09): stop-buy and stop-sell triggers at the box extremes when `wave_cycles` reports the box
-- [ ] Fixtures for sweep vs breakout, first-touch refusal, and each confirmation
+- [x] Levels and boxes are causal and pass the gates
+- [x] A 15m close beyond a 4H level does not count as a 4H breakout
+- [x] Touch-count rule enforced with parameters
+- [x] Box Breakout setup emits a candidate with trigger beyond the edge and stop per blueprint
+- [x] Each breakout confirmation is a separate Confirmation Block
+- [x] Two-way box mode (ticket 09): stop-buy and stop-sell triggers at the box extremes when `wave_cycles` reports the box
+- [x] Fixtures for sweep vs breakout, first-touch refusal, and each confirmation
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`

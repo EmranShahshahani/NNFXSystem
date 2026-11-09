@@ -66,7 +66,7 @@ def arrays(out: ContextOutput | SetupOutput) -> dict[str, np.ndarray]:
     a = {
         f.name: getattr(out, f.name)
         for f in fields(out)
-        if f.name not in ("flags", "tags") and getattr(out, f.name) is not None
+        if f.name not in ("flags", "tags", "meta") and getattr(out, f.name) is not None
     }
     if isinstance(out, ContextOutput):
         a.update({f"extra:{k}": v for k, v in out.flags.items()})
@@ -74,6 +74,7 @@ def arrays(out: ContextOutput | SetupOutput) -> dict[str, np.ndarray]:
             a.update({f"tag:{k}:long": lo, f"tag:{k}:short": sh})
     else:
         a.update({f"extra:{k}": v for k, v in out.tags.items()})
+        a.update({f"meta:{k}": v for k, v in out.meta.items()})
     return a
 
 
@@ -150,7 +151,7 @@ def test_series_blocks_are_price_scale_invariant(btype: str):
     d = data()
     a, b = arrays(block(btype).compute(d)), arrays(block(btype).compute(d.scaled(SCALE)))
     for name in a:
-        if name in SetupOutput.PRICE_FIELDS:
+        if name in SetupOutput.PRICE_FIELDS or name.removeprefix("meta:") in SetupOutput.PRICE_META:
             assert np.allclose(a[name] * SCALE, b[name], rtol=1e-9, equal_nan=True), name
         else:
             assert same(a[name], b[name]), name
@@ -176,7 +177,11 @@ def scaled(c: SetupCandidate) -> SetupCandidate:
     from dataclasses import replace
 
     return replace(
-        c, trigger=c.trigger * SCALE, invalidation=c.invalidation * SCALE, stop=c.stop * SCALE
+        c,
+        trigger=c.trigger * SCALE,
+        invalidation=c.invalidation * SCALE,
+        stop=c.stop * SCALE,
+        meta=tuple((k, v * SCALE if k in SetupOutput.PRICE_META else v) for k, v in c.meta),
     )
 
 

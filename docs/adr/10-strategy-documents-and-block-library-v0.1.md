@@ -347,6 +347,62 @@ and honest trial counting.
     move (`CloseMove`); the engine ignores one before the first step, so the
     2R floor stands.
 
+15. **Levels, touches, boxes and breakout confirmation (ticket 11).**
+    `strategy/levels.py` is causal and scale-free: swings confirm
+    `pivot_bars` later, distances are in ATR.
+
+    **Levels.** A swing joins the nearest level within `tolerance_atr` ATR or
+    starts one. A level is a single price, the median of its touches' body
+    prices (a swing high is its body top, a swing low its body bottom), never
+    a zone. A touch weighs 0.5 per `half_life` bars of age, so recent tests
+    count more. A level touched as both resistance and support has flipped
+    polarity. `level_location` (Confirmation) passes when such a level lies
+    in the setup candle, widened by the tolerance; it is the key-level
+    location the Candle Setup was waiting for.
+
+    **Boxes.** A top edge touched `min_touches` times (3) and a bottom edge
+    `min_bottom_touches` times (2) within `lookback` bars, between
+    `min_height_atr` and `max_height_atr` ATR apart, at least `min_bars` old,
+    with no close beyond an edge by more than the tolerance since the first
+    touch. It is detected again whenever a swing is confirmed.
+
+    **Box Breakout** (`box_breakout`). A breakout is the first close beyond
+    an edge by more than the tolerance. A candidate stands on that bar and on
+    each later one, up to `window` bars, while every close since stays beyond
+    the edge; a close back inside ends it. A wick that pierces the edge and
+    falls back is a sweep and makes none. Trigger: the bar's extreme in the
+    breakout direction. Invalidation: the broken edge. Stop: the opposite
+    edge. The candidate carries facts for the Confirmation Blocks (`meta`:
+    the level, the breakout bar, the box start, the edge's touches).
+
+    **A breakout belongs to the timeframe of its level.** Levels and boxes are
+    computed on the bars of the Block's `timeframe` role, and a candidate
+    appears only on the LWC bar where a bar of that role closes. A 15m close
+    beyond a 4H level is nothing until the 4H bar closes beyond it. All
+    counts are in that timeframe's bars.
+
+    **Confirmations, each its own Block.** `breakout_body_close`: the whole
+    body (or, if switched, the close) beyond the level. `breakout_range`:
+    the breakout candle's range at least 1.5x the previous 6 bars' average.
+    `consecutive_closes`: the closes beyond the level since the breakout reach
+    N, 8 on 15m, 4 on 4H, 2 on daily (no default for other timeframes: it is
+    not applicable until `bars` is set). `box_volume_dryup`: the box's second
+    half quieter than its first. `touch_count`: the touch rule. One touch is
+    a breakout on the first attempt and is refused. Two need another factor:
+    the `confluence_timeframe` trend running the trade's way, or an
+    absorption wick on the breakout candle. Three or four are the best
+    window. All hard by default except the volume one. With the default
+    `min_touches` of 3 a box always has three, so the tiers apply to boxes
+    built with fewer.
+
+    **The two-way box** (`box_extremes`, one instance per side). While price
+    is inside a detected box it stands every `refresh_bars` bars with the
+    trigger at one edge and the stop at the other. Paired with `wave_cycles`
+    (`two_way_box`), the Execution Block's `oco` (one fill cancels its twin),
+    and `max_positions_per_symbol` 2, it is the blueprint's pair of
+    stop-buy and stop-sell triggers at the box extremes; trades are tagged
+    `counter_trend`, so the Profit Chain takes 2R-3R.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

@@ -36,6 +36,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
     register,
 )
+from nnfx.strategy.levels import BoxTrack
 from nnfx.strategy.series import falling, rising, rsi, sma
 from nnfx.strategy.structure import wave_bias
 
@@ -636,11 +637,396 @@ class SmaCrossover(ConfirmationBlock[SmaCrossoverParams]):
         )
 
 
+# ------------------------------------------------- boxes, levels, breakouts
+BREAKOUT_BARS = {"M15": 8, "H4": 4, "D1": 2}  # consecutive closes (blueprint 03, video 24)
+
+
+class BoxParams(BlockParams):
+    timeframe: Role = Field("mwc", description="تایم‌فریمی که سطح و باکس روی آن رسم می‌شود")
+    pivot_bars: int = Field(2, ge=1, description="پیوت: تعداد کندل‌های دو طرف")
+    lookback: int = Field(60, ge=4, description="پنجرهٔ جست‌وجوی لمس‌ها، تعداد کندل")
+    tolerance_atr: float = Field(0.5, gt=0, description="فاصلهٔ مجاز لمس‌ها از یک قیمت (ATR)")
+    min_touches: int = Field(3, ge=1, description="کمترین لمس لبهٔ بالایی (جزوه: ۳)")
+    min_bottom_touches: int = Field(2, ge=1, description="کمترین لمس لبهٔ پایینی")
+    min_height_atr: float = Field(1.0, ge=0, description="کمترین ارتفاع باکس (ATR)")
+    max_height_atr: float = Field(8.0, gt=0, description="بیشترین ارتفاع باکس (ATR)")
+    min_bars: int = Field(8, ge=1, description="کمترین عمر باکس، تعداد کندل")
+
+    def track(self, data: StrategyData, window: int) -> BoxTrack:
+        return data.boxes(
+            self.timeframe, pivot_bars=self.pivot_bars, lookback=self.lookback,
+            tolerance_atr=self.tolerance_atr, min_top=self.min_touches,
+            min_bottom=self.min_bottom_touches, min_height_atr=self.min_height_atr,
+            max_height_atr=self.max_height_atr, min_bars=self.min_bars, window=window,
+        )  # fmt: skip
+
+
+class BoxBreakoutParams(BoxParams):
+    window: int = Field(12, ge=1, description="تا چند کندل پس از شکست، ستاپ معتبر می‌ماند")
+
+
+@register
+class BoxBreakout(SetupBlock[BoxBreakoutParams]):
+    """A consolidation box breaks: a body closes beyond an edge (blueprint 01 B, video 21).
+
+    A box is a top edge touched at least ``min_touches`` times and a bottom edge
+    touched at least ``min_bottom_touches`` times (single prices calibrated to
+    candle bodies; see ``levels.track_boxes``). The candidate stands on each
+    ``timeframe`` bar from the first close beyond an edge, for ``window`` bars,
+    while every close since stays beyond it. Wicks that pierce and fall back are
+    sweeps and make none. Trigger: the bar's extreme in the breakout direction;
+    invalidation: the broken edge; stop: the opposite edge. The breakout belongs to
+    the timeframe the level was drawn on: it is read only when a ``timeframe`` bar
+    closes, never from a lower timeframe's close. The confirmations (body, range,
+    consecutive closes, touch count, volume dry-up) are separate Blocks.
+    """
+
+    kind = BlockKind.SETUP
+    type = "box_breakout"
+    title_fa = "شکست باکس"
+    sources = (
+        "tcp-blueprint 01 (B): resistance and consolidation box breakout",
+        "tcp-blueprint 03: video 21 (body close, touches, timeframe anchor)",
+    )
+    Params = BoxBreakoutParams
+
+    def compute(self, data: StrategyData) -> SetupOutput:
+        p, role = self.p, self.p.timeframe
+        t = p.track(data, p.window)
+        d = data.on_close(role, t.direction, 0).astype("int8")
+        meta = {
+            "level": data.on_close(role, t.edge, np.nan),
+            "anchor": data.on_close(role, np.where(t.anchor >= 0, t.anchor, np.nan), np.nan),
+            "start": data.on_close(role, np.where(t.start >= 0, t.start, np.nan), np.nan),
+            "touches": data.on_close(role, np.where(t.touches > 0, t.touches, np.nan), np.nan),
+        }
+        return SetupOutput(
+            d,
+            data.on_close(role, t.trigger, np.nan),
+            meta["level"],
+            data.on_close(role, t.opposite, np.nan),
+            {"box_breakout": d != 0},
+            meta,
+        )
+
+
+class BoxExtremesParams(BoxParams):
+    side: Literal["long", "short"] = Field("long", description="سمت: خرید بالای باکس / فروش زیر آن")
+    refresh_bars: int = Field(4, ge=1, description="هر چند کندل (تایم‌فریم باکس) ستاپ تازه شود")
+
+
+@register
+class BoxExtremes(SetupBlock[BoxExtremesParams]):
+    """The two-way box (video 64): a trigger at an edge of a box that price is still inside.
+
+    Use one instance per side. A long's trigger is the top edge and its stop and
+    invalidation the bottom edge; a short mirrors it. A fresh candidate stands every
+    ``refresh_bars`` bars of the box's life, so a resting pair is replaced as it
+    expires. Pair it with ``wave_cycles`` (``two_way_box``) to trade it only while the
+    HWC and MWC range, give the Execution Block ``oco`` so one fill cancels the other,
+    and allow two positions per symbol.
+    """
+
+    kind = BlockKind.SETUP
+    type = "box_extremes"
+    title_fa = "باکس دوطرفه (تریگر در دو لبه)"
+    sources = ("tcp-blueprint 07: video 64 (two-way trading box)",)
+    Params = BoxExtremesParams
+
+    def compute(self, data: StrategyData) -> SetupOutput:
+        p, role = self.p, self.p.timeframe
+        t = p.track(data, 1)
+        due = t.in_box & (t.age % p.refresh_bars == 0)
+        long_ = p.side == "long"
+        near, far = (t.top, t.bottom) if long_ else (t.bottom, t.top)
+        d = data.on_close(role, due.astype("int8"), 0).astype("int8") * (1 if long_ else -1)
+        trigger = data.on_close(role, np.where(due, near, np.nan), np.nan)
+        stop = data.on_close(role, np.where(due, far, np.nan), np.nan)
+        start = data.on_close(role, np.where(due, t.start, np.nan), np.nan)
+        return SetupOutput(
+            d.astype("int8"),
+            trigger,
+            stop.copy(),
+            stop,
+            {"box_extremes": d != 0},
+            {"level": trigger.copy(), "start": start},
+        )
+
+
+class LevelParams(BlockParams):
+    timeframe: Role = Field("mwc", description="تایم‌فریمی که سطح‌ها روی آن رسم شده‌اند")
+    pivot_bars: int = Field(2, ge=1, description="پیوت: تعداد کندل‌های دو طرف")
+    tolerance_atr: float = Field(0.5, gt=0, description="فاصلهٔ مجاز لمس‌ها از یک قیمت (ATR)")
+    half_life: float = Field(100.0, gt=0, description="نیمه‌عمر وزن تازگی، تعداد کندل")
+    max_age: int = Field(1000, ge=1, description="سطحی که این‌قدر کندل لمس نشده کنار می‌رود")
+
+
+class LevelLocationParams(ConfirmationParams, LevelParams):
+    min_weight: float = Field(0.5, ge=0, description="کمترین وزن تازگی سطح")
+    flipped_only: bool = Field(False, description="فقط سطح‌هایی که قطبیت عوض کرده‌اند")
+
+
+@register
+class LevelLocation(ConfirmationBlock[LevelLocationParams]):
+    """The setup forms at (or breaches) an established horizontal key level (video 36).
+
+    Passes when a level of ``timeframe`` with enough recency-weighted touches lies in
+    the setup candle's range, widened by ``tolerance_atr`` ATR. Levels are single
+    prices calibrated to candle bodies, weighted toward recent touches; a level
+    touched as both resistance and support has flipped polarity.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "level_location"
+    title_fa = "موقعیت روی سطح کلیدی"
+    sources = (
+        "tcp-blueprint 01: video 4-5 (levels, polarity flips, recency)",
+        "tcp-blueprint 04: video 36 (structural S/R break)",
+    )
+    Params = LevelLocationParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p = self.p
+        i = int(data.positions[p.timeframe][candidate.bar])
+        rng = data.atr(p.timeframe)
+        if i < 0 or not np.isfinite(rng[i]):
+            return CheckResult("na", f"{p.timeframe} history is too short")
+        book = data.levels(
+            p.timeframe, pivot_bars=p.pivot_bars, tolerance_atr=p.tolerance_atr,
+            half_life=p.half_life, max_age=p.max_age,
+        )  # fmt: skip
+        tol = p.tolerance_atr * float(rng[i])
+        lo, hi = sorted((candidate.invalidation, candidate.trigger))
+        near = [
+            lv for lv in book.at(i, min_weight=p.min_weight)
+            if lo - tol <= lv.price <= hi + tol and (lv.flipped or not p.flipped_only)
+        ]  # fmt: skip
+        if not near:
+            return CheckResult("fail", f"no level of weight >= {p.min_weight:g} in the candle")
+        lv = max(near, key=lambda x: x.weight)
+        flip = ", flipped polarity" if lv.flipped else ""
+        return CheckResult(
+            "pass", f"level {lv.price:g}: {len(lv.touches)} touches, weight {lv.weight:.2f}{flip}"
+        )
+
+
+class BreakoutParams(ConfirmationParams):
+    timeframe: Role = Field("mwc", description="تایم‌فریمی که سطح روی آن رسم شده (مثل ستاپ)")
+
+
+class TouchCountParams(BreakoutParams):
+    hard: bool = Field(True, description="قانون لمس رد شود، ستاپ کامل رد می‌شود")
+    second_touch: Literal["confluence", "allow", "refuse"] = Field(
+        "confluence", description="لمس دوم: با هم‌گرایی دیگر، آزاد، یا ممنوع"
+    )
+    confluence_timeframe: Role = Field("hwc", description="روندِ هم‌جهت کدام تایم‌فریم هم‌گرایی است")
+    confluence_pivot_bars: int = Field(2, ge=1, description="پیوت برای روند هم‌گرایی")
+    wick_ratio: float = Field(
+        1.0, gt=0, description="سایهٔ جذب (مخالف شکست) دست‌کم این ضریبِ بدنهٔ کندل شکست"
+    )
+    max_touches: int = Field(0, ge=0, description="بیش از این لمس مجاز نیست (۰: بدون سقف)")
+
+
+@register
+class TouchCount(ConfirmationBlock[TouchCountParams]):
+    """The touch-count rule (video 21): the 1st touch is refused, the 2nd needs confluence.
+
+    ``touches`` is the swings that have tested the broken edge. One: a breakout on
+    the first attempt, refused. Two: elevated risk, allowed only with another factor,
+    either the ``confluence_timeframe`` trend running the trade's way or an absorption
+    wick on the breakout candle (an exhaustion wick on the side the move came from).
+    Three or four: the best window. Beyond ``max_touches``, if set, refused.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "touch_count"
+    title_fa = "قانون تعداد لمس"
+    sources = ("tcp-blueprint 03: video 21 (touch-count boundary)",)
+    Params = TouchCountParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p = self.p
+        k = candidate.fact("touches")
+        if k is None:
+            return CheckResult("na", "the setup reports no touches")
+        n = int(k)
+        if n <= 1:
+            return CheckResult("fail", "first touch: a breakout on the first attempt")
+        if p.max_touches and n > p.max_touches:
+            return CheckResult("fail", f"{n} touches, more than {p.max_touches}")
+        if n >= 3 or p.second_touch == "allow":
+            return CheckResult("pass", f"{n} touches")
+        if p.second_touch == "refuse":
+            return CheckResult("fail", "second touch is refused")
+        j = int(data.positions[p.confluence_timeframe][candidate.bar])
+        trend = 0
+        if j >= 0:
+            trend = int(data.dow(p.confluence_timeframe, p.confluence_pivot_bars)[j])
+        if trend == candidate.direction:
+            return CheckResult("pass", f"second touch with the {p.confluence_timeframe} trend")
+        r, a = int(data.positions[p.timeframe][candidate.bar]), candidate.fact("anchor")
+        if a is not None and r >= 0:
+            f = data.frames[p.timeframe]
+            ai = int(a)
+            body = abs(f.close[ai] - f.open[ai])
+            wick = (
+                min(f.open[ai], f.close[ai]) - f.low[ai]
+                if candidate.direction > 0
+                else f.high[ai] - max(f.open[ai], f.close[ai])
+            )
+            if wick > 0 and wick >= p.wick_ratio * body:
+                return CheckResult("pass", "second touch with an absorption wick")
+        return CheckResult("fail", "second touch without extra confluence")
+
+
+class BodyCloseParams(BreakoutParams):
+    full_body: bool = Field(True, description="کل بدنهٔ کندل شکست آن سوی سطح بسته شود")
+
+
+@register
+class BreakoutBodyClose(ConfirmationBlock[BodyCloseParams]):
+    """The body-close rule (video 21): a breakout is a body that closes beyond the level.
+
+    A wick that pierces and pulls back is a sweep and never becomes a candidate. With
+    ``full_body`` the whole real body (open and close) must lie beyond the level;
+    a candle that opened inside and closed outside only counts when it is off.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "breakout_body_close"
+    title_fa = "بسته‌شدن بدنه آن سوی سطح"
+    sources = ("tcp-blueprint 03: video 21 (structural body-close rule)",)
+    Params = BodyCloseParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p = self.p
+        level, a = candidate.fact("level"), candidate.fact("anchor")
+        if level is None or a is None:
+            return CheckResult("na", "the setup reports no broken level")
+        f, i = data.frames[p.timeframe], int(a)
+        near = min(f.open[i], f.close[i]) if candidate.direction > 0 else max(f.open[i], f.close[i])
+        edge = f.close[i] if not p.full_body else near
+        beyond = (edge - level) * candidate.direction > 0
+        word = "whole body" if p.full_body else "close"
+        return CheckResult(
+            "pass" if beyond else "fail",
+            f"{word} {'beyond' if beyond else 'not beyond'} the level {level:g}",
+        )
+
+
+class BreakoutRangeParams(BreakoutParams):
+    bars: int = Field(6, ge=1, description="میانگین دامنهٔ این‌قدر کندل پیش از شکست")
+    factor: float = Field(1.5, gt=0, description="دامنهٔ کندل شکست دست‌کم این ضریبِ میانگین")
+
+
+@register
+class BreakoutRange(ConfirmationBlock[BreakoutRangeParams]):
+    """The volatility filter (video 24): the breakout candle spans >= 1.5x the 6-bar average."""
+
+    kind = BlockKind.CONFIRMATION
+    type = "breakout_range"
+    title_fa = "دامنهٔ کندل شکست"
+    sources = ("tcp-blueprint 03: video 24 (volatility / scale-based filter)",)
+    Params = BreakoutRangeParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p, a = self.p, candidate.fact("anchor")
+        if a is None:
+            return CheckResult("na", "the setup reports no breakout candle")
+        f, i = data.frames[p.timeframe], int(a)
+        if i < p.bars:
+            return CheckResult("na", f"needs {p.bars} bars before the breakout, {i} so far")
+        avg = float(np.mean(f.high[i - p.bars : i] - f.low[i - p.bars : i]))
+        ratio = float(f.high[i] - f.low[i]) / avg if avg > 0 else float("inf")
+        return CheckResult(
+            "pass" if ratio >= p.factor else "fail",
+            f"range {ratio:.2f}x the {p.bars}-bar average (needs {p.factor:g}x)",
+        )
+
+
+class ConsecutiveParams(BreakoutParams):
+    bars: int = Field(
+        0, ge=0, description="تعداد بسته‌شدن پیاپی (۰: خودکار: ۸ برای ۱۵د، ۴ برای ۴س، ۲ برای روزانه)"
+    )
+
+
+@register
+class ConsecutiveCloses(ConfirmationBlock[ConsecutiveParams]):
+    """N consecutive closes beyond the broken level (video 24): 8 on 15m, 4 on 4H, 2 on daily.
+
+    The count is in ``timeframe`` bars, from the breakout candle through the one the
+    setup stands on. The Setup Block keeps a candidate alive only while every close
+    stays beyond, so reaching N means the break held. There is no default count
+    for other timeframes: set ``bars``.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "consecutive_closes"
+    title_fa = "بسته‌شدن‌های پیاپی آن سوی سطح"
+    sources = ("tcp-blueprint 03: video 24 (time-based filter)",)
+    Params = ConsecutiveParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p, a = self.p, candidate.fact("anchor")
+        if a is None:
+            return CheckResult("na", "the setup reports no breakout candle")
+        tf = data.roles[p.timeframe]
+        need = p.bars or BREAKOUT_BARS.get(tf, 0)
+        if need == 0:
+            return CheckResult("na", f"no default count for {tf}; set bars")
+        held = int(data.positions[p.timeframe][candidate.bar]) - int(a) + 1
+        return CheckResult(
+            "pass" if held >= need else "fail", f"{held} closes beyond the level, needs {need}"
+        )
+
+
+class DryUpParams(BreakoutParams):
+    factor: float = Field(1.0, gt=0, description="نیمهٔ دوم باکس کمتر از این ضریبِ حجم نیمهٔ اول")
+
+
+@register
+class BoxVolumeDryUp(ConfirmationBlock[DryUpParams]):
+    """Volume inside the box dries up toward the breakout (blueprint 01 B, video 33).
+
+    Compares the average volume of the box's second half with its first half,
+    from the first touch to the bar before the breakout. Not applicable without
+    venue volume or with fewer than 4 bars of box.
+    """
+
+    kind = BlockKind.CONFIRMATION
+    type = "box_volume_dryup"
+    title_fa = "خشک‌شدن حجم داخل باکس"
+    sources = ("tcp-blueprint 01 (B): volume within the box must dry up",)
+    Params = DryUpParams
+
+    def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
+        p = self.p
+        a, st = candidate.fact("anchor"), candidate.fact("start")
+        if a is None or st is None:
+            return CheckResult("na", "the setup reports no box")
+        f = data.frames[p.timeframe]
+        if f.volume_kind == "none":
+            return CheckResult("na", "the venue reports no volume")
+        lo, hi = int(st), int(a)
+        if hi - lo < 4:
+            return CheckResult("na", f"the box has {hi - lo} bars, needs 4")
+        mid = (lo + hi) // 2
+        first, second = float(np.mean(f.volume[lo:mid])), float(np.mean(f.volume[mid:hi]))
+        ratio = second / first if first > 0 else float("inf")
+        return CheckResult(
+            "pass" if ratio < p.factor else "fail",
+            f"second-half volume {ratio:.2f}x the first half (needs under {p.factor:g}x)",
+        )
+
+
 # -------------------------------------------------------------- execution
 class StopMarketParams(BlockParams):
     buffer_pct: float = Field(0.05, ge=0, description="فاصلهٔ تریگر از سطح، درصد قیمت")
     expiry_bars: int = Field(4, ge=1, description="عمر سفارش منتظر، تعداد کندل")
     cancel_on_invalidation: bool = Field(True, description="لغو با بسته‌شدن کندل آن سوی سطح ابطال")
+    oco: bool = Field(
+        False, description="سفارش‌های هم‌زمان یک نماد یکی-لغو-دیگری باشند (باکس دوطرفه)"
+    )
 
 
 @register
@@ -661,6 +1047,7 @@ class StopMarket(ExecutionBlock[StopMarketParams]):
                 buffer=candidate.trigger * p.buffer_pct / 100.0,
                 invalidation=candidate.invalidation if p.cancel_on_invalidation else None,
                 expires_after_bars=p.expiry_bars,
+                oco_group=f"{candidate.symbol}|{candidate.time}|oco" if p.oco else None,
             )
         ]
 
