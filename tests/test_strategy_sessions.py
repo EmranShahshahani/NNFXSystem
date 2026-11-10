@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from nnfx.config import SessionConfig
+from nnfx.data.bars import BarFrame
 from nnfx.strategy import REGISTRY
 from nnfx.strategy.blocks import BlockKind, StrategyData
 from nnfx.strategy.sessions import (
@@ -34,6 +35,16 @@ def price_path(points: list[tuple[float, float]], days: int) -> list[float]:
 
 def build(closes: list[float], start: str) -> StrategyData:
     return StrategyData.build(frame(rows_of(closes), start), ROLES, BTC, SessionConfig())
+
+
+def frame_h1(rows: list[tuple[float, float, float, float]]):
+    a = np.asarray(rows)
+    idx = pd.date_range("2024-03-01 01:00", periods=len(a), freq="1h", tz="UTC")
+    df = pd.DataFrame(
+        {"open": a[:, 0], "high": a[:, 1], "low": a[:, 2], "close": a[:, 3], "volume": 1.0},
+        index=idx,
+    )
+    return BarFrame(df, BTC.symbol, timeframe="H1", volume_kind="traded", price_venue="x")
 
 
 def labels(d: StrategyData) -> pd.DatetimeIndex:
@@ -187,3 +198,15 @@ def test_nothing_is_known_before_the_first_session_finishes():
     d = build(price_path([(0, 100), (48, 130)], 2), "2024-03-01")
     out = SessionRegime().compute(d.head(30))
     assert not out.flags["bias"].any() and not out.flags["london_failed"].any()
+
+
+def test_a_window_that_is_not_a_whole_number_of_hourly_bars_is_judged_to_its_last_whole_bar():
+    closes = [100.0 + 1.0 * k for k in range(48)]
+    rows = [(c, c + 0.05, c - 0.05, c) for c in closes]
+    d = StrategyData.build(
+        frame_h1(rows), {**ROLES, "lwc": "H1", "hwc": "H1", "mwc": "H1", "management": "H1"},
+        BTC, SessionConfig(),
+    )  # fmt: skip
+    known, trend = session_trends(d, 7.0, 13.5, 0.5)
+    assert len(known) == 2 and pd.Timestamp(known[0], tz="UTC").strftime("%H:%M") == "13:00"
+    assert list(trend) == [1, 1]

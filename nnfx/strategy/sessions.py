@@ -147,8 +147,11 @@ def session_trends(
         step = TIMEFRAMES[f.timeframe]
         opened = f.index - step
         hour = np.asarray(opened.hour + opened.minute / 60.0, dtype=float)
-        inside = (hour >= start) & (hour < end)
-        want = round((end - start) * HOUR / step)
+        # Only bars that close by ``end`` count, so a window that is not a whole number of bars
+        # (13:30 on hourly bars) is judged up to the last bar that fits, never a bar beyond it.
+        step_h = step / HOUR
+        inside = (hour >= start) & (hour + step_h <= end + 1e-9)
+        want = int((end - start) / step_h + 1e-9)
         day = ns(opened.floor("D"))[inside]
         o, h, lo, c = f.open[inside], f.high[inside], f.low[inside], f.close[inside]
         known: list[int] = []
@@ -159,7 +162,7 @@ def session_trends(
                 continue
             rng = h[sel].max() - lo[sel].min()
             net = c[sel][-1] - o[sel][0]
-            known.append(int(t) + round(end * HOUR.value))
+            known.append(int(t) + round(start * HOUR.value) + want * step.value)
             trend.append(int(np.sign(net)) if rng > 0 and abs(net) >= efficiency * rng else 0)
         return np.array(known, dtype="int64"), np.array(trend, dtype="int8")
 

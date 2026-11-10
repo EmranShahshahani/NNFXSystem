@@ -222,7 +222,7 @@ class BbRunway(ConfirmationBlock[BbRunwayParams]):
     def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
         p = self.p
         m = int(data.positions[p.role][candidate.bar])
-        if m < p.period - 1:
+        if m < p.period + p.bars - 2:
             return CheckResult("na", f"needs {p.period} {p.role} bars for the bands")
         state = runway_state(data, p.role, p.period, p.inner, p.outer)
         if bool(np.all(state[m - p.bars + 1 : m + 1] == candidate.direction)):

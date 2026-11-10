@@ -720,7 +720,8 @@ when all its bars are in and its window has ended.
 (R3 = P + 2 range, R4 = P + 3 range, S mirrored). The three default sessions together cover
 00:00-21:00, so the blackout is already implied by them; it stays a switch and takes any window
 (wrapping midnight) for sessions chosen otherwise. Regime 2 is judged at the start of the US
-window because London's close (16:00) comes after it. "Aggressive profit-taking at R3" is a stop
+window because London's close (16:00) comes after it; on hourly bars, where 13:30 is not a bar
+close, London is judged to the last whole bar (13:00). "Aggressive profit-taking at R3" is a stop
 tightening in `both` and a close in `r3`; the choice is a parameter. Not built: the weekly pivot
 as a *level* for trend filters, and session-based alerts (ticket 22).
 
