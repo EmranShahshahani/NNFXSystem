@@ -25,7 +25,7 @@ document's Risk section, ADR 10 §10.)
 from __future__ import annotations
 
 import builtins
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, ClassVar, Literal
@@ -171,6 +171,13 @@ class StrategyData:
         if key not in self._cache:
             self._cache[key] = sma(self.frames[role].close, period)
         out: np.ndarray = self._cache[key]
+        return out
+
+    def memo[T](self, key: Any, make: Callable[[], T]) -> T:
+        """``make()`` once per ``key`` for this data (the shared cache Blocks may use)."""
+        if key not in self._cache:
+            self._cache[key] = make()
+        out: T = self._cache[key]
         return out
 
     def rsi(self, role: str, period: int = 14) -> np.ndarray:

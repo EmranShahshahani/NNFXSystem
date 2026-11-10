@@ -395,3 +395,22 @@ def test_the_cascade_hold_keeps_the_position_while_the_higher_role_is_still_stre
     assert set(held) <= set(free)
     assert all(rsi14[j] <= 70 for j in held)  # never closed while RSI is beyond 70
     assert len(held) < len(free)  # and the fixture does have bars where the hold mattered
+
+
+def test_parameter_validation_refuses_inconsistent_forms():
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        RecalibratedParams(min_period=50, max_period=10)
+    for bad in ([], ["lwc", "lwc"]):
+        with pytest.raises(ValidationError):
+            CascadeParams(roles=bad)
+    assert CascadeParams().sequential is False  # a missed entry may have pulled back already
+
+
+def test_signal_cross_looks_past_a_newer_mid_zone_cross_to_an_older_valid_one():
+    crash = FLAT + DOWN + [DOWN[-1] + 1.0 * (k + 1) for k in range(10)]
+    d = data(crash)
+    wide = OscSignalCross(OscSignalCrossParams(zone="extreme", zone_margin=0.5, cross_bars=12))
+    narrow = OscSignalCross(OscSignalCrossParams(zone="extreme", zone_margin=0.5, cross_bars=3))
+    assert outcomes(wide, d).count("pass") >= outcomes(narrow, d).count("pass")

@@ -592,8 +592,16 @@ Decisions and limits:
   `hold_while_rsi_role` is the cascade's hold side: while that role's RSI is still beyond
   70/30 the SMA-flatten and RSI-exhaustion closes wait. Both are off by default. The
   exhaustion exit does not also ask that price be at resistance.
+* The cascade's `sequential` option (lower roles still in the zone) is off by default: a
+  missed 15m entry may already have pulled back when the 4H closes above 70. The cascade
+  and the hold use the three roles (a daily rung is reachable by mapping a role to it); the
+  hold is one role, not the whole 1H/4H/daily chain.
+* The extreme-zone rule for divergences is strict (`< 30`, `> 70`), and the oscillator is
+  read at the price pivots' bars. `rsi_bb_reentry` needs a cross from at or below the
+  middle line; the established trend is the context's job.
 * **Not built in:** trendlines and chart patterns on the oscillator (only horizontal levels),
-  the apex timing principle, and the CCI/ROC/MACD-specific parts (ticket 16).
+  the apex timing principle, scaling MACD and SMA by MF (RSI only; MACD is ticket 16), and
+  a price-at-resistance condition on the RSI exhaustion exit.
 
 ## Consequences
 

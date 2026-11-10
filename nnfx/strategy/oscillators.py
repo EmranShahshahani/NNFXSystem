@@ -30,7 +30,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 
 from nnfx.data.timeframes import duration
 from nnfx.strategy.blocks import (
@@ -62,7 +62,7 @@ class Osc:
 def oscillator(
     data: StrategyData,
     role: str,
-    kind: str,
+    kind: Oscillator,
     period: int,
     *,
     overbought: float,
@@ -70,32 +70,38 @@ def oscillator(
     window: int,
     fraction: float,
 ) -> Osc:
-    key = ("osc", role, kind, period, overbought, oversold, window, fraction)
-    cache = data._cache
-    if key not in cache:
+    def make() -> Osc:
         f = data.frames[role]
         if kind == "rsi":
             v = data.rsi(role, period)
             n = len(v)
-            cache[key] = Osc(v, np.full(n, overbought), np.full(n, oversold), 50.0)
-        else:
-            v = cci(f.high, f.low, f.close, period) if kind == "cci" else roc(f.close, period)
-            top, bottom = prior_extremes(v, window)
-            with np.errstate(invalid="ignore"):
-                hi = np.where(top > 0, fraction * top, np.nan)
-                lo = np.where(bottom < 0, fraction * bottom, np.nan)
-            cache[key] = Osc(v, hi, lo, 0.0)
-    out: Osc = cache[key]
-    return out
+            return Osc(v, np.full(n, overbought), np.full(n, oversold), 50.0)
+        v = cci(f.high, f.low, f.close, period) if kind == "cci" else roc(f.close, period)
+        top, bottom = prior_extremes(v, window)
+        with np.errstate(invalid="ignore"):
+            hi = np.where(top > 0, fraction * top, np.nan)
+            lo = np.where(bottom < 0, fraction * bottom, np.nan)
+        return Osc(v, hi, lo, 0.0)
+
+    return data.memo(("osc", role, kind, period, overbought, oversold, window, fraction), make)
 
 
 # ----------------------------------------------------------------- params
-class OscParams(ConfirmationParams):
+class ZoneParams(ConfirmationParams):
+    """The overbought/oversold zone of a bounded oscillator (RSI)."""
+
+    overbought: float = Field(70.0, gt=50, lt=100, description="مرز اشباع خرید (RSI)")
+    oversold: float = Field(30.0, gt=0, lt=50, description="مرز اشباع فروش (RSI)")
+
+    def zone_level(self, sign: int) -> float:
+        """The edge a trade of ``sign`` wants the oscillator beyond."""
+        return self.overbought if sign > 0 else self.oversold
+
+
+class OscParams(ZoneParams):
     role: Role = Field("lwc", description="تایم‌فریمی که نوسان‌نما روی آن خوانده می‌شود")
     osc: Oscillator = Field("rsi", description="نوسان‌نما: RSI (کران‌دار)، CCI یا ROC (بی‌کران)")
     period: int = Field(14, ge=2, description="دورهٔ نوسان‌نما")
-    overbought: float = Field(70.0, gt=50, lt=100, description="مرز اشباع خرید (RSI)")
-    oversold: float = Field(30.0, gt=0, lt=50, description="مرز اشباع فروش (RSI)")
     extreme_window: int = Field(
         200, ge=10, description="نوسان‌نمای بی‌کران: پنجرهٔ قله و دره‌های غلتان برای ناحیه‌ها"
     )
@@ -104,11 +110,15 @@ class OscParams(ConfirmationParams):
     )
 
 
-class OscBlock[P: OscParams](ConfirmationBlock[P]):
-    """A Confirmation over one oscillator of one role (``self.p.role``)."""
+class OscillatorBlock[P: ConfirmationParams](ConfirmationBlock[P]):
+    """A Confirmation that reads an oscillator: it filters, it never triggers."""
 
     kind = BlockKind.CONFIRMATION
     oscillator = True
+
+
+class OscBlock[P: OscParams](OscillatorBlock[P]):
+    """A Confirmation over one oscillator of one role (``self.p.role``)."""
 
     def osc(self, data: StrategyData) -> Osc:
         p = self.p
@@ -138,13 +148,13 @@ def _na(what: str) -> CheckResult:
     return CheckResult("na", what)
 
 
-def _entered(o: Osc, m: int, sign: int, bars: int) -> bool:
-    """Whether the oscillator was *not* beyond its zone at some role bar in the last ``bars``."""
-    levels = o.hi if sign > 0 else o.lo
+def _entered(x: np.ndarray, level: np.ndarray | float, m: int, sign: int, bars: int) -> bool:
+    """Whether ``x`` was *not* beyond ``level`` (in the trade's favour) at some bar of the
+    ``bars`` before ``m``: it has just entered. ``level`` is a number or one per bar."""
     lo = max(0, m - bars)
-    before = o.value[lo:m]
-    out = (before - levels[lo:m]) * sign <= 0
-    return bool(np.any(np.isfinite(before) & np.isfinite(levels[lo:m]) & out))
+    before = x[lo:m]
+    edge = level[lo:m] if isinstance(level, np.ndarray) else level
+    return bool(np.any(np.isfinite(before) & np.isfinite(edge) & ((before - edge) * sign <= 0)))
 
 
 # ------------------------------------------------- method 1: OB/OS momentum
@@ -182,7 +192,9 @@ class OscMomentum(OscBlock[OscMomentumParams]):
         word = f"{p.osc} {now:.1f} {_word(sign)} {level:.1f}"
         if not verdict:
             return CheckResult("fail", f"{word} is false")
-        if p.fresh_bars and not _entered(o, m, sign, p.fresh_bars):
+        if p.fresh_bars and not _entered(
+            o.value, o.hi if sign > 0 else o.lo, m, sign, p.fresh_bars
+        ):
             return CheckResult("fail", f"{word}: already there for more than {p.fresh_bars} bars")
         return CheckResult("pass", word)
 
@@ -223,11 +235,8 @@ class OscInflection(OscBlock[OscInflectionParams]):
         word = f"{p.osc} {o.value[m]:.1f} {_word(sign)} the line {line:g}"
         if not side:
             return CheckResult("fail", f"{word} is false")
-        if p.cross_bars:
-            lo = max(0, m - p.cross_bars)
-            before = o.value[lo:m]
-            if not np.any(np.isfinite(before) & ((before - line) * sign <= 0)):
-                return CheckResult("fail", f"{word}: crossed more than {p.cross_bars} bars ago")
+        if p.cross_bars and not _entered(o.value, line, m, sign, p.cross_bars):
+            return CheckResult("fail", f"{word}: crossed more than {p.cross_bars} bars ago")
         return CheckResult("pass", word)
 
 
@@ -242,7 +251,10 @@ class OscSignalCrossParams(OscParams):
         description="تقاطع معتبر: در ناحیهٔ اشباع، همراه با شکست نقطهٔ عطف، یا هر دو حالت",
     )
     zone_margin: float = Field(
-        0.1, ge=0, le=1, description="حاشیهٔ ناحیهٔ اشباع، کسری از فاصلهٔ دو مرز (از درون ناحیه)"
+        0.1,
+        ge=0,
+        le=1,
+        description="ناحیهٔ اشباع را به این کسر از فاصلهٔ دو مرز به سمت میانه گسترش بده",
     )
 
 
@@ -253,7 +265,7 @@ class OscSignalCross(OscBlock[OscSignalCrossParams]):
     The signal line is a synthetic SMA of half the period (a 7 over the 14 RSI).
     A bullish cross (oscillator over its signal) passes for a long when it
     happened within ``cross_bars`` role bars and either in the oversold zone
-    (``zone_margin`` of the zone span inside it), or with a breach of the
+    (widened toward the midline by ``zone_margin`` of the span between the zones), or with a breach of the
     inflection line on the cross bar or the one after. Crosses in the mid-zone,
     where whipsaws live, are ignored. Shorts mirror it.
     """
@@ -269,8 +281,23 @@ class OscSignalCross(OscBlock[OscSignalCrossParams]):
         o = self.osc(data)
         if m < 0:
             return _na("no closed role bar yet")
-        sig = sma(o.value, p.signal_period or max(2, p.period // 2))
+        n_sig = p.signal_period or max(2, p.period // 2)
+        sig = data.memo(
+            (
+                "osc_signal",
+                p.role,
+                p.osc,
+                p.period,
+                p.overbought,
+                p.oversold,
+                p.extreme_window,
+                p.extreme_fraction,
+                n_sig,
+            ),
+            lambda: sma(o.value, n_sig),
+        )
         diff = (o.value - sig) * sign  # > 0: on the trade's side of the signal line
+        mid_zone: int | None = None
         for j in range(m, max(m - p.cross_bars, 0), -1):
             if not (diff[j] > 0 and diff[j - 1] <= 0):
                 continue  # not a cross on this bar (NaN compares False)
@@ -289,9 +316,11 @@ class OscSignalCross(OscBlock[OscSignalCrossParams]):
             if ok[p.zone]:
                 where = "in the extreme zone" if extreme else "through the midline"
                 return CheckResult("pass", f"signal-line cross {m - j} bars ago {where}")
-            return CheckResult("fail", f"signal-line cross {m - j} bars ago in the mid-zone")
+            mid_zone = m - j  # a cross in the mid-zone is ignored; an older one may still count
         if not np.isfinite(diff[m]):
             return _na(f"{p.osc} signal line not ready on {p.role}")
+        if mid_zone is not None:
+            return CheckResult("fail", f"signal-line cross {mid_zone} bars ago was in the mid-zone")
         return CheckResult("fail", f"no signal-line cross in the last {p.cross_bars} bars")
 
 
@@ -329,15 +358,14 @@ class OscLevelBreak(OscBlock[OscLevelBreakParams]):
         idx = idx[idx + n <= m]
         if not len(idx):
             return _na("no confirmed oscillator level yet")
-        # The level in force when the break happened is the one confirmed before it.
+        # The level as known now (the latest confirmed swing); the bars before are judged
+        # against it, so a break counts only if the oscillator was under it recently.
         level = float(v[idx[-1]])
         if (v[m] - level) * sign <= 0:
             return CheckResult(
                 "fail", f"{p.osc} {v[m]:.1f} not {_word(sign)} its level {level:.1f}"
             )
-        lo = max(0, m - p.fresh_bars)
-        before = v[lo:m]
-        if np.any(np.isfinite(before) & ((before - level) * sign <= 0)):
+        if _entered(v, level, m, sign, p.fresh_bars):
             return CheckResult(
                 "pass", f"{p.osc} broke its level {level:.1f} within {p.fresh_bars} bars"
             )
@@ -363,7 +391,7 @@ class RsiBollingerParams(ConfirmationParams):
 
 
 @register
-class RsiBollingerReentry(ConfirmationBlock[RsiBollingerParams]):
+class RsiBollingerReentry(OscillatorBlock[RsiBollingerParams]):
     """Method 5 (videos 15, 50): re-entry in a trend when RSI curls back over its middle line.
 
     A long passes when RSI, within ``cross_bars`` role bars, crossed up through
@@ -373,8 +401,6 @@ class RsiBollingerReentry(ConfirmationBlock[RsiBollingerParams]):
     the price continuation candle is the Setup. Shorts mirror it.
     """
 
-    kind = BlockKind.CONFIRMATION
-    oscillator = True
     type = "rsi_bb_reentry"
     title_fa = "ورود دوباره: RSI روی خط میانی بولینگر"
     sources = (
@@ -415,7 +441,7 @@ class RsiBollingerReentry(ConfirmationBlock[RsiBollingerParams]):
 
 
 # ------------------------------------------------- method 6: cycle recalibration
-class RecalibratedParams(ConfirmationParams):
+class RecalibratedParams(ZoneParams):
     role: Role = Field("lwc", description="تایم‌فریمی که RSI و چرخه‌ها روی آن خوانده می‌شود")
     base_period: int = Field(14, ge=2, description="دورهٔ RSI وقتی چرخهٔ کافی نیست")
     pivot_bars: int = Field(3, ge=1, description="پیوت قیمت: تعداد کندل‌های دو طرف")
@@ -425,11 +451,15 @@ class RecalibratedParams(ConfirmationParams):
     structure_pivot_bars: int = Field(
         3, ge=1, description="پیوت دائو برای تشخیص تغییر رژیم (چرخه‌های رژیم پیشین کنار می‌روند)"
     )
-    overbought: float = Field(70.0, gt=50, lt=100, description="مرز اشباع خرید")
-    oversold: float = Field(30.0, gt=0, lt=50, description="مرز اشباع فروش")
     fresh_bars: int = Field(
         3, ge=0, description="باید در این تعداد کندل اخیر وارد ناحیه شده باشد (۰: فقط سطح)"
     )
+
+    @model_validator(mode="after")
+    def _periods(self) -> RecalibratedParams:
+        if self.min_period > self.max_period:
+            raise ValueError("کمینهٔ دوره نباید از بیشینهٔ آن بیشتر باشد")
+        return self
 
 
 def cycle_period(
@@ -453,7 +483,7 @@ def cycle_period(
 
 
 @register
-class OscRecalibrated(ConfirmationBlock[RecalibratedParams]):
+class OscRecalibrated(OscillatorBlock[RecalibratedParams]):
     """Method 6 (video 51): replace the arbitrary 14 with the market's own cycle length.
 
     The period is the mean distance, in bars, between the last ``swings``
@@ -463,8 +493,6 @@ class OscRecalibrated(ConfirmationBlock[RecalibratedParams]):
     the regime the base period stands. The check is then momentum on that RSI.
     """
 
-    kind = BlockKind.CONFIRMATION
-    oscillator = True
     type = "osc_recalibrated"
     title_fa = "مومنتوم RSI با دورهٔ بازتنظیم‌شده"
     sources = ("tcp-blueprint 06: video 51 (cycle length recalibration)",)
@@ -477,31 +505,24 @@ class OscRecalibrated(ConfirmationBlock[RecalibratedParams]):
             return _na("no closed role bar yet")
         period, cycles = cycle_period(data, p, m, sign)
         r = data.rsi(p.role, period)
-        level = p.overbought if sign > 0 else p.oversold
+        level = p.zone_level(sign)
         verdict = _beyond(float(r[m]), level, sign)
         if verdict is None:
             return _na(f"RSI {period} on {p.role} not ready")
         word = f"RSI({period}, {cycles} cycles) {r[m]:.1f} {_word(sign)} {level:g}"
         if not verdict:
             return CheckResult("fail", f"{word} is false")
-        if p.fresh_bars:
-            lo = max(0, m - p.fresh_bars)
-            before = r[lo:m]
-            if not np.any(np.isfinite(before) & ((before - level) * sign <= 0)):
-                return CheckResult(
-                    "fail", f"{word}: already there for more than {p.fresh_bars} bars"
-                )
+        if p.fresh_bars and not _entered(r, level, m, sign, p.fresh_bars):
+            return CheckResult("fail", f"{word}: already there for more than {p.fresh_bars} bars")
         return CheckResult("pass", word)
 
 
 # ------------------------------------------------- method 7: multiplier factor
-class MultiplierParams(ConfirmationParams):
+class MultiplierParams(ZoneParams):
     source: Literal["mwc", "hwc"] = Field(
         "mwc", description="تایم‌فریم بالاتری که روی LWC بازسازی می‌شود"
     )
     base_period: int = Field(14, ge=2, description="دورهٔ RSI روی همان تایم‌فریم بالاتر")
-    overbought: float = Field(70.0, gt=50, lt=100, description="مرز اشباع خرید")
-    oversold: float = Field(30.0, gt=0, lt=50, description="مرز اشباع فروش")
     fresh_bars: int = Field(
         0, ge=0, description="باید در این تعداد کندل LWC اخیر وارد ناحیه شده باشد (۰: فقط سطح)"
     )
@@ -514,17 +535,14 @@ def multiplier_factor(data: StrategyData, source: str) -> int:
 
 
 @register
-class OscMultiplier(ConfirmationBlock[MultiplierParams]):
+class OscMultiplier(OscillatorBlock[MultiplierParams]):
     """Method 7 (video 52): a higher-timeframe RSI drawn on the execution chart.
 
     The LWC's RSI period is ``base_period x MF`` (14 x 16 = 224 for the 4H RSI on
     15m), which tracks the higher-timeframe line without a second timeframe's
     redraw problem. It needs that many LWC bars first (not applicable before).
-    When the source role is the LWC itself MF is 1.
     """
 
-    kind = BlockKind.CONFIRMATION
-    oscillator = True
     type = "osc_mf"
     title_fa = "RSI تایم‌فریم بالاتر با ضریب MF"
     sources = ("tcp-blueprint 06: video 52 (multi-timeframe multiplier factor)",)
@@ -536,19 +554,15 @@ class OscMultiplier(ConfirmationBlock[MultiplierParams]):
         period = p.base_period * mf
         r = data.rsi("lwc", period)
         i = candidate.bar
-        level = p.overbought if sign > 0 else p.oversold
+        level = p.zone_level(sign)
         verdict = _beyond(float(r[i]), level, sign)
         if verdict is None:
             return _na(f"RSI {period} (MF {mf}) needs {period + 1} LWC bars, {i + 1} so far")
         word = f"RSI({p.base_period}x{mf}={period}) {r[i]:.1f} {_word(sign)} {level:g}"
         if not verdict:
             return CheckResult("fail", f"{word} is false")
-        if p.fresh_bars:
-            before = r[max(0, i - p.fresh_bars) : i]
-            if not np.any(np.isfinite(before) & ((before - level) * sign <= 0)):
-                return CheckResult(
-                    "fail", f"{word}: already there for more than {p.fresh_bars} bars"
-                )
+        if p.fresh_bars and not _entered(r, level, i, sign, p.fresh_bars):
+            return CheckResult("fail", f"{word}: already there for more than {p.fresh_bars} bars")
         return CheckResult("pass", word)
 
 
@@ -604,7 +618,7 @@ class OscDivergence(OscBlock[DivergenceParams]):
             return _na(f"{p.osc} has no value at the swings")
         zone = o.lo if sign > 0 else o.hi
         in_zone = [
-            (v - z) * sign <= 0 if np.isfinite(z) else False
+            (v - z) * sign < 0 if np.isfinite(z) else False
             for v, z in ((oa, zone[a]), (ob, zone[b]))
         ]
         if not any(in_zone):
@@ -624,34 +638,38 @@ class OscDivergence(OscBlock[DivergenceParams]):
 
 
 # ------------------------------------------------- the multi-timeframe cascade
-class CascadeParams(ConfirmationParams):
+class CascadeParams(ZoneParams):
     roles: list[Role] = Field(
         default_factory=lambda: list[Role](["lwc", "mwc", "hwc"]),
         description="تایم‌فریم‌ها از پایین به بالا؛ ورود از اولین نقشی که تازه وارد ناحیه شده",
     )
     rsi_period: int = Field(14, ge=2, description="دورهٔ RSI")
-    overbought: float = Field(70.0, gt=50, lt=100, description="مرز اشباع خرید")
-    oversold: float = Field(30.0, gt=0, lt=50, description="مرز اشباع فروش")
     fresh_bars: int = Field(3, ge=1, description="تازه: ورود به ناحیه در این تعداد کندل همان نقش")
     sequential: bool = Field(
-        True, description="نقش‌های پایین‌تر از نقش تازه باید خودشان همچنان در ناحیه باشند"
+        False,
+        description="فقط وقتی تازه‌واردشدن معتبر است که نقش‌های پایین‌تر هنوز در ناحیه باشند",
     )
+
+    @field_validator("roles")
+    @classmethod
+    def _roles(cls, v: list[Role]) -> list[Role]:
+        if not v or len(set(v)) != len(v):
+            raise ValueError("نقش‌ها باید ناتهی و بدون تکرار باشند (از پایین‌ترین به بالاترین)")
+        return v
 
 
 @register
-class RsiCascade(ConfirmationBlock[CascadeParams]):
+class RsiCascade(OscillatorBlock[CascadeParams]):
     """The RSI trend-alignment cascade (videos 46, 54): missed entries move up a timeframe.
 
     High-momentum extensions pass RSI 70 on the 15m, then the 1H, 4H and the
     daily. The check passes when RSI on any listed role has just entered the
-    zone (within ``fresh_bars`` of that role's bars), and with ``sequential``
-    every lower listed role is still in it: the 15m is stretched, the entry was
-    missed, and now the 4H closes above 70. The hold side of the cascade is
+    zone (within ``fresh_bars`` of that role's bars), and, with ``sequential``,
+    every lower listed role is still in it (off by default: a missed 15m entry may
+    already have pulled back while the 4H closes above 70). The hold side of the cascade is
     ``ProfitChain.hold_while_rsi_role``.
     """
 
-    kind = BlockKind.CONFIRMATION
-    oscillator = True
     type = "rsi_cascade"
     title_fa = "آبشار RSI چندتایم‌فریمی"
     sources = ("tcp-blueprint 02: video 27; tcp-blueprint 05: videos 46, 54 (RSI cascade)",)
@@ -659,7 +677,7 @@ class RsiCascade(ConfirmationBlock[CascadeParams]):
 
     def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
         p, sign = self.p, candidate.direction
-        level = p.overbought if sign > 0 else p.oversold
+        level = p.zone_level(sign)
         lower_in = True
         for role in p.roles:
             m = int(data.positions[role][candidate.bar])
@@ -668,8 +686,7 @@ class RsiCascade(ConfirmationBlock[CascadeParams]):
             if verdict is None:
                 return _na(f"RSI {p.rsi_period} on {role} not ready")
             if verdict:
-                before = r[max(0, m - p.fresh_bars) : m]
-                fresh = bool(np.any(np.isfinite(before) & ((before - level) * sign <= 0)))
+                fresh = _entered(r, level, m, sign, p.fresh_bars)
                 if fresh and (lower_in or not p.sequential):
                     return CheckResult("pass", f"RSI on {role} entered {_word(sign)} {level:g}")
             else:
