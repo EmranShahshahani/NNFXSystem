@@ -4,11 +4,15 @@
 
 **Blocked by:** 09 (Market structure and wave cycles), 12 (TCP Azizpour Template (core))
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Missing dominance data makes the Block not-applicable and flags the run incomplete
-- [ ] Regime matrix matches the blueprint table
-- [ ] Screener runs from exchange ticker data and is tested offline
-- [ ] Fixtures per rule; Template updated
+- [x] Missing dominance data makes the Block not-applicable and flags the run incomplete
+- [x] Regime matrix matches the blueprint table
+- [x] Screener runs from exchange ticker data and is tested offline
+- [x] Fixtures per rule; Template updated
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`
+
+## Resolution
+
+`strategy/market.py` (`MarketData`, `read_market_series`, ratios derived from two pairs when the cross pair is missing, causal and staleness-aware trend), `strategy/dominance.py` (`dominance_regime`: BTC-led / Altseason / Altcoin Flush matrix; `relative_strength`: ALT/BTC sieve with optional ALT/ETH or ETH/BTC), the `market_filter` Block kind with `ContextOutput.available`, `DocumentRun.incomplete` (and the UI notice), `strategy/screener.py` (`screen`, `stats_from_exchange`; offline tests with a fake exchange), Template rows (disabled), ADR 10 §24. Notes: combinations outside the blueprint table restrict nothing; the bullish regimes also refuse shorts; the UI cannot yet upload market series; the screener has no CLI/UI entry yet.

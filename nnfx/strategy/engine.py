@@ -68,6 +68,7 @@ from nnfx.strategy.blocks import (
     closes_all_below,
 )
 from nnfx.strategy.document import StrategyDocument
+from nnfx.strategy.market import MarketData
 from nnfx.strategy.risk import govern, leverage_problem, margin, update_state
 from nnfx.strategy.series import atr
 
@@ -105,13 +106,14 @@ def compile_document(
     frames: Mapping[str, BarFrame],
     instruments: Mapping[str, InstrumentSpec],
     session: SessionConfig,
+    market: MarketData | None = None,
 ) -> CompiledDocument:
     """Build every symbol's timeframe views and run the document's series Blocks once."""
-    contexts = doc.instances(BlockKind.CONTEXT)
+    contexts = doc.instances(BlockKind.CONTEXT) + doc.instances(BlockKind.MARKET_FILTER)
     setups = doc.instances(BlockKind.SETUP)
     symbols = {}
     for sym, f in sorted(frames.items()):
-        data = StrategyData.build(f, doc.timeframes.as_dict(), instruments[sym], session)
+        data = StrategyData.build(f, doc.timeframes.as_dict(), instruments[sym], session, market)
         symbols[sym] = CompiledSymbol(
             data,
             [
@@ -284,7 +286,9 @@ class DocumentEngine:
         """Every Context and Confirmation check, and the Confluence Score."""
         side = "longs" if cand.direction > 0 else "shorts"
         items = [
-            ChecklistItem(
+            ChecklistItem(name, "context", "na", 0.0, True, "no market data for this bar")
+            if not out.known(cand.bar)
+            else ChecklistItem(
                 name,
                 "context",
                 "pass" if (ok := out.allows(cand.bar, cand.direction)) else "fail",
@@ -367,7 +371,7 @@ class DocumentEngine:
         path: list[tuple[str, StageStatus]] = []
         refused = False
         context = [i for i in checklist if i.kind == "context"]
-        context_ok = all(i.outcome == "pass" for i in context)
+        context_ok = all(i.outcome != "fail" for i in context)
         path.append(("context", "pass" if context_ok else "fail"))
         refused = not context_ok
         for i in checklist:

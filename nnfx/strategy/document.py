@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError, 
 from nnfx.data.bars import BASE_TIMEFRAMES, TIMEFRAMES
 from nnfx.research.logs import canonical_json
 from nnfx.strategy import bands as _bands  # noqa: F401
+from nnfx.strategy import dominance as _dominance  # noqa: F401
 from nnfx.strategy import fibonacci as _fibonacci  # noqa: F401
 from nnfx.strategy import health as _health  # noqa: F401
 from nnfx.strategy import library as _library  # noqa: F401  (registers the Blocks)

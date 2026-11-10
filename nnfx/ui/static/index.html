@@ -583,13 +583,13 @@ function stCandidates(cands, total) {
       c.reasons.length ? el("div", { class: "neg" }, "دلیل: ", el("bdi", { dir: "ltr" }, c.reasons.join("، "))) : null,
       el("div", { class: "tablewrap", dir: "ltr" }, el("table", {},
         el("tr", {}, ["بررسی", "نوع", "نتیجه", "وزن", "سخت", "توضیح"].map(h => el("th", {}, h))),
-        c.checklist.map(i => el("tr", {}, el("td", {}, i.block), el("td", {}, i.kind === "context" ? "زمینه" : "تأیید"),
+        c.checklist.map(i => el("tr", {}, el("td", {}, i.block), el("td", {}, i.kind === "context" ? "زمینه یا فیلتر بازار" : "تأیید"),
           el("td", { class: i.outcome === "pass" ? "pos" : i.outcome === "fail" ? "neg" : "muted" }, OUTCOME_FA[i.outcome]),
           el("td", {}, fmt(i.weight, 1)), el("td", {}, i.hard ? "بله" : "—"), el("td", {}, i.reason))))))));
 }
 // ---- the builder: forms drawn from the parameter schemas, so a new Block needs no UI code
 const ST = { doc: null, cat: {}, catList: [], schema: null, templates: [], saved: [], compare: null };
-const KIND_ORDER = ["context", "setup", "confirmation", "execution", "stop", "exit"];
+const KIND_ORDER = ["context", "market_filter", "setup", "confirmation", "execution", "stop", "exit"];
 const SINGLE_KINDS = ["stop", "exit"];
 const OP_FA = { added: "اضافه", removed: "حذف", changed: "تغییر", reordered: "ترتیب" };
 const METRICS = [
@@ -979,6 +979,7 @@ $("#st-run").addEventListener("click", async () => {
       el("div", { class: "panel" }, el("h2", {}, "نتیجه"),
         el("div", {}, "اثر انگشت سند: ", el("code", { dir: "ltr" }, r.fingerprint), " · آزمون: ", el("code", { dir: "ltr" }, r.trial_id || "—")),
         el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidate_count} · معاملات: ${r.trades.length}`),
+        r.incomplete ? el("div", { class: "neg" }, "نتیجه ناقص است: دادهٔ بازار (دامیننس یا نسبت‌ها) برای این بلوک‌ها در برخی ستاپ‌ها نبود و بررسی‌شان «نامربوط» ثبت شد: " + r.incomplete_blocks.join("، ")) : null,
         r.spot_transfers.length ? el("div", {}, `انتقال سود به اسپات: ${r.spot_transfers.length} بار، جمعاً `,
           el("bdi", { dir: "ltr" }, fmt(r.spot_balance, 2))) : null,
         el("pre", { dir: "ltr", class: "ltr" }, r.summary)),

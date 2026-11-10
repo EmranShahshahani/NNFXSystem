@@ -536,6 +536,9 @@ class App:
                 # Futures-to-spot recycling record (Profit Chain option); empty when off.
                 "spot_transfers": [asdict(t) for t in run.spot_transfers],
                 "spot_balance": run.spot_balance(),
+                # A Market Filter lacked its series at some candidate (checked n/a): see ADR 10 §24.
+                "incomplete": run.incomplete,
+                "incomplete_blocks": run.incomplete_blocks,
                 # The equity curve less the profit recorded as moved to spot.
                 "equity_trading": (
                     [

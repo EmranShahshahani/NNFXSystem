@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from nnfx.config import SessionConfig
+from nnfx.data.bars import BarFrame
 from nnfx.data.synthetic import intraday_walk
 from nnfx.engine.types import ExitStepView, PositionView
 from nnfx.instruments import crypto_spec
@@ -29,6 +30,7 @@ from nnfx.strategy.blocks import (
     StopBlock,
 )
 from nnfx.strategy.library import CandleSetup, ProfitChain, ProfitChainParams
+from nnfx.strategy.market import MarketData
 
 ROLES = {"hwc": "D1", "mwc": "H4", "lwc": "M15"}
 SCALE = 1000.0
@@ -36,8 +38,19 @@ SCALE = 1000.0
 
 @cache
 def data() -> StrategyData:
-    bars = intraday_walk(96 * 40, seed=3, symbol="BTC/USDT")
-    return StrategyData.build(bars, ROLES, crypto_spec("BTC/USDT"), SessionConfig())
+    bars = intraday_walk(96 * 40, seed=3, symbol="SOL/USDT")
+    return StrategyData.build(bars, ROLES, crypto_spec("SOL/USDT"), SessionConfig(), market())
+
+
+def market() -> MarketData:
+    """BTC/USDT, ETH/USDT and BTC.D for the Market Filters; BTC.D stops a week early."""
+    series = {}
+    for seed, name, start in ((11, "BTC/USDT", 100.0), (12, "ETH/USDT", 50.0), (13, "BTC.D", 55.0)):
+        f = intraday_walk(96 * 40, seed=seed, symbol=name, start_price=start)
+        series[name] = BarFrame(f.df, name, timeframe="M15", volume_kind="none")
+    gone = series["BTC.D"].df.iloc[: 96 * 33]
+    series["BTC.D"] = BarFrame(gone, "BTC.D", timeframe="M15", volume_kind="none")
+    return MarketData(series)
 
 
 def variants(btype: str) -> list[str]:
@@ -121,7 +134,7 @@ def test_series_blocks_never_look_ahead(btype: str):
 @pytest.mark.parametrize("btype", SERIES)
 def test_series_blocks_are_deterministic(btype: str):
     d = data()
-    rebuilt = StrategyData.build(d.base, ROLES, d.instrument, d.session)
+    rebuilt = StrategyData.build(d.base, ROLES, d.instrument, d.session, d.market)
     a, b = arrays(block(btype).compute(d)), arrays(block(btype).compute(rebuilt))
     assert all(same(a[k], b[k]) for k in a)
 

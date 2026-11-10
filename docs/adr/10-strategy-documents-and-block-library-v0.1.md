@@ -779,6 +779,52 @@ built. The "Fib 1.618 without momentum" exhaustion exit is not built (`fib_targe
 level unconditionally). The macro Weekly/Daily Fibonacci floors are available by choosing the
 role; they do not gate lower-timeframe triggers, because nothing reads them as a trigger.
 
+## 24. Dominance, ALT/BTC and the screener (ticket 20)
+
+Videos 12, 59, 66, 83 and 84. Market Filter Blocks in `strategy/dominance.py`, the series
+plumbing in `strategy/market.py`, the screener in `strategy/screener.py`. Both Blocks are off
+in the Template.
+
+**The Market Filter contract.** A Market Filter is a Context Block over the *market series*, not
+the symbol's own bars (`MarketFilterBlock`, kind `market_filter`). It returns a `ContextOutput`
+with one more field, `available`: where it is False the Block has no data and its check is
+`na`, never a pass and never a refusal. `StrategyData.market` carries the series (`MarketData`,
+name -> `BarFrame` on a base timeframe); `compile_document` and `backtest_document` take it.
+`DocumentRun.incomplete` (and `incomplete_blocks`) says whether any candidate saw such an `na`,
+the "incomplete result" of the order-book rule (§9) generalised. The UI shows it.
+
+**Series.** Dominance indices (`BTC.D`, `USDT.D`, `TOTAL2`, `TOTAL3`) come from a TradingView
+export (`read_market_series`, hourly or 15-minute like every import) and are read at the
+Block's timeframe role like any bars. A pair ratio is the cross pair when it was given
+(`SOL/BTC`) and is otherwise derived from the closes of the two exchange pairs on the bars both
+have (a ratio's open, high, low and close are all that ratio). A series is *known* at an LWC bar
+only if one of its role bars closed by then and no more than `max_stale_bars` role bars ago:
+starting late, ending early or a hole all read as unknown. Trend is the Dow state of the closes
+(`structure.waves`), the same trend every other Block uses.
+
+| Block | Rule |
+|---|---|
+| `dominance_regime` | BTC trend x BTC.D trend. **BTC-led** (BTC up, BTC.D up): BTC longs only, no altcoin trade. **Altseason** (BTC up or ranging, BTC.D down): altcoin longs, no shorts, and no BTC long unless `altseason_trades_btc`. **Alt flush** (BTC down, BTC.D up): BTC is never shorted; altcoins may be shorted, not bought. Candidates carry the regime as a tag |
+| `relative_strength` | a long needs the ALT/BTC trend up, a short the mirror; `second` adds ALT/ETH or ETH/BTC (the Ultimate Long Sieve); a ranging ratio admits neither; BTC itself is outside it |
+
+**Decisions and limits.** Combinations outside the blueprint's table (BTC.D ranging, both
+falling) restrict nothing. The table says "BTC longs only" and "avoid altcoin longs", and the
+blocks refuse the shorts in the bullish regimes too, since the matrix allocates margin to longs;
+a clone that wants shorts there leaves the filter off. ALT/BTC "breaking out of a consolidation on
+expanding volume" is read as the ratio's Dow trend turning up, which a breakout of the swing high
+does; the volume leg is left to the volume Blocks on the ALT/USDT chart. The Strategy Builder UI
+does not yet upload market series, so a UI run with a Market Filter on is honestly incomplete.
+
+**The screener.** `screen` ranks a watchlist from exchange ticker data: 24-hour quote volume
+converted to BTC at BTC/USDT's price (at least 1,000 BTC), and performance *valued in BTC*,
+`(1 + alt) / (1 + btc) - 1`, positive over 24 hours and 7 days; at most five assets (1 to 5),
+ranked by the 7-day figure, then the 24-hour one, then the symbol. Stablecoins, BTC and
+non-USDT pairs are skipped (a stablecoin would otherwise "beat" a falling BTC). The 7-day change
+comes from daily bars and is fetched only for pairs that already pass the cheaper tests.
+`stats_from_exchange` reads a ccxt-style exchange, injected, so every test is offline. The
+list is an input to the morning routine, not a signal; it is not yet wired to a CLI command or
+the UI.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

@@ -25,6 +25,7 @@ from nnfx.research.trials import ResearchState
 from nnfx.strategy.document import StrategyDocument
 from nnfx.strategy.engine import DocumentEngine, compile_document
 from nnfx.strategy.library import ProfitChain
+from nnfx.strategy.market import MarketData
 
 # The harness wants an NNFX config for the account, costs and portfolio caps it
 # shares with every engine; its indicator slots are unused by the document engine.
@@ -79,6 +80,26 @@ class DocumentRun:
     stop_labels: dict[str, str] = field(default_factory=dict)
     # Futures-to-spot recycling record (Profit Chain option), oldest first.
     spot_transfers: list[SpotTransfer] = field(default_factory=list)
+
+    @property
+    def incomplete(self) -> bool:
+        """Whether a Market Filter lacked its data at some candidate (ADR 10 §9, §24).
+
+        Its check was not-applicable there instead of a pass: the result rests on less
+        than the document asked for.
+        """
+        return bool(self.incomplete_blocks)
+
+    @property
+    def incomplete_blocks(self) -> list[str]:
+        return sorted(
+            {
+                item["block"]
+                for c in self.candidates
+                for item in c.get("checklist", [])
+                if item["kind"] == "context" and item["outcome"] == "na"
+            }
+        )
 
     def spot_balance(self) -> float:
         return sum(t.amount for t in self.spot_transfers)
@@ -154,6 +175,7 @@ def backtest_document(
     config: SystemConfig | None = None,
     start: pd.Timestamp | None = None,
     end: pd.Timestamp | None = None,
+    market_data: MarketData | None = None,
 ) -> DocumentRun:
     if not frames:
         raise ValueError("no bars to run on")
@@ -167,7 +189,7 @@ def backtest_document(
     segment = segment_of(market, frames, end)
     journal = journal if journal is not None else Journal()  # the candidates live in it
     cfg = document_config(doc, config)
-    compiled = compile_document(doc, frames, instruments, cfg.session)
+    compiled = compile_document(doc, frames, instruments, cfg.session, market_data)
     result = BacktestHarness(
         cfg,
         {s: instruments[s] for s in frames},

@@ -108,6 +108,9 @@ _TCP_BLOCKS: list[_Row] = [
     # --- Sessions (ticket 18): UTC windows, off by default
     ("context", "session_filter", False, {}, BlockSource((58,), "no entries 21:00-00:00 UTC")),
     ("context", "session_regime", False, {}, BlockSource((58,), "session correlation regimes")),
+    # --- Market filters (ticket 20): need the dominance / pair series, off by default
+    ("market_filter", "dominance_regime", False, {}, BlockSource((12, 66), "regime matrix")),
+    ("market_filter", "relative_strength", False, {}, BlockSource((12, 59, 83), "ALT/BTC sieve")),
     # --- Setups: the Candle Setup and the Box Breakout lead
     ("setup", "candle_setup", True, {}, BlockSource((35, 36, 37))),
     ("setup", "box_breakout", True, {}, BlockSource((20, 21), "blueprint 01 (B)")),

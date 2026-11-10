@@ -18,8 +18,11 @@ Contracts by kind:
   position is open (conditional breakeven, trailing; ticket 07). No exit
   rule may close the whole position below ``MIN_FULL_CLOSE_R``.
 
-(Market Filter gets its contract with ticket 20; account-wide risk is the
-document's Risk section, ADR 10 §10.)
+- Market Filter: the Context contract (``compute(data) -> ContextOutput``) over the market
+  series in ``StrategyData.market`` (dominance, pair ratios; ticket 20). Where a series is
+  missing it sets ``available`` False: the check is not-applicable and the run incomplete.
+
+(Account-wide risk is the document's Risk section, ADR 10 §10.)
 """
 
 from __future__ import annotations
@@ -40,6 +43,7 @@ from nnfx.data.timeframes import TimeframeViews
 from nnfx.engine.types import ExitPlan, PositionView
 from nnfx.instruments import InstrumentSpec
 from nnfx.strategy.levels import BoxTrack, LevelBook, track_boxes
+from nnfx.strategy.market import MarketData
 from nnfx.strategy.series import atr, pivots, rsi, sma
 from nnfx.strategy.structure import waves
 
@@ -101,6 +105,7 @@ class StrategyData:
     positions: dict[str, np.ndarray]  # role -> index of its latest closed bar per LWC bar
     instrument: InstrumentSpec
     session: SessionConfig
+    market: MarketData = field(default_factory=MarketData)  # dominance and pair series (ticket 20)
     _cache: dict[Any, Any] = field(default_factory=dict, compare=False, repr=False)
 
     @classmethod
@@ -110,6 +115,7 @@ class StrategyData:
         roles: dict[str, str],
         instrument: InstrumentSpec,
         session: SessionConfig,
+        market: MarketData | None = None,
     ) -> StrategyData:
         if base.timeframe != roles["lwc"]:
             raise ValueError(f"LWC is {roles['lwc']} but the bars are {base.timeframe}")
@@ -122,7 +128,9 @@ class StrategyData:
             role: np.searchsorted(ns(f.index), at, side="right").astype("int64") - 1
             for role, f in frames.items()
         }
-        return cls(base.symbol, dict(roles), frames, positions, instrument, session)
+        return cls(
+            base.symbol, dict(roles), frames, positions, instrument, session, market or MarketData()
+        )
 
     @property
     def base(self) -> BarFrame:
@@ -275,11 +283,13 @@ class StrategyData:
 
     def head(self, n: int) -> StrategyData:
         """The data as it stood at the close of LWC bar ``n - 1``."""
-        return StrategyData.build(self.base.head(n), self.roles, self.instrument, self.session)
+        return StrategyData.build(
+            self.base.head(n), self.roles, self.instrument, self.session, self.market
+        )
 
     def scaled(self, factor: float) -> StrategyData:
         return StrategyData.build(
-            self.base.scaled(factor), self.roles, self.instrument, self.session
+            self.base.scaled(factor), self.roles, self.instrument, self.session, self.market
         )
 
 
@@ -294,6 +304,12 @@ class ContextOutput:
     # Bars where resting breakout orders are cancelled and none are placed (e.g. a
     # Choppy Regime). None: the Block never cancels orders.
     cancels_orders: np.ndarray | None = None
+    # Bars where the Block has the data it needs. None: always (every Context Block but the
+    # Market Filters). Where False the check is not-applicable, never a pass or a refusal.
+    available: np.ndarray | None = None
+
+    def known(self, i: int) -> bool:
+        return self.available is None or bool(self.available[i])
 
     def allows(self, i: int, direction: int) -> bool:
         return bool(self.long_ok[i] if direction > 0 else self.short_ok[i])
@@ -458,6 +474,10 @@ class ContextBlock[P: BlockParams](Block[P]):
         raise NotImplementedError
 
 
+class MarketFilterBlock[P: BlockParams](ContextBlock[P]):
+    """A Context Block over the market series (dominance, pair ratios), not the symbol's bars."""
+
+
 class SetupBlock[P: BlockParams](Block[P]):
     def compute(self, data: StrategyData) -> SetupOutput:
         raise NotImplementedError
@@ -521,6 +541,7 @@ class ExitBlock[P: BlockParams](Block[P]):
 
 BASES: dict[BlockKind, type[Block[Any]]] = {
     BlockKind.CONTEXT: ContextBlock,
+    BlockKind.MARKET_FILTER: MarketFilterBlock,
     BlockKind.SETUP: SetupBlock,
     BlockKind.CONFIRMATION: ConfirmationBlock,
     BlockKind.EXECUTION: ExecutionBlock,
