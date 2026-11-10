@@ -295,11 +295,12 @@ def test_a_losing_streak_cuts_risk_after_three_and_halts_after_five():
 
 def test_the_daily_loss_limit_halts_trading_for_the_day():
     t = warmup()
-    for _ in range(3):  # three stop-outs inside one day, 0.75% each
+    for _ in range(4):  # stop-outs within one day, 0.75% each, the trend barely dented
         setup_bar(t)
         fill_bar(t)
-        t.bar(1.0, 1.0, 0.985, 0.988)
-        t.leg(12, 0.001)
+        t.bar(1.0, 1.0, 0.99, 0.996)
+        t.leg(40, 0.006)
     out, _ = run(t)
-    assert len(out.result.trades) == 2  # -1.5% is reached: the third setup is refused
-    assert any("daily_loss_limit" in r for rs in refusals(out) for r in rs)
+    assert len(out.result.trades) == 3  # -1.5% is passed: the fourth setup is refused
+    last = candle(out)[-1]
+    assert last["decision"] == "refused" and "daily_loss_limit" in last["reasons"]
