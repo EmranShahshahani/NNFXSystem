@@ -40,7 +40,7 @@ from nnfx.data.timeframes import TimeframeViews
 from nnfx.engine.types import ExitPlan, PositionView
 from nnfx.instruments import InstrumentSpec
 from nnfx.strategy.levels import BoxTrack, LevelBook, track_boxes
-from nnfx.strategy.series import atr, pivots, sma
+from nnfx.strategy.series import atr, pivots, rsi, sma
 from nnfx.strategy.structure import waves
 
 Role = Literal["hwc", "mwc", "lwc"]
@@ -170,6 +170,14 @@ class StrategyData:
         key = ("sma", role, period)
         if key not in self._cache:
             self._cache[key] = sma(self.frames[role].close, period)
+        out: np.ndarray = self._cache[key]
+        return out
+
+    def rsi(self, role: str, period: int = 14) -> np.ndarray:
+        """Wilder's RSI of each ``role`` bar's close, cached."""
+        key = ("rsi", role, period)
+        if key not in self._cache:
+            self._cache[key] = rsi(self.frames[role].close, period)
         out: np.ndarray = self._cache[key]
         return out
 
@@ -426,6 +434,8 @@ class Block[P: BlockParams]:
     type: ClassVar[str]
     title_fa: ClassVar[str]
     sources: ClassVar[tuple[str, ...]] = ()
+    # An oscillator Block only filters and alerts; it never triggers (video 44, 53).
+    oscillator: ClassVar[bool] = False
     # builtins.type: the class attribute ``type`` (the registry name) shadows the builtin here.
     Params: ClassVar[builtins.type[BlockParams]] = BlockParams
 
@@ -508,6 +518,8 @@ BASES: dict[BlockKind, type[Block[Any]]] = {
     BlockKind.EXIT: ExitBlock,
 }
 REGISTRY: dict[str, type[Block[Any]]] = {}
+# The kinds that create or place entries; a Block flagged ``oscillator`` may be none of them.
+TRIGGER_KINDS = frozenset({BlockKind.SETUP, BlockKind.EXECUTION})
 
 
 def register[B: type[Block[Any]]](cls: B) -> B:
@@ -516,6 +528,10 @@ def register[B: type[Block[Any]]](cls: B) -> B:
     if not issubclass(cls, BASES[cls.kind]):
         raise TypeError(
             f"{cls.__name__} is a {cls.kind} Block but not a {BASES[cls.kind].__name__}"
+        )
+    if cls.oscillator and cls.kind in TRIGGER_KINDS:
+        raise TypeError(
+            f"{cls.__name__}: an oscillator never triggers, so it cannot be a {cls.kind} Block"
         )
     for name, f in cls.Params.model_fields.items():
         if f.is_required() or not f.description:
@@ -534,6 +550,7 @@ def block_catalogue(kinds: Iterable[BlockKind] | None = None) -> list[dict[str, 
             "kind_fa": KIND_FA[c.kind],
             "title_fa": c.title_fa,
             "sources": list(c.sources),
+            "oscillator": c.oscillator,
             "params": c.Params.model_json_schema(),
         }
         for c in sorted(REGISTRY.values(), key=lambda c: (list(BlockKind).index(c.kind), c.type))

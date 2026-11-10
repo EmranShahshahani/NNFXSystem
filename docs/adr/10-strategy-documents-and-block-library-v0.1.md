@@ -556,6 +556,45 @@ Decisions and known limits:
 * The LA's "faster pushes" are counted in bars between confirmed swings, so they appear
   `pivot_bars` late; every output is causal and tested to be.
 
+## 19. The oscillator methods (ticket 15)
+
+Oscillators warn and filter; they never trigger (videos 44, 53). The registry enforces it:
+a Block class flagged `oscillator = True` cannot be a Setup or Execution Block
+(`register` raises), and the catalogue reports the flag. All nine are Confirmation Blocks in
+`strategy/oscillators.py`, off in the Template, and read the oscillator of one timeframe
+role (`role`) at the role bar the candidate stands on.
+
+| Block | Method | Passes when |
+|---|---|---|
+| `osc_momentum` | 1, OB/OS as momentum | beyond the zone in the trade's favour (optionally just entered) |
+| `osc_inflection` | 2, 50/0 line | on the trade's side of the line (`offset` moves it; optional fresh cross) |
+| `osc_signal_cross` | 3, signal line | cross of a half-period synthetic SMA in the extreme zone or through the midline; mid-zone crosses ignored |
+| `osc_level_break` | 4, levels on the oscillator | closed beyond its latest confirmed swing level within `fresh_bars` |
+| `rsi_bb_reentry` | 5, BB on RSI | RSI back over its Bollinger middle after an impulse out of the band (`impulse`) or a dip into the other band (`dip`) |
+| `osc_recalibrated` | 6, cycle length | momentum with RSI period = mean swing-to-swing distance of the current Dow regime |
+| `osc_mf` | 7, multiplier factor | momentum with the LWC RSI period = base x (higher minutes / LWC minutes) |
+| `osc_divergence` | 8, divergences | regular/hidden divergence between the last two confirmed swings, one oscillator pivot in the extreme zone |
+| `rsi_cascade` | RSI ladder | a role just entered the zone while the lower roles are still in it |
+
+Decisions and limits:
+
+* Bounded oscillators (RSI) use fixed zones (70/30). Unbounded ones (CCI, ROC) use
+  `extreme_fraction` (0.8) of the rolling 200-bar extremes of the bars *before* the tested one,
+  so a new extreme can still break the zone; the 0.8 is my reading of "the highest and lowest
+  swing extremes over 200 candles", exposed as a parameter.
+* The recalibrated period resets at a Dow state change of the role (the "regime shift
+  governor"); with fewer than two cycles in the regime the base period stands.
+* The MF RSI needs `base x MF` LWC bars first (224 for 4H on 15m), so it is not applicable
+  earlier.
+* The exit side lives in `profit_chain` (one Exit Block per document): `rsi_exhaustion_exit`
+  closes what remains, after the first step, when RSI pierced its upper (shorts: lower)
+  Bollinger band within `rsi_reject_bars` management bars and has turned back inside;
+  `hold_while_rsi_role` is the cascade's hold side: while that role's RSI is still beyond
+  70/30 the SMA-flatten and RSI-exhaustion closes wait. Both are off by default. The
+  exhaustion exit does not also ask that price be at resistance.
+* **Not built in:** trendlines and chart patterns on the oscillator (only horizontal levels),
+  the apex timing principle, and the CCI/ROC/MACD-specific parts (ticket 16).
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

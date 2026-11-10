@@ -72,3 +72,41 @@ def pivots(
 
     # Comparisons with NaN are False: a NaN bar, or one next to it, is never a pivot.
     return find(low, 1.0), find(high, -1.0)
+
+
+def bollinger(x: np.ndarray, n: int, k: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Bollinger bands of ``x``: (lower, middle, upper), population deviation; NaN until ``n``."""
+    s = pd.Series(x)
+    mid = s.rolling(n, min_periods=n).mean()
+    dev = s.rolling(n, min_periods=n).std(ddof=0)
+    return (mid - k * dev).to_numpy(), mid.to_numpy(), (mid + k * dev).to_numpy()
+
+
+def cci(high: np.ndarray, low: np.ndarray, close: np.ndarray, n: int) -> np.ndarray:
+    """Commodity channel index (unbounded, zero-centred); NaN until ``n`` bars exist."""
+    tp = pd.Series((high + low + close) / 3.0)
+    mean = tp.rolling(n, min_periods=n).mean()
+    dev = tp.rolling(n, min_periods=n).apply(lambda w: np.abs(w - w.mean()).mean(), raw=True)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = (tp - mean) / (0.015 * dev)
+    return out.replace([np.inf, -np.inf], np.nan).to_numpy()
+
+
+def roc(close: np.ndarray, n: int) -> np.ndarray:
+    """Rate of change in percent over ``n`` bars (unbounded, zero-centred)."""
+    prev = np.r_[np.full(n, np.nan), close[:-n]]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.asarray(100.0 * (close / prev - 1.0))
+
+
+def prior_extremes(x: np.ndarray, window: int) -> tuple[np.ndarray, np.ndarray]:
+    """Rolling (max, min) of the ``window`` bars *before* each bar (the bar itself excluded).
+
+    The zones of an unbounded oscillator: causal, and a new extreme can still break them.
+    """
+    s = pd.Series(x).shift(1)
+    mn = max(2, window // 4)
+    return (
+        s.rolling(window, min_periods=mn).max().to_numpy(),
+        s.rolling(window, min_periods=mn).min().to_numpy(),
+    )

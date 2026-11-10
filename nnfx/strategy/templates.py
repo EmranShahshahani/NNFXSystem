@@ -135,6 +135,16 @@ _TCP_BLOCKS: list[_Row] = [
     ("confirmation", "volume_expansion", False, _CANDLE, BlockSource((31, 32))),
     ("confirmation", "sma_crossover", False, _CANDLE, BlockSource((), "crossover dynamics (10)")),
     ("confirmation", "level_location", False, _CANDLE, BlockSource((4, 5, 36))),
+    # --- The oscillator methods (ticket 15): filters and alerts, never triggers; off by default
+    ("confirmation", "osc_momentum", False, {}, BlockSource((46,), "method 1: OB/OS as momentum")),
+    ("confirmation", "osc_inflection", False, {}, BlockSource((47,), "method 2: 50/0 line")),
+    ("confirmation", "osc_signal_cross", False, {}, BlockSource((48,), "method 3: signal line")),
+    ("confirmation", "osc_level_break", False, {}, BlockSource((49, 54), "method 4: levels")),
+    ("confirmation", "rsi_bb_reentry", False, {}, BlockSource((15, 50), "method 5: BB on RSI")),
+    ("confirmation", "osc_recalibrated", False, {}, BlockSource((51,), "method 6: cycle length")),
+    ("confirmation", "osc_mf", False, {}, BlockSource((52,), "method 7: multiplier factor")),
+    ("confirmation", "osc_divergence", False, {}, BlockSource((53,), "method 8: divergences")),
+    ("confirmation", "rsi_cascade", False, {}, BlockSource((27, 46, 54), "RSI cascade")),
     # --- Box Breakout confirmations
     ("confirmation", "touch_count", True, _BOX, BlockSource((21,))),
     ("confirmation", "breakout_body_close", True, {**_BOX, "hard": True}, BlockSource((21,))),

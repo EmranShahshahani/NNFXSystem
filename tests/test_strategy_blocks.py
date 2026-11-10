@@ -213,6 +213,8 @@ def exit_variants() -> list[ExitBlock]:
     )
     out.append(ProfitChain(ProfitChainParams(pivot_bars=1)))
     out.append(ProfitChain(ProfitChainParams(sma_flatten_exit=True, sma_period=5)))
+    out.append(ProfitChain(ProfitChainParams(rsi_exhaustion_exit=True, rsi_period=5)))
+    out.append(ProfitChain(ProfitChainParams(hold_while_rsi_role="lwc", rsi_exhaustion_exit=True)))
     return out
 
 

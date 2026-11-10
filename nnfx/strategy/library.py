@@ -37,7 +37,7 @@ from nnfx.strategy.blocks import (
     register,
 )
 from nnfx.strategy.levels import BoxTrack
-from nnfx.strategy.series import falling, rising, rsi, sma
+from nnfx.strategy.series import bollinger, falling, rising, rsi, sma
 from nnfx.strategy.structure import wave_bias
 
 
@@ -1116,6 +1116,22 @@ class ProfitChainParams(BlockParams):
     sma_flat_atr: float = Field(
         0.02, ge=0, description="شیب هم‌جهت معامله کمتر از این (ATR در هر کندل) یعنی تخت"
     )
+    rsi_exhaustion_exit: bool = Field(
+        False,
+        description="سود را بگیر وقتی RSI از باند بالایی بولینگرش بیرون زد و رد شد (پس از پلهٔ اول)",
+    )
+    rsi_period: int = Field(14, ge=2, description="دورهٔ RSI برای خروج فرسودگی و نگه‌داشتن")
+    rsi_bb_period: int = Field(20, ge=2, description="دورهٔ بولینگر روی RSI")
+    rsi_bb_k: float = Field(2.0, gt=0, description="ضریب انحراف معیار بولینگر روی RSI")
+    rsi_reject_bars: int = Field(
+        2, ge=1, description="بیرون‌زدن RSI از باند باید در این تعداد کندل مدیریت اخیر باشد"
+    )
+    hold_while_rsi_role: Literal["off", "lwc", "mwc", "hwc"] = Field(
+        "off",
+        description="تا وقتی RSI این تایم‌فریم در ناحیهٔ اشباع هم‌جهت است، بستن سود (SMA و RSI) را نگه دار",
+    )
+    hold_overbought: float = Field(70.0, gt=50, lt=100, description="مرز اشباع خرید برای نگه‌داشتن")
+    hold_oversold: float = Field(30.0, gt=0, lt=50, description="مرز اشباع فروش برای نگه‌داشتن")
     trail_after_step: int = Field(
         3, ge=1, le=3, description="تریل حد ضرر پس از پر شدن این تعداد پله (۳: فقط رانر)"
     )
@@ -1172,6 +1188,11 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
       when the SMA 25 on the management timeframe stops sloping with the trade,
       what remains is closed (blueprint: the 25 SMA flattening triggers
       profit-taking). The 2R floor holds: a step has already filled.
+    - **RSI exhaustion** (optional, ``rsi_exhaustion_exit``). After the first step,
+      when RSI pierced its upper (shorts: lower) Bollinger band within
+      ``rsi_reject_bars`` management bars and is back inside it, what remains is
+      closed (video 50). ``hold_while_rsi_role`` is the cascade's hold side: while
+      that role's RSI is still beyond 70 (30) the profit-taking closes wait.
     - **Counter-trend mode.** No Runner: everything closes at 2R, or at the
       first structural boundary (the nearest confirmed swing beyond the
       trigger), never below 2R and at most ``counter_trend_max_r``
@@ -1237,6 +1258,34 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             return None
         return float(beyond.min() if d > 0 else beyond.max())
 
+    def _held_by_cascade(self, data: StrategyData, bar: int, d: int) -> bool:
+        """The RSI cascade's hold side (video 46): while a higher timeframe's RSI is still
+        beyond its zone in the trade's direction, profit-taking closes wait."""
+        p = self.p
+        if p.hold_while_rsi_role == "off":
+            return False
+        m = int(data.positions[p.hold_while_rsi_role][bar])
+        if m < 0:
+            return False
+        value = float(data.rsi(p.hold_while_rsi_role, p.rsi_period)[m])
+        level = p.hold_overbought if d > 0 else p.hold_oversold
+        return bool(np.isfinite(value) and (value - level) * d > 0)
+
+    def _rsi_rejected(self, data: StrategyData, m: int, d: int) -> bool:
+        """RSI pierced its Bollinger band on the trade's side within ``rsi_reject_bars``
+        management bars and has turned back inside it now (exhaustion, video 50)."""
+        p = self.p
+        r = data.rsi(self.ROLE, p.rsi_period)
+        lower, _, upper = bollinger(r, p.rsi_bb_period, p.rsi_bb_k)
+        band = upper if d > 0 else lower
+        if not (np.isfinite(r[m]) and np.isfinite(band[m])) or (r[m] - band[m]) * d > 0:
+            return False
+        if m == 0 or not (r[m] - r[m - 1]) * d < 0:
+            return False  # RSI must have turned back; a band widening round a pegged RSI is not a rejection
+        lo = max(0, m - p.rsi_reject_bars)
+        pierced = (r[lo:m] - band[lo:m]) * d > 0
+        return bool(np.any(pierced & np.isfinite(band[lo:m])))
+
     def manage(
         self, position: PositionView, data: StrategyData, bar: int
     ) -> StopMove | CloseMove | None:
@@ -1249,7 +1298,15 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
         m = int(pos[bar])
         if m < 0 or (bar > 0 and int(pos[bar - 1]) == m):
             return moves[0] if moves else None  # the rest acts on management closes only
-        if p.sma_flatten_exit and position.steps_filled >= 1:
+        held = position.steps_filled >= 1 and self._held_by_cascade(data, bar, d)
+        if (
+            p.rsi_exhaustion_exit
+            and position.steps_filled >= 1
+            and not held
+            and self._rsi_rejected(data, m, d)
+        ):
+            return CloseMove("rsi_bb_exhaustion")
+        if p.sma_flatten_exit and position.steps_filled >= 1 and not held:
             k = p.sma_slope_bars
             line, rng = data.sma(self.ROLE, p.sma_period), data.atr(self.ROLE)
             if m >= k and np.isfinite(line[m]) and np.isfinite(line[m - k]) and rng[m] > 0:
