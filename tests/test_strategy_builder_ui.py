@@ -55,9 +55,9 @@ def test_the_builder_edits_saves_versions_diffs_exports_imports_and_compares(
     )  # fmt: skip
     seen = json.loads(out.stdout.strip().splitlines()[-1])
     # Every Block of the Template has a form; the palette has no free Block until one is removed.
-    assert seen["blockCount"] == 65 and seen["offCount"] == 48
-    assert seen["paletteTotal"] == 64 and seen["paletteFree"] == 0
-    assert (seen["afterRemove"], seen["freedUp"], seen["afterAdd"]) == (64, True, 65)
+    assert seen["blockCount"] == 68 and seen["offCount"] == 51
+    assert seen["paletteTotal"] == 67 and seen["paletteFree"] == 0
+    assert (seen["afterRemove"], seen["freedUp"], seen["afterAdd"]) == (67, True, 68)
     # Editing through the forms is editing the document.
     assert seen["weightEdited"] == 2.5 and seen["touchOff"] is False and seen["risk"] == 0.004
     assert seen["rowMarked"] >= 1 and seen["badge"] == 1

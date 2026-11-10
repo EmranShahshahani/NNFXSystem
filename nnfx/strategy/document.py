@@ -27,6 +27,7 @@ from nnfx.strategy import fibonacci as _fibonacci  # noqa: F401
 from nnfx.strategy import health as _health  # noqa: F401
 from nnfx.strategy import library as _library  # noqa: F401  (registers the Blocks)
 from nnfx.strategy import momentum as _momentum  # noqa: F401
+from nnfx.strategy import orderbook_blocks as _orderbook_blocks  # noqa: F401
 from nnfx.strategy import oscillators as _oscillators  # noqa: F401
 from nnfx.strategy import pivots as _pivots  # noqa: F401
 from nnfx.strategy import sessions as _sessions  # noqa: F401

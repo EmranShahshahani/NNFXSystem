@@ -181,8 +181,23 @@ _TCP_BLOCKS: list[_Row] = [
     # --- Execution, Stop, Exit
     ("execution", "stop_market", True, {}, BlockSource((35, 41), "Trigger / stop-market (01)")),
     ("execution", "adx_order_type", False, {}, BlockSource((56,), "stop order or body close")),
+    (
+        "execution",
+        "wall_trigger",
+        False,
+        {},
+        BlockSource((41, 50), "order-book walls (live-first)"),
+    ),
     ("stop", "structural_stop", True, {}, BlockSource((6,))),
+    (
+        "stop",
+        "wall_shielded_stop",
+        False,
+        {},
+        BlockSource((41, 50), "order-book walls (live-first)"),
+    ),
     ("exit", "profit_chain", True, {}, BlockSource((19,), "blueprint 01 (B); 61-70 recycling")),
+    ("exit", "wall_targets", False, {}, BlockSource((41, 50), "targets in front of walls")),
     ("exit", "fixed_r", False, {"r": 2.0}, BlockSource((), "no exit below 2R (01 B)")),
 ]
 

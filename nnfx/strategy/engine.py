@@ -67,8 +67,10 @@ from nnfx.strategy.blocks import (
     StrategyData,
     closes_all_below,
 )
+from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument
 from nnfx.strategy.market import MarketData
+from nnfx.strategy.orderbook_blocks import BookBlock
 from nnfx.strategy.risk import govern, leverage_problem, margin, update_state
 from nnfx.strategy.series import atr
 
@@ -95,6 +97,8 @@ class CompiledDocument:
     stop: StopBlock[Any]
     exit: ExitBlock[Any]  # validation allows one enabled Stop and one Exit Block
     confirmations: list[tuple[str, ConfirmationBlock[Any]]] = field(default_factory=list)
+    # The enabled Execution, Stop and Exit Blocks that read the order book (ticket 21).
+    book_blocks: list[tuple[str, BookBlock[Any]]] = field(default_factory=list)
 
 
 def block_label(index: int, btype: str) -> str:
@@ -107,13 +111,16 @@ def compile_document(
     instruments: Mapping[str, InstrumentSpec],
     session: SessionConfig,
     market: MarketData | None = None,
+    book: BookData | None = None,
 ) -> CompiledDocument:
     """Build every symbol's timeframe views and run the document's series Blocks once."""
     contexts = doc.instances(BlockKind.CONTEXT) + doc.instances(BlockKind.MARKET_FILTER)
     setups = doc.instances(BlockKind.SETUP)
     symbols = {}
     for sym, f in sorted(frames.items()):
-        data = StrategyData.build(f, doc.timeframes.as_dict(), instruments[sym], session, market)
+        data = StrategyData.build(
+            f, doc.timeframes.as_dict(), instruments[sym], session, market, book
+        )
         symbols[sym] = CompiledSymbol(
             data,
             [
@@ -134,7 +141,15 @@ def compile_document(
         for i, b in doc.instances(BlockKind.CONFIRMATION)
         if isinstance(b, ConfirmationBlock)
     ]
-    return CompiledDocument(doc, symbols, executions, stops[0], exits[0], confirmations)
+    book_blocks = [
+        (block_label(i, b.type), b)
+        for kind in (BlockKind.EXECUTION, BlockKind.STOP, BlockKind.EXIT)
+        for i, b in doc.instances(kind)
+        if isinstance(b, BookBlock)
+    ]
+    return CompiledDocument(
+        doc, symbols, executions, stops[0], exits[0], confirmations, book_blocks
+    )
 
 
 class DocumentEngine:
@@ -351,7 +366,14 @@ class DocumentEngine:
         intents: list[Intent] = []
         stop_status: StageStatus = "skipped"
         order_status: StageStatus = "skipped"
+        book_missing: list[str] = []
         if not blocked:
+            # Order-book Blocks without a book at this time act as their plain counterparts.
+            book_missing = [
+                name
+                for name, b in self.compiled.book_blocks
+                if b.book_state(cand, comp.data) is None
+            ]
             stop = self.compiled.stop.initial_stop(cand, comp.data)
             if not np.isfinite(stop) or (cand.trigger - stop) * cand.direction <= 0:
                 blocked.append("no_stop")  # an entry without a stop is never placed
@@ -403,6 +425,7 @@ class DocumentEngine:
                 "risk": record,
                 "decision": "placed" if placed else "refused",
                 "reasons": blocked,
+                **({"book_missing": book_missing} if self.compiled.book_blocks else {}),
                 # On a placed setup: would a stop here be a normal loss (ADR 10 §11)?
                 "justified": justified,
                 "decision_path": [{"stage": s, "status": st} for s, st in path],

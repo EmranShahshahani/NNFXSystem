@@ -18,6 +18,9 @@ Contracts by kind:
   position is open (conditional breakeven, trailing; ticket 07). No exit
   rule may close the whole position below ``MIN_FULL_CLOSE_R``.
 
+- Order-book Blocks (ticket 21) are Execution, Stop and Exit Blocks that also read
+  ``StrategyData.book``. Without a snapshot at the candidate's time they behave as their plain
+  counterpart and the engine flags the run incomplete (``DocumentRun.incomplete``).
 - Market Filter: the Context contract (``compute(data) -> ContextOutput``) over the market
   series in ``StrategyData.market`` (dominance, pair ratios; ticket 20). Where a series is
   missing it sets ``available`` False: the check is not-applicable and the run incomplete.
@@ -42,6 +45,7 @@ from nnfx.data.bars import BarFrame, ns
 from nnfx.data.timeframes import TimeframeViews
 from nnfx.engine.types import ExitPlan, PositionView
 from nnfx.instruments import InstrumentSpec
+from nnfx.strategy.book import BookData
 from nnfx.strategy.levels import BoxTrack, LevelBook, track_boxes
 from nnfx.strategy.market import MarketData
 from nnfx.strategy.series import atr, pivots, rsi, sma
@@ -106,6 +110,7 @@ class StrategyData:
     instrument: InstrumentSpec
     session: SessionConfig
     market: MarketData = field(default_factory=MarketData)  # dominance and pair series (ticket 20)
+    book: BookData = field(default_factory=BookData)  # order-book snapshots (ticket 21)
     _cache: dict[Any, Any] = field(default_factory=dict, compare=False, repr=False)
 
     @classmethod
@@ -116,6 +121,7 @@ class StrategyData:
         instrument: InstrumentSpec,
         session: SessionConfig,
         market: MarketData | None = None,
+        book: BookData | None = None,
     ) -> StrategyData:
         if base.timeframe != roles["lwc"]:
             raise ValueError(f"LWC is {roles['lwc']} but the bars are {base.timeframe}")
@@ -129,8 +135,9 @@ class StrategyData:
             for role, f in frames.items()
         }
         return cls(
-            base.symbol, dict(roles), frames, positions, instrument, session, market or MarketData()
-        )
+            base.symbol, dict(roles), frames, positions, instrument, session,
+            market or MarketData(), book or BookData(),
+        )  # fmt: skip
 
     @property
     def base(self) -> BarFrame:
@@ -284,13 +291,14 @@ class StrategyData:
     def head(self, n: int) -> StrategyData:
         """The data as it stood at the close of LWC bar ``n - 1``."""
         return StrategyData.build(
-            self.base.head(n), self.roles, self.instrument, self.session, self.market
+            self.base.head(n), self.roles, self.instrument, self.session, self.market, self.book
         )
 
     def scaled(self, factor: float) -> StrategyData:
         return StrategyData.build(
-            self.base.scaled(factor), self.roles, self.instrument, self.session, self.market
-        )
+            self.base.scaled(factor), self.roles, self.instrument, self.session, self.market,
+            self.book,
+        )  # fmt: skip
 
 
 # ---------------------------------------------------------------- outputs

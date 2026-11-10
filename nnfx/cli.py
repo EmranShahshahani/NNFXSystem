@@ -295,6 +295,12 @@ def cmd_strategy_backtest(args: argparse.Namespace) -> int:
         print(exc)
         return 1
     frames, inst = load_frames(_pairs(args.csv), _registry(args), doc.timeframes.lwc)
+    book = None
+    if args.orderbook:
+        from nnfx.orderbook import RecordedOrderBook
+        from nnfx.strategy.book import BookData
+
+        book = BookData(RecordedOrderBook(args.orderbook))
     run = backtest_document(
         doc,
         frames,
@@ -302,11 +308,19 @@ def cmd_strategy_backtest(args: argparse.Namespace) -> int:
         costs=None if args.zero_costs else CostModel.from_venue(args.venue),
         research=ResearchState(Path(args.research)),
         stage="strategy/cli",
+        book_data=book,
     )
     name = f"{doc.metadata.name} v{doc.metadata.version}"
     print(f"{name}  fingerprint {run.fingerprint}  trial {run.trial_id}")
     print(f"trades: {len(run.result.trades)}")
     print(run.metrics().summary())
+    if run.incomplete:
+        lacking = run.book_missing_candidates
+        print(f"INCOMPLETE: no data for {', '.join(run.incomplete_blocks)}")
+        if run.book_gaps:
+            print(f"  order-book Blocks had no snapshot at {lacking} candidate(s); gaps:")
+            for g in run.book_gaps[:20]:
+                print(f"    {g['symbol']}  {g['start']} -> {g['end']}")
     return 0
 
 
@@ -760,6 +774,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--venue", default="config/venues/backtest.yaml")
     p.add_argument("--research", default="research")
     p.add_argument("--zero-costs", action="store_true")
+    p.add_argument(
+        "--orderbook", metavar="DIR", help="recorded order-book snapshots (orderbook record --root)"
+    )
     p.set_defaults(fn=cmd_strategy_backtest)
 
     ob = sub.add_parser("orderbook", help="order-book snapshots (live Nobitex, recorded)")

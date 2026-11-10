@@ -826,6 +826,41 @@ comes from daily bars and is fetched only for pairs that already pass the cheape
 list is an input to the morning routine, not a signal; it is not yet wired to a CLI command or
 the UI.
 
+### 25. Order-book Blocks (ticket 21)
+
+Order-book rules are live-first: they read the walls of ADR 02's Order Book Source (ticket 04)
+through `StrategyData.book`, a `BookData` over a recorded or fixture history. Each snapshot is
+fed once, in time order, to a `WallTracker` per (symbol, wall parameters), and the Block asks for
+the state *as of the candidate's time*: the latest snapshot at or before it, never a later one,
+none if it is older than `max_age_seconds` or one-sided. Walls are confirmed (persistent across
+`persist` snapshots), sized against the book's own depth (a percentile and a multiple of its
+median level), and never spoofs: a wall that vanished or stepped back as price approached is gone
+from the state, and a wall confirmed again at a level that spoofed is suspect and left out.
+
+| Block | Rule |
+|---|---|
+| `wall_trigger` (Execution) | the stop-market trigger moves just beyond the far edge of the *largest* persistent opposing wall within `max_distance_pct` of the setup's trigger (ask wall above a long, bid wall below a short). It aborts the breakout (no order) when volume contracts (the last `volume_bars` average under `contraction_factor` of the bars before) while a wall's near edge is within `approach_pct` of the close |
+| `wall_shielded_stop` (Stop) | the nearest persistent wall of the entry's own side strictly between the structural stop and the trigger (bid wall under a long) takes the stop to just behind its far edge; the stop only tightens and stays on the losing side; walls glued to the trigger (`min_gap_pct`) are ignored |
+| `wall_targets` (Exit) | a Profit Chain whose steps are pulled in front of the opposing walls that would stop them: for each step, the nearest wall between the previous step and the step's price places the target just in front of its near edge. No step goes below 2R, so a closer wall changes nothing; steps stay increasing; manage, breakeven, trail and exhaustion exits are the Profit Chain's |
+
+**Without a book** (no recording, a gap, a stale snapshot) each Block is its plain counterpart
+(`stop_market`, `structural_stop`, `profit_chain`) and the engine journals `book_missing` on every
+candidate it evaluated: `DocumentRun.incomplete` is true, `incomplete_blocks` names the Blocks,
+`book_missing_candidates` counts the candidates, and `book_gaps` lists, per symbol, the stretches of
+the run with no snapshot fresher than the Blocks' `max_age_seconds` (the longest of them). The CLI
+prints them (`nnfx strategy backtest --orderbook DIR`, DIR being the recorder's `--root`); the UI
+shows the incomplete notice.
+
+**Decisions and limits.** Walls are found with the Block's own parameters, so two order-book
+Blocks with different parameters track separately. The Template carries all three disabled; they
+replace `stop_market`, `structural_stop` and `profit_chain`, never join them (one Stop and one
+Exit Block decide). `wall_targets` extends `ProfitChain` so the recycling record and every
+exit option still work. "Heavy" is the wall definition itself (relative to the book), not a second
+threshold. The abort is part of `wall_trigger` because an Execution Block can only add orders,
+never veto another's; with no venue volume it aborts nothing. A UI run cannot upload recordings
+yet, so it is honestly incomplete. Price-scale invariance is not claimed: walls are absolute
+prices in the exchange's units.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

@@ -979,7 +979,7 @@ $("#st-run").addEventListener("click", async () => {
       el("div", { class: "panel" }, el("h2", {}, "نتیجه"),
         el("div", {}, "اثر انگشت سند: ", el("code", { dir: "ltr" }, r.fingerprint), " · آزمون: ", el("code", { dir: "ltr" }, r.trial_id || "—")),
         el("div", {}, `ستاپ‌های بررسی‌شده: ${r.candidate_count} · معاملات: ${r.trades.length}`),
-        r.incomplete ? el("div", { class: "neg" }, "نتیجه ناقص است: دادهٔ بازار (دامیننس یا نسبت‌ها) برای این بلوک‌ها در برخی ستاپ‌ها نبود و بررسی‌شان «نامربوط» ثبت شد: " + r.incomplete_blocks.join("، ")) : null,
+        r.incomplete ? el("div", { class: "neg" }, "نتیجه ناقص است: داده (سری‌های بازار یا اسنپ‌شات دفتر سفارش) برای این بلوک‌ها در برخی ستاپ‌ها نبود؛ فیلترهای بازار «نامربوط» ثبت شدند و بلوک‌های دفتر سفارش مثل همتای ساده‌شان عمل کردند: " + r.incomplete_blocks.join("، ")) : null,
         r.spot_transfers.length ? el("div", {}, `انتقال سود به اسپات: ${r.spot_transfers.length} بار، جمعاً `,
           el("bdi", { dir: "ltr" }, fmt(r.spot_balance, 2))) : null,
         el("pre", { dir: "ltr", class: "ltr" }, r.summary)),

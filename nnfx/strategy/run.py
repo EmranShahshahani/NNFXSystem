@@ -22,8 +22,9 @@ from nnfx.journal.journal import Journal
 from nnfx.research.metrics import Metrics, compute_metrics
 from nnfx.research.partition import HoldoutAccessError, Market, Partition, SegmentName
 from nnfx.research.trials import ResearchState
+from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument
-from nnfx.strategy.engine import DocumentEngine, compile_document
+from nnfx.strategy.engine import CompiledDocument, DocumentEngine, compile_document
 from nnfx.strategy.library import ProfitChain
 from nnfx.strategy.market import MarketData
 
@@ -80,13 +81,17 @@ class DocumentRun:
     stop_labels: dict[str, str] = field(default_factory=dict)
     # Futures-to-spot recycling record (Profit Chain option), oldest first.
     spot_transfers: list[SpotTransfer] = field(default_factory=list)
+    # Stretches of the run with no order-book snapshot, for the order-book Blocks (ticket 21):
+    # {"symbol", "start", "end"}. Empty when the document has no such Block or the book was full.
+    book_gaps: list[dict[str, str]] = field(default_factory=list)
 
     @property
     def incomplete(self) -> bool:
-        """Whether a Market Filter lacked its data at some candidate (ADR 10 §9, §24).
+        """Whether a Market Filter or order-book Block lacked its data at some candidate.
 
-        Its check was not-applicable there instead of a pass: the result rests on less
-        than the document asked for.
+        A Market Filter's check was not-applicable there instead of a pass (ADR 10 §9, §24); an
+        order-book Block acted as its plain counterpart (§25): the result rests on less than
+        the document asked for.
         """
         return bool(self.incomplete_blocks)
 
@@ -99,7 +104,13 @@ class DocumentRun:
                 for item in c.get("checklist", [])
                 if item["kind"] == "context" and item["outcome"] == "na"
             }
+            | {name for c in self.candidates for name in c.get("book_missing", [])}
         )
+
+    @property
+    def book_missing_candidates(self) -> int:
+        """Candidates at which some order-book Block had no book."""
+        return sum(bool(c.get("book_missing")) for c in self.candidates)
 
     def spot_balance(self) -> float:
         return sum(t.amount for t in self.spot_transfers)
@@ -176,6 +187,7 @@ def backtest_document(
     start: pd.Timestamp | None = None,
     end: pd.Timestamp | None = None,
     market_data: MarketData | None = None,
+    book_data: BookData | None = None,
 ) -> DocumentRun:
     if not frames:
         raise ValueError("no bars to run on")
@@ -189,7 +201,7 @@ def backtest_document(
     segment = segment_of(market, frames, end)
     journal = journal if journal is not None else Journal()  # the candidates live in it
     cfg = document_config(doc, config)
-    compiled = compile_document(doc, frames, instruments, cfg.session, market_data)
+    compiled = compile_document(doc, frames, instruments, cfg.session, market_data, book_data)
     result = BacktestHarness(
         cfg,
         {s: instruments[s] for s in frames},
@@ -225,7 +237,33 @@ def backtest_document(
         if isinstance(ex, ProfitChain) and ex.p.recycle_to_spot
         else []
     )
-    return DocumentRun(fp, result, trial, candidates, labels, transfers)
+    gaps = book_gaps(compiled, frames, book_data or BookData(), start, end)
+    return DocumentRun(fp, result, trial, candidates, labels, transfers, gaps)
+
+
+def book_gaps(
+    compiled: CompiledDocument,
+    frames: Mapping[str, BarFrame],
+    book: BookData,
+    start: pd.Timestamp | None,
+    end: pd.Timestamp | None,
+) -> list[dict[str, str]]:
+    """Where each symbol's run had no order-book snapshot fresh enough for the book Blocks."""
+    if not compiled.book_blocks:
+        return []
+    fresh = max(b.p.max_age_seconds for _, b in compiled.book_blocks)
+    out = []
+    for sym, f in sorted(frames.items()):
+        if not len(f):
+            continue
+        first, last = f.index[0], f.index[-1]
+        if start is not None:
+            first = max(first, pd.Timestamp(start))
+        if end is not None:
+            last = min(last, pd.Timestamp(end))
+        for a, b in book.gaps(sym, first, last, pd.Timedelta(seconds=fresh)):
+            out.append({"symbol": sym, "start": a.isoformat(), "end": b.isoformat()})
+    return out
 
 
 def _candidates_and_labels(
