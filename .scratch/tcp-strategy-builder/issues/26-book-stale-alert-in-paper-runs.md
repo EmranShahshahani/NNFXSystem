@@ -4,11 +4,15 @@
 
 **Blocked by:** 25 (Order-book Blocks see the book in Paper Runs)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] One `book_stale` alert per symbol per outage and one recovery alert, deduplicated across restarts and replayed cycles like other alerts
-- [ ] The run continues through the outage with its decisions marked `book_missing`; it is not stopped
-- [ ] Runs whose documents have no order-book Block never raise it
-- [ ] Alert delivery failure never affects decisions (as for the other alerts)
+- [x] One `book_stale` alert per symbol per outage and one recovery alert, deduplicated across restarts and replayed cycles like other alerts
+- [x] The run continues through the outage with its decisions marked `book_missing`; it is not stopped
+- [x] Runs whose documents have no order-book Block never raise it
+- [x] Alert delivery failure never affects decisions (as for the other alerts)
 
 Spec: `.scratch/tcp-strategy-builder/spec.md` (story 109)
+
+## Resolution
+
+`book_alert` (`book_stale` / `book_back`), `stale_books` and `BookData.has_snapshot`, `PaperManager` tracking each run's stale symbols (`book_stale` in the run's state, so a restart mid-outage does not alert again), ADR 10 §28. Notes: a run that starts while the recorder is down alerts at its first cycle; staleness is judged at the symbol's latest bar, with the Blocks' largest `max_age_seconds`; without a recordings directory nothing is watched.

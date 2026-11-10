@@ -137,6 +137,10 @@ class BookData:
         state = tl.states[i]
         return None if state is None or at - state.born > max_age else state
 
+    def has_snapshot(self, symbol: str, start: pd.Timestamp, end: pd.Timestamp) -> bool:
+        """Whether any snapshot was seen in [start, end]."""
+        return self.source is not None and bool(self.source.snapshots(symbol, utc(start), utc(end)))
+
     def gaps(
         self, symbol: str, start: pd.Timestamp | str, end: pd.Timestamp | str, max_gap: pd.Timedelta
     ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:

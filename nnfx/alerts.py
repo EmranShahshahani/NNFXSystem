@@ -32,7 +32,7 @@ Post = Callable[[str, dict[str, Any]], None]
 class Alert:
     id: str
     time: str  # the bar the alert is about
-    kind: str  # candidate | placed | filled | cancelled | expired | halt
+    kind: str  # candidate | placed | filled | cancelled | expired | halt | book_stale | book_back
     symbol: str
     text: str  # Persian, ready to show or send
     run: str = ""
@@ -288,3 +288,14 @@ def halt_alert(run: str, when: str, reason: str) -> Alert:
     return Alert(
         _id(run, when, "halt", reason), when, "halt", "", f"اجرای کاغذی متوقف شد: {reason}", run
     )
+
+
+def book_alert(run: str, when: str, symbol: str, stale: bool) -> Alert:
+    """The recorder stopped delivering books for ``symbol`` (or resumed): once per outage."""
+    kind = "book_stale" if stale else "book_back"
+    text = (
+        f"دفتر سفارش {symbol} دیگر تازه نمی‌شود؛ بلوک‌های دفتر مثل همتای ساده‌شان عمل می‌کنند"
+        if stale
+        else f"دفتر سفارش {symbol} دوباره تازه شد"
+    )
+    return Alert(_id(run, when, kind, symbol), when, kind, symbol, text, run)

@@ -22,7 +22,7 @@ from typing import Any
 
 import pandas as pd
 
-from nnfx.alerts import Notifier, alerts_from_cycle, halt_alert, owner_hash
+from nnfx.alerts import Alert, Notifier, alerts_from_cycle, book_alert, halt_alert, owner_hash
 from nnfx.brokers.costs import CostModel
 from nnfx.brokers.paper import PaperBroker
 from nnfx.brokers.sim import Trade
@@ -38,7 +38,7 @@ from nnfx.strategy.analytics import journal_report, journal_rows
 from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument, validate_document
 from nnfx.strategy.engine import DocumentEngine, compile_document
-from nnfx.strategy.run import book_gaps, document_config
+from nnfx.strategy.run import book_gaps, document_config, stale_books
 
 BarSource = Callable[[str, pd.Timestamp], BarFrame]
 MAX_RUNS = 3  # running paper runs per user
@@ -73,6 +73,8 @@ class PaperRunInfo:
     alerted_through: str = ""  # the latest cycle whose alerts were handed over
     # Stretches of the recent window with no fresh order-book snapshot (order-book Blocks only).
     book_gaps: list[dict[str, str]] = field(default_factory=list)
+    # Symbols whose books are stale as of the latest cycle (one alert per outage, ticket 26).
+    book_stale: list[str] = field(default_factory=list)
 
     def public(self) -> dict[str, Any]:
         d = asdict(self)
@@ -111,6 +113,15 @@ class LiveBars:
             )
         self._cache[symbol] = merged
         return merged.between(None, now)
+
+
+@dataclass(frozen=True)
+class BookWatch:
+    """What a cycle learned about the order book: gaps, who is stale now, and what to announce."""
+
+    gaps: list[dict[str, str]] = field(default_factory=list)
+    stale: list[str] = field(default_factory=list)
+    alerts: list[Alert] = field(default_factory=list)
 
 
 class PaperManager:
@@ -259,10 +270,22 @@ class PaperManager:
         if self.book is not None:
             self.book.refresh(now, BOOK_HISTORY)  # what the recorder wrote since the last cycle
         compiled = compile_document(doc, frames, inst, cfg.session, None, self.book)
-        gaps = []
-        if compiled.book_blocks:
+        watch = BookWatch()
+        if compiled.book_blocks and self.book is not None:
             first = max(min(f.index[0] for f in frames.values()), now - BOOK_HISTORY)
-            gaps = book_gaps(compiled, frames, self.book or BookData(), first, None)
+            gaps = book_gaps(compiled, frames, self.book, first, None)
+            stale = stale_books(compiled, frames, self.book)
+            before = set(info.book_stale)
+            alerts = [
+                book_alert(info.id, t.isoformat(), s, True)
+                for s, t in stale.items()
+                if s not in before
+            ] + [
+                book_alert(info.id, frames[s].index[-1].isoformat(), s, False)
+                for s in sorted(before - set(stale))
+                if s in frames
+            ]
+            watch = BookWatch(gaps, sorted(stale), alerts)
         d = self.run_dir(info.owner, info.id)
         costs = self.costs.with_toggles(cfg.costs) if self.costs else CostModel.zero()
         broker = PaperBroker(
@@ -285,10 +308,10 @@ class PaperManager:
             engine=DocumentEngine(compiled),
         )
         report = harness.run_cycle()
-        self._announce(info, now, report.halted, gaps)
+        self._announce(info, now, report.halted, watch)
 
     def _announce(
-        self, info: PaperRunInfo, now: pd.Timestamp, halted: str | None, gaps: list[dict[str, str]]
+        self, info: PaperRunInfo, now: pd.Timestamp, halted: str | None, watch: BookWatch
     ) -> None:
         """Hand the new cycles' alerts over, then remember how far we got."""
         cycles = list(Journal(self.run_dir(info.owner, info.id) / "journal.jsonl").records("cycle"))
@@ -299,10 +322,19 @@ class PaperManager:
         fresh = [c for c in cycles if through is None or pd.Timestamp(c["time"]) > through]
         for c in fresh:
             self.notifier.submit(info.owner, alerts_from_cycle(info.id, c, symbols))
+        self.notifier.submit(info.owner, watch.alerts)
         with self._lock:
             cur = self._get(info.owner, info.id)
             if cur.status == "running":
                 last = cycles[-1]["time"] if cycles else cur.last_cycle
-                self._save(replace(cur, last_cycle=last, alerted_through=last, book_gaps=gaps))
+                self._save(
+                    replace(
+                        cur,
+                        last_cycle=last,
+                        alerted_through=last,
+                        book_gaps=watch.gaps,
+                        book_stale=watch.stale,
+                    )
+                )
         if halted:
             self._fail(info, now, halted)

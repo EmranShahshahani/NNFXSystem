@@ -963,6 +963,18 @@ the process's life; walls older than the two-day window are forgotten at the sta
 server rebuilds from the last two days only); a wall tracker built after the first cycle for new
 parameters starts from the snapshots then held.
 
+*Stale books (ticket 26).* When a run's document has order-book Blocks and the server has a
+recordings directory, each cycle checks every symbol of the run: no snapshot within the Blocks'
+largest `max_age_seconds` before the symbol's latest bar means its book is stale. The first stale
+cycle raises one `book_stale` alert and the first fresh one after it a `book_back` alert; the
+run's `book_stale` list holds who is stale now, so a restart in the middle of an outage does not
+alert again (alert ids are also fixed by run, bar and symbol, so a replayed cycle is deduplicated
+like any alert). The run is never stopped: its order-book Blocks act as their plain counterparts
+and candidates carry `book_missing` (§25), as in a backtest with a gap. A run that starts while the
+recorder is down gets `book_stale` at its first cycle. Without a recordings directory nothing is
+watched, and a document with no order-book Blocks never raises it. Delivery goes through the
+usual notifier, so a Bale failure changes no decision.
+
 
 ## Consequences
 

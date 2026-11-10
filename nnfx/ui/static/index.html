@@ -460,7 +460,7 @@ async function loadResearch() {
 
 // ---------------------------------------------------------------- live
 // ---------------------------------------------------------------- paper runs and alerts (ticket 22)
-const ALERT_KINDS = { candidate: "نامزد ستاپ", placed: "تریگر ثبت شد", filled: "پر شد", cancelled: "لغو شد", expired: "منقضی شد", halt: "توقف" };
+const ALERT_KINDS = { candidate: "نامزد ستاپ", placed: "تریگر ثبت شد", filled: "پر شد", cancelled: "لغو شد", expired: "منقضی شد", halt: "توقف", book_stale: "دفتر سفارش قدیمی", book_back: "دفتر سفارش برگشت" };
 let paperTimer = null;
 async function loadPaper() {
   const out = $("#paper-out");

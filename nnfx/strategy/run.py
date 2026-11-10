@@ -270,6 +270,20 @@ def book_gaps(
     return out
 
 
+def stale_books(
+    compiled: CompiledDocument, frames: Mapping[str, BarFrame], book: BookData
+) -> dict[str, pd.Timestamp]:
+    """Symbols with no snapshot fresher than the Blocks allow at their latest bar -> that bar."""
+    if not compiled.book_blocks:
+        return {}
+    fresh = pd.Timedelta(seconds=max(b.p.max_age_seconds for _, b in compiled.book_blocks))
+    out = {}
+    for sym, f in sorted(frames.items()):
+        if len(f) and not book.has_snapshot(sym, f.index[-1] - fresh, f.index[-1]):
+            out[sym] = f.index[-1]
+    return out
+
+
 def _candidates_and_labels(
     journal: Journal, result: BacktestResult
 ) -> tuple[list[dict[str, Any]], dict[str, str]]:
