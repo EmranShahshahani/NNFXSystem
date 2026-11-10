@@ -108,7 +108,7 @@ def test_the_alert_goes_to_bale_too_and_a_bale_outage_changes_no_decision(tmp_pa
     m = manager(tmp_path, rec)
     sent: list[dict] = []
     m.notifier.bale.post = lambda url, body: sent.append(body)  # type: ignore[union-attr]
-    m.notifier.store.set_settings("ali", AlertSettings(True, True, "7"))
+    m.notifier.store.set_settings("ali", AlertSettings(True, True, "7", True))
     rid = start(m, raw=book_doc())
     outage(m, rec)
     m.notifier.flush()
@@ -121,7 +121,7 @@ def test_the_alert_goes_to_bale_too_and_a_bale_outage_changes_no_decision(tmp_pa
     m2 = manager(tmp_path / "two", rec2)
     m2.notifier.bale.post = down  # type: ignore[union-attr]
     m2.notifier.bale.sleep = lambda s: None  # type: ignore[union-attr]
-    m2.notifier.store.set_settings("ali", AlertSettings(True, True, "7"))
+    m2.notifier.store.set_settings("ali", AlertSettings(True, True, "7", True))
     rid2 = start(m2, raw=book_doc())
     outage(m2, rec2)
     m2.notifier.flush()

@@ -124,7 +124,9 @@ def notifier(tmp_path: Path, post: FakeBale) -> Notifier:
 def test_delivery_follows_each_users_switches(tmp_path: Path):
     post = FakeBale()
     n = notifier(tmp_path, post)
-    n.store.set_settings("ali", AlertSettings(in_site=True, bale=True, bale_chat="9"))
+    n.store.set_settings(
+        "ali", AlertSettings(in_site=True, bale=True, bale_chat="9", bale_verified=True)
+    )
     n.store.set_settings("sara", AlertSettings(in_site=False, bale=False, bale_chat="9"))
     (alert, *_) = alerts_from_cycle("r", CYCLE, SYMBOLS)
     n.submit("ali", [alert])
@@ -137,7 +139,9 @@ def test_delivery_follows_each_users_switches(tmp_path: Path):
 def test_bale_needs_a_chat_id(tmp_path: Path):
     post = FakeBale()
     n = notifier(tmp_path, post)
-    n.store.set_settings("ali", AlertSettings(in_site=True, bale=True, bale_chat=""))
+    n.store.set_settings(
+        "ali", AlertSettings(in_site=True, bale=True, bale_chat="", bale_verified=True)
+    )
     n.submit("ali", alerts_from_cycle("r", CYCLE, SYMBOLS)[:1])
     n.flush()
     assert post.calls == []
@@ -145,7 +149,9 @@ def test_bale_needs_a_chat_id(tmp_path: Path):
 
 def test_a_bale_failure_is_logged_and_the_feed_still_has_the_alert(tmp_path: Path):
     n = Notifier(AlertStore(tmp_path), sender(FakeBale(fail=99)))
-    n.store.set_settings("ali", AlertSettings(in_site=True, bale=True, bale_chat="9"))
+    n.store.set_settings(
+        "ali", AlertSettings(in_site=True, bale=True, bale_chat="9", bale_verified=True)
+    )
     n.submit("ali", alerts_from_cycle("r", CYCLE, SYMBOLS)[:1])
     n.flush()
     assert len(n.store.feed("ali")) == 1
@@ -161,7 +167,9 @@ def test_submit_returns_at_once_while_delivery_is_stuck(tmp_path: Path):
         gate.wait(5)
 
     n = Notifier(AlertStore(tmp_path), sender(stuck))  # type: ignore[arg-type]
-    n.store.set_settings("ali", AlertSettings(in_site=True, bale=True, bale_chat="9"))
+    n.store.set_settings(
+        "ali", AlertSettings(in_site=True, bale=True, bale_chat="9", bale_verified=True)
+    )
     done = threading.Event()
 
     def go() -> None:
@@ -193,7 +201,9 @@ def test_the_feed_is_one_json_object_per_line(tmp_path: Path):
 def test_a_replayed_alert_is_neither_resent_nor_re_added_whatever_the_switches(tmp_path: Path):
     post = FakeBale()
     n = notifier(tmp_path, post)
-    n.store.set_settings("ali", AlertSettings(in_site=False, bale=True, bale_chat="9"))
+    n.store.set_settings(
+        "ali", AlertSettings(in_site=False, bale=True, bale_chat="9", bale_verified=True)
+    )
     alerts = alerts_from_cycle("r", CYCLE, SYMBOLS)[:2]
     n.submit("ali", alerts)
     n.submit("ali", alerts)  # a crash replayed the cycle

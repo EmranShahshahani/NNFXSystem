@@ -10,14 +10,16 @@ user and never raised to the caller.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
 import queue
+import secrets
 import threading
 import time
 import urllib.request
 from collections.abc import Callable, Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -100,6 +102,16 @@ class AlertSettings:
     in_site: bool = True
     bale: bool = False
     bale_chat: str = ""
+    bale_verified: bool = False  # the user proved they can read this chat (ticket 27)
+
+
+CODE_TTL = 600.0  # seconds a verification code lives
+CODE_INTERVAL = 60.0  # seconds between two codes for one user
+CODE_TRIES = 5
+
+
+class VerificationError(ValueError):
+    """A verification request the user can fix; the message is Persian and shown as is."""
 
 
 def owner_hash(text: str) -> str:
@@ -121,17 +133,101 @@ class AlertStore:
         p = self._dir(user) / "settings.json"
         try:
             raw = json.loads(p.read_text(encoding="utf-8"))
-            return AlertSettings(bool(raw["in_site"]), bool(raw["bale"]), str(raw["bale_chat"]))
+            return AlertSettings(
+                bool(raw["in_site"]),
+                bool(raw["bale"]),
+                str(raw["bale_chat"]),
+                bool(raw.get("bale_verified", False)),
+            )
         except (OSError, ValueError, KeyError):
             return AlertSettings()
 
-    def set_settings(self, user: str, s: AlertSettings) -> None:
+    def set_settings(self, user: str, s: AlertSettings, *, _locked: bool = False) -> None:
         d = self._dir(user)
-        with self._lock:
+
+        def write() -> None:
             d.mkdir(parents=True, exist_ok=True)
             tmp = d / "settings.tmp"
             tmp.write_text(json.dumps(asdict(s)), encoding="utf-8")
             tmp.replace(d / "settings.json")
+
+        if _locked:  # the caller holds the store's lock already
+            write()
+        else:
+            with self._lock:
+                write()
+
+    # ------------------------------------------------------- chat verification
+    def issue_code(self, user: str, *, now: float | None = None) -> str:
+        """A fresh one-time code for the user's saved chat; the caller sends it to that chat.
+
+        Only a hash is kept. A user gets one code a minute; each code lives ten minutes and
+        allows five tries. Reading the code in the chat is what shows the chat is the user's.
+        """
+        now = time.time() if now is None else now
+        chat = self.settings(user).bale_chat
+        if not chat:
+            raise VerificationError("ابتدا شناسهٔ چت بله را ذخیره کنید")
+        d = self._dir(user)
+        with self._lock:
+            d.mkdir(parents=True, exist_ok=True)
+            cur = self._pending(d)
+            if cur and now - cur["issued"] < CODE_INTERVAL:
+                raise VerificationError("کد تازه‌ای به‌تازگی فرستاده شد؛ یک دقیقه صبر کنید")
+            code = f"{secrets.randbelow(10**6):06d}"
+            salt = secrets.token_hex(8)
+            row = {
+                "chat": chat,
+                "salt": salt,
+                "hash": self._code_hash(salt, code),
+                "issued": now,
+                "tries": 0,
+            }
+            self._write_pending(d, row)
+        return code
+
+    def drop_code(self, user: str) -> None:
+        """Forget a pending code (its message could not be sent)."""
+        with self._lock:
+            (self._dir(user) / "verify.json").unlink(missing_ok=True)
+
+    def check_code(self, user: str, code: str, *, now: float | None = None) -> bool:
+        """Whether ``code`` is the pending one for the chat still saved; marks the chat verified."""
+        now = time.time() if now is None else now
+        d = self._dir(user)
+        with self._lock:
+            row = self._pending(d)
+            if row is None:
+                return False
+            cur = self.settings(user)
+            if (
+                now - row["issued"] > CODE_TTL
+                or row["tries"] >= CODE_TRIES
+                or row["chat"] != cur.bale_chat
+            ):
+                return False
+            if not hmac.compare_digest(row["hash"], self._code_hash(row["salt"], code.strip())):
+                self._write_pending(d, {**row, "tries": row["tries"] + 1})
+                return False
+            (d / "verify.json").unlink(missing_ok=True)
+            self.set_settings(user, replace(cur, bale_verified=True), _locked=True)
+            return True
+
+    @staticmethod
+    def _code_hash(salt: str, code: str) -> str:
+        return hashlib.sha256(f"{salt}|{code}".encode()).hexdigest()
+
+    def _pending(self, d: Path) -> dict[str, Any] | None:
+        try:
+            row: dict[str, Any] = json.loads((d / "verify.json").read_text(encoding="utf-8"))
+            return row
+        except (OSError, ValueError):
+            return None
+
+    def _write_pending(self, d: Path, row: dict[str, Any]) -> None:
+        tmp = d / "verify.tmp"
+        tmp.write_text(json.dumps(row), encoding="utf-8")
+        tmp.replace(d / "verify.json")
 
     def _lines(self, path: Path) -> list[dict[str, Any]]:
         if not path.exists():
@@ -248,7 +344,7 @@ class Notifier:
                 s = self.store.settings(user)
                 if s.in_site:
                     self.store.append(user, a)
-                if s.bale and s.bale_chat and self.bale is not None:
+                if s.bale and s.bale_chat and s.bale_verified and self.bale is not None:
                     self._ensure_worker()
                     self._q.put((user, a, s.bale_chat))
             except Exception:  # alerts must never reach the trading path

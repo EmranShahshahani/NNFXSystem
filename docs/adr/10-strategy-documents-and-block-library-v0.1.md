@@ -980,6 +980,24 @@ still stale repeats the `book_stale` alert (a replay on the same bar is deduplic
 that errors in an outage gets no `book_back`.
 
 
+### 29. Proving a Bale chat id (ticket 27)
+
+A chat id typed into the site proves nothing: anyone could enter another person's id and have
+alerts sent to a stranger, or have the bot post to a chat that is not theirs. The user now has to
+show they can read the chat. `POST /api/alerts/bale/code` sends a six-digit one-time code to the
+saved chat id through the bot; `POST /api/alerts/bale/verify` takes it back and marks the chat
+verified. The code is generated with `secrets`, stored only as a salted hash (`verify.json` per
+user), lives ten minutes, allows five tries, and a user gets one code a minute; if sending fails
+the pending code is dropped so the user can retry at once. A code is good only for the chat that
+was saved when it was issued. Changing the chat id removes the verification and turns Bale off;
+switching Bale on needs a verified chat; the notifier never sends to an unverified one, whatever
+the stored switches say (settings files written before this ticket have no `bale_verified`, so
+those users verify once). No inbound webhook or polling is needed: the proof is that the code,
+sent to the chat, came back. Limits: a user must have started a conversation with the bot for
+Bale to deliver at all (the error says so); verification proves the user can read that chat, not
+that the chat is private to them (a group chat is the user's call); the code messages go through
+the same retried sender as alerts.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

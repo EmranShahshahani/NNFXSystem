@@ -173,7 +173,7 @@ def test_a_bale_outage_does_not_change_the_decisions(tmp_path: Path):
         raise OSError("bale unreachable")
 
     m, n = manager(tmp_path, Bars(f), post=down)
-    n.store.set_settings("ali", AlertSettings(True, True, "9"))
+    n.store.set_settings("ali", AlertSettings(True, True, "9", True))
     rid = start(m)
     step_through(m, f)
     n.flush()

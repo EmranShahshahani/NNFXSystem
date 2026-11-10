@@ -27,7 +27,14 @@ from urllib.parse import parse_qs, urlparse
 import numpy as np
 import pandas as pd
 
-from nnfx.alerts import AlertSettings, AlertStore, BaleSender, Notifier, default_post
+from nnfx.alerts import (
+    AlertSettings,
+    AlertStore,
+    BaleSender,
+    Notifier,
+    VerificationError,
+    default_post,
+)
 from nnfx.brokers.costs import CostModel
 from nnfx.config import SystemConfig, load_system_config
 from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
@@ -653,24 +660,54 @@ class App:
     def alerts_feed(self, user: User, after: int = 0) -> dict[str, Any]:
         return {"alerts": self.notifier.store.feed(user.username, after)}
 
-    def alert_settings(self, user: User) -> dict[str, Any]:
-        s = self.notifier.store.settings(user.username)
+    def _settings_reply(self, s: AlertSettings) -> dict[str, Any]:
         return {**asdict(s), "bale_available": self.notifier.bale is not None}
+
+    def alert_settings(self, user: User) -> dict[str, Any]:
+        return self._settings_reply(self.notifier.store.settings(user.username))
 
     def alert_settings_save(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
         cur = self.notifier.store.settings(user.username)
         chat = str(req.get("bale_chat", cur.bale_chat)).strip()
         if chat and not re.fullmatch(r"-?\d{1,20}", chat):
             raise ValueError("شناسهٔ چت بله باید عدد باشد")
-        new = AlertSettings(
-            bool(req.get("in_site", cur.in_site)), bool(req.get("bale", cur.bale)), chat
-        )
-        if new.bale and not chat:
+        changed = chat != cur.bale_chat
+        verified = cur.bale_verified and not changed  # a new chat has to be proven again
+        # Changing the chat turns Bale off unless the user asks for it and the chat is proven.
+        want = bool(req.get("bale", False if changed else cur.bale))
+        if want and not chat:
             raise ValueError("برای دریافت در بله شناسهٔ چت را وارد کنید")
-        if new.bale and self.notifier.bale is None:
+        if want and self.notifier.bale is None:
             raise ValueError("ربات بله روی این سرور تنظیم نشده است")
+        if want and not verified:
+            raise ValueError("شناسهٔ چت هنوز تأیید نشده است؛ ابتدا کد تأیید را بگیرید و وارد کنید")
+        new = AlertSettings(bool(req.get("in_site", cur.in_site)), want, chat, verified)
         self.notifier.store.set_settings(user.username, new)
-        return {"ok": True, **asdict(new), "bale_available": self.notifier.bale is not None}
+        return {"ok": True, **self._settings_reply(new)}
+
+    def bale_code(self, user: User) -> dict[str, Any]:
+        """Send a one-time code to the saved chat; reading it there proves the chat is theirs."""
+        bale = self.notifier.bale
+        if bale is None:
+            raise ValueError("ربات بله روی این سرور تنظیم نشده است")
+        store = self.notifier.store
+        try:
+            code = store.issue_code(user.username)
+        except VerificationError as e:
+            raise ValueError(str(e)) from None
+        error = bale.send(
+            store.settings(user.username).bale_chat,
+            f"کد تأیید NNFX: {code}\nاین کد ده دقیقه معتبر است. اگر شما نخواسته‌اید، نادیده بگیرید.",
+        )
+        if error is not None:
+            store.drop_code(user.username)  # nothing was delivered: allow an immediate retry
+            raise ValueError("ارسال به بله ناموفق بود؛ شناسهٔ چت و شروع گفتگو با ربات را بررسی کنید")
+        return {"ok": True}
+
+    def bale_verify(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        if not self.notifier.store.check_code(user.username, str(req.get("code", ""))):
+            raise ValueError("کد نادرست یا منقضی است")
+        return {"ok": True, **self._settings_reply(self.notifier.store.settings(user.username))}
 
     # ------------------------------------------------------------ beta accounts
     def _accounts(self) -> Auth:
@@ -933,6 +970,10 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 self._dispatch(app.paper_stop, user, body)
             elif path == "/api/alerts/settings":
                 self._dispatch(app.alert_settings_save, user, body)
+            elif path == "/api/alerts/bale/code":
+                self._dispatch(app.bale_code, user)
+            elif path == "/api/alerts/bale/verify":
+                self._dispatch(app.bale_verify, user, body)
             elif path == "/api/feedback":
                 self._dispatch(app.add_feedback, user, body)
             elif path == "/api/admin/invites":

@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from nnfx.alerts import AlertSettings
 from nnfx.ui.auth import Auth
 from nnfx.ui.server import App, serve
 from tests.test_beta_auth import _call, _client
@@ -113,6 +114,7 @@ def test_each_channel_is_switchable_per_user(beta: Beta):
         _call(c, beta.base + "/api/paper/start", {"name": "tracer"})
     s = _call(ali, beta.base + "/api/alerts/settings")[1]
     assert s["in_site"] and not s["bale"] and s["bale_available"]
+    beta.app.notifier.store.set_settings("ali", AlertSettings(True, False, "42", True))  # proven
     code, _ = _call(
         ali, beta.base + "/api/alerts/settings", {"in_site": False, "bale": True, "bale_chat": "42"}
     )

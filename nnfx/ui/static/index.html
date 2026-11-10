@@ -489,12 +489,18 @@ async function loadPaper() {
             el("button", { onclick: async () => { try { const j = await api("/api/paper/journal?id=" + r.id); jbox.replaceChildren(stJournal(j.journal, j.stats, j.review)); } catch (e) { msg.className = "err"; msg.textContent = e.message; } } }, "ژورنال"))))))) : el("div", { class: "muted" }, "اجرای فعالی نیست."),
       jbox));
     const inSite = el("input", { type: "checkbox", checked: set.in_site });
-    const bale = el("input", { type: "checkbox", checked: set.bale, disabled: !set.bale_available });
+    const bale = el("input", { type: "checkbox", checked: set.bale, disabled: !set.bale_available || !set.bale_verified });
     const chat = el("input", { value: set.bale_chat, placeholder: "شناسهٔ عددی چت بله", dir: "ltr", disabled: !set.bale_available });
     const smsg = el("div", { class: "muted" });
+    const vcode = el("input", { placeholder: "کد ۶ رقمی", dir: "ltr", inputmode: "numeric", maxlength: "6" });
     out.append(el("div", { class: "panel" }, el("h2", {}, "هشدارها"),
       el("label", {}, inSite, " نمایش در همین سایت"),
       el("label", {}, bale, " ارسال در بله", set.bale_available ? "" : " (روی این سرور فعال نیست)"), chat,
+      set.bale_available ? el("div", { class: "row" },
+        el("span", { class: set.bale_verified ? "" : "muted" }, set.bale_verified ? "✓ شناسهٔ چت تأیید شده است" : "شناسهٔ چت تأیید نشده؛ ابتدا ذخیره کنید، سپس کد بگیرید"),
+        set.bale_chat && !set.bale_verified ? el("button", { onclick: async () => { try { await api("/api/alerts/bale/code", {}); smsg.className = "muted"; smsg.textContent = "کد در بله فرستاده شد"; } catch (e) { smsg.className = "err"; smsg.textContent = e.message; } } }, "ارسال کد تأیید") : null,
+        set.bale_chat && !set.bale_verified ? vcode : null,
+        set.bale_chat && !set.bale_verified ? el("button", { onclick: async () => { try { await api("/api/alerts/bale/verify", { code: vcode.value }); await loadPaper(); } catch (e) { smsg.className = "err"; smsg.textContent = e.message; } } }, "تأیید کد") : null) : null,
       el("button", { onclick: async () => { try { await api("/api/alerts/settings", { in_site: inSite.checked, bale: bale.checked, bale_chat: chat.value }); smsg.className = "muted"; smsg.textContent = "ذخیره شد"; } catch (e) { smsg.className = "err"; smsg.textContent = e.message; } } }, "ذخیرهٔ تنظیمات"),
       smsg));
     const list = el("div", {});
