@@ -682,6 +682,48 @@ bullish divergence (falling price, falling volume) as favouring longs, as the bl
 does. `health_exit` and `climax_exit` live in the Profit Chain with the shared `HealthParams`
 fields, so the Profit Chain's form is long. All new rows are off in the Template.
 
+## 22. Bollinger, pivots and sessions (ticket 18)
+
+Videos 14, 57 and 58. Bollinger in `strategy/bands.py`, floor pivots in `strategy/pivots.py`,
+sessions in `strategy/sessions.py`; `strategy/candles.py` now holds the candle-style Setup
+output that `setups.py` and `bands.py` share. All new rows are off in the Template.
+
+| Block | Kind | Rule |
+|---|---|---|
+| `bb_htf_touch` | Setup | higher-timeframe Dow up: a low at or under the lower band that closes back above it (`touch`), or a close back over the middle line (`cross`) is a long; mirrored for shorts; flat Dow gives nothing |
+| `bb_squeeze` | Setup | bandwidth strictly under the `squeeze_pct` quantile of the `window` bars before it within `squeeze_bars` bars, then a close outside the band: trade the break |
+| `bb_runway` | Confirmation | the last `bars` closes lie between the 1 SD and 2 SD bands on the trade's side (double Bollinger "Momentum Runway") |
+| `pivot_breach` | Confirmation | the close is beyond R1 (longs) or S1 (shorts) of the last closed 4H bar or week; the central P is never a signal |
+| `session_filter` | Context | entries only in the chosen sessions (Asia 00-08, London 07-16, New York 12-21 UTC) and never from 21:00 to 00:00 UTC |
+| `session_regime` | Context | London and New York trending the same way set a continuation bias until the next London close; a London that failed to trend moves momentum to the 13:30-14:30 UTC window |
+
+Profit Chain additions, both only after the first step (the 2R floor): `runway_exit` closes
+what remains once candles that rode the runway in the last `runway_bars` bars close back inside
+the 1 SD band (a close beyond 2 SD is not "lost"); `pivot_exit` (`r3`, `r4`, `both`) closes at
+R3/S3 or R4/S4 on `pivot_period`, where `both` only tightens the stop (behind the last swing) at
+R3 and closes at R4. A management bar is judged against the pivots in force while it traded
+(the LWC bar before its close), so the period that closes with the bar never grades its own
+candle.
+
+**Pivots are causal by construction.** The H4 and weekly bars come from the shared
+`TimeframeViews` resampler, which drops partial ends; at each LWC bar the levels are those of the
+latest period closed by then.
+
+**Sessions are UTC and never read a local zone**, so daylight-saving changes in New York or
+London move nothing (tested across the four 2024 clock changes). A bar is labelled by its close,
+which is also when the next bar opens, so "may I place an order now" is judged by the label's
+hour: a bar labelled 21:00 places nothing, one labelled 00:00 may. A session's trend is its net
+move over its high-low range (`trend_efficiency`, default 0.5; scale-free) and is judged only
+when all its bars are in and its window has ended.
+
+**Decisions and limits.** The blueprint gives no pivot formulas; I use the "traditional" set
+(R3 = P + 2 range, R4 = P + 3 range, S mirrored). The three default sessions together cover
+00:00-21:00, so the blackout is already implied by them; it stays a switch and takes any window
+(wrapping midnight) for sessions chosen otherwise. Regime 2 is judged at the start of the US
+window because London's close (16:00) comes after it. "Aggressive profit-taking at R3" is a stop
+tightening in `both` and a close in `r3`; the choice is a parameter. Not built: the weekly pivot
+as a *level* for trend filters, and session-based alerts (ticket 22).
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

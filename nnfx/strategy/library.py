@@ -14,6 +14,7 @@ import pandas as pd
 from pydantic import Field, model_validator
 
 from nnfx.engine.types import ExitPlan, ExitStep, PositionView
+from nnfx.strategy.bands import runway_lost
 from nnfx.strategy.blocks import (
     MIN_FULL_CLOSE_R,
     BlockKind,
@@ -44,6 +45,7 @@ from nnfx.strategy.momentum import (
     macd_decelerating,
     roc_at_extreme,
 )
+from nnfx.strategy.pivots import Period, pivot_levels
 from nnfx.strategy.series import bollinger, falling, rising, rsi, sma
 from nnfx.strategy.structure import wave_bias
 from nnfx.strategy.volume import climax_at
@@ -1233,6 +1235,19 @@ class ProfitChainParams(HealthParams):
         description="ضعف روند: خاموش، حد ضرر تنگ‌تر، گرفتن سود، یا هر دو (آستانه‌ها: معیارهای سلامت روند)",
     )
     health_min_signals: int = Field(2, ge=1, description="ضعف روند: دست‌کم این‌قدر معیار هشدار دهند")
+    runway_exit: bool = Field(
+        False,
+        description="سود را بگیر وقتی کندل‌های سوار بر مسیر مومنتوم بولینگر به داخل باند ۱ برگشتند (پس از پلهٔ اول)",
+    )
+    runway_period: int = Field(20, ge=2, description="مسیر مومنتوم: دورهٔ بولینگر")
+    runway_inner: float = Field(1.0, gt=0, description="مسیر مومنتوم: باند داخلی (انحراف معیار)")
+    runway_outer: float = Field(2.0, gt=0, description="مسیر مومنتوم: باند بیرونی (انحراف معیار)")
+    runway_bars: int = Field(5, ge=1, description="مسیر مومنتوم: سواربودن در این تعداد کندل اخیر")
+    pivot_exit: Literal["off", "r3", "r4", "both"] = Field(
+        "off",
+        description="هدف پیوت: خاموش، بستن در R3/S3، بستن در R4/S4، یا تنگ‌کردن حد ضرر در R3 و بستن در R4",
+    )
+    pivot_period: Period = Field("W1", description="دورهٔ پیوت‌های هدف: H4 یا W1")
     trail_after_step: int = Field(
         3, ge=1, le=3, description="تریل حد ضرر پس از پر شدن این تعداد پله (۳: فقط رانر)"
     )
@@ -1255,6 +1270,12 @@ class ProfitChainParams(HealthParams):
     recycle_min_r: float = Field(
         5.0, ge=MIN_FULL_CLOSE_R, description="انتقال به اسپات از این R به بالا (۵R تا ۱۰R)"
     )
+
+    @model_validator(mode="after")
+    def _runway_ordered(self) -> ProfitChainParams:
+        if self.runway_inner >= self.runway_outer:
+            raise ValueError("باند داخلی مسیر مومنتوم باید کوچک‌تر از باند بیرونی باشد")
+        return self
 
     @model_validator(mode="after")
     def _health_reachable(self) -> ProfitChainParams:
@@ -1419,7 +1440,26 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             return "climax"
         if p.health_exit in ("close", "both") and self._unhealthy(data, m, d):
             return "trend_health"
+        if p.runway_exit and runway_lost(
+            data, role, m, d, period=p.runway_period, inner=p.runway_inner,
+            outer=p.runway_outer, bars=p.runway_bars,
+        ):  # fmt: skip
+            return "bb_runway_lost"
         return None
+
+    def _pivot_reached(self, data: StrategyData, bar: int, m: int, d: int, level: str) -> bool:
+        """Whether management bar ``m`` reached the pivot ``level`` ("r3"/"r4"; shorts: "s3"/"s4").
+
+        Read against the pivots in force while ``m`` traded: the LWC bar before ``m``'s close
+        still belongs to ``m``, so a period closing with ``m`` does not swap its own pivots in.
+        """
+        if bar < 1:
+            return False
+        name = level if d > 0 else "s" + level[1:]
+        target = pivot_levels(data, self.p.pivot_period)[name][bar - 1]
+        f = data.frames[self.ROLE]
+        edge = f.high[m] if d > 0 else f.low[m]
+        return bool(np.isfinite(target) and (edge - target) * d >= 0)
 
     def _unhealthy(self, data: StrategyData, m: int, d: int) -> bool:
         """The trade's trend shows ``health_min_signals`` or more weaknesses at management bar ``m``."""
@@ -1427,13 +1467,15 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
         signals = weakness(data, self.ROLE, p).signals(m, d, p.metrics)
         return len(signals) >= p.health_min_signals
 
-    def _tighten_reason(self, data: StrategyData, m: int, d: int) -> str | None:
+    def _tighten_reason(self, data: StrategyData, bar: int, m: int, d: int) -> str | None:
         """Why the stop should come in behind the latest swing, if it should."""
         p = self.p
         if p.adx_exhaustion in ("tighten", "both") and self._adx_exhausted(data, m):
             return "adx_exhaustion_tighten"  # strength is fading
         if p.health_exit in ("tighten", "both") and self._unhealthy(data, m, d):
             return "trend_health_tighten"
+        if p.pivot_exit == "both" and self._pivot_reached(data, bar, m, d, "r3"):
+            return "pivot_r3_tighten"  # the ceiling is in reach: R4 is the extreme
         return None
 
     def _adx_exhausted(self, data: StrategyData, m: int) -> bool:
@@ -1462,6 +1504,11 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             return CloseMove("rsi_bb_exhaustion")
         if position.steps_filled >= 1 and not held and (why := self._momentum_exit(data, m, d)):
             return CloseMove(why)
+        if position.steps_filled >= 1 and not held:
+            if p.pivot_exit in ("r4", "both") and self._pivot_reached(data, bar, m, d, "r4"):
+                return CloseMove("pivot_r4")
+            if p.pivot_exit == "r3" and self._pivot_reached(data, bar, m, d, "r3"):
+                return CloseMove("pivot_r3")
         if p.sma_flatten_exit and position.steps_filled >= 1 and not held:
             k = p.sma_slope_bars
             line, rng = data.sma(self.ROLE, p.sma_period), data.atr(self.ROLE)
@@ -1484,6 +1531,6 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             trail = level - d * level * p.trail_buffer_pct / 100.0
             if steps and has_runner and position.steps_filled >= trail_from:
                 moves.append(StopMove(trail, "runner_trail"))
-            elif why := self._tighten_reason(data, m, d):
+            elif why := self._tighten_reason(data, bar, m, d):
                 moves.append(StopMove(trail, why))
         return max(moves, key=lambda mv: mv.stop * d, default=None)

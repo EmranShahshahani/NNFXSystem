@@ -224,6 +224,9 @@ def exit_variants() -> list[ExitBlock]:
     )
     out.append(ProfitChain(ProfitChainParams(health_exit="close", health_min_signals=1)))
     out.append(ProfitChain(ProfitChainParams(health_exit="tighten", health_min_signals=1)))
+    out.append(ProfitChain(ProfitChainParams(runway_exit=True, runway_period=5, runway_bars=8)))
+    out.append(ProfitChain(ProfitChainParams(pivot_exit="both", pivot_period="H4")))
+    out.append(ProfitChain(ProfitChainParams(pivot_exit="r3", pivot_period="W1")))
     return out
 
 

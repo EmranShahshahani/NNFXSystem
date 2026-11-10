@@ -30,6 +30,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
     register,
 )
+from nnfx.strategy.candles import candle_setup
 from nnfx.strategy.library import BoxParams
 from nnfx.strategy.series import atr, rsi, sma
 
@@ -55,27 +56,6 @@ def _prior_mean(x: np.ndarray, n: int) -> np.ndarray:
 def _lag(x: np.ndarray, k: int, fill: float = np.nan) -> np.ndarray:
     """``x`` as it was ``k`` bars ago."""
     return np.r_[np.full(k, fill), x[:-k]] if 0 < k < len(x) else np.full(len(x), fill)
-
-
-def _out(
-    long_: np.ndarray,
-    short: np.ndarray,
-    f_hi: np.ndarray,
-    f_lo: np.ndarray,
-    tag: str,
-    meta: dict[str, np.ndarray] | None = None,
-) -> SetupOutput:
-    """Candle-style output: a long triggers above the bar's high, a short below its low.
-
-    The invalidation and the proposed stop are the far side of the same bar.
-    """
-    both = long_ & short  # a bar cannot be both; it makes no candidate
-    long_, short = long_ & ~both, short & ~both
-    d = np.where(long_, 1, np.where(short, -1, 0)).astype("int8")
-    nan = np.full(len(d), np.nan)
-    trigger = np.where(d > 0, f_hi, np.where(d < 0, f_lo, nan))
-    inval = np.where(d > 0, f_lo, np.where(d < 0, f_hi, nan))
-    return SetupOutput(d, trigger, inval, inval.copy(), {tag: d != 0}, meta or {})
 
 
 # --------------------------------------------------------------- engulfing
@@ -131,7 +111,7 @@ class Engulfing(SetupBlock[EngulfingParams]):
             covers_dn = (c < o) & (body_hi >= _lag(h, 1)) & (body_lo <= _lag(lo, 1))
             long_ = covers_up & (_lag(c, 1) < _lag(o, 1)) & (down_move >= floor) & weak
             short = covers_dn & (_lag(c, 1) > _lag(o, 1)) & (-down_move >= floor) & weak
-        return _out(long_, short, h, lo, "engulfing")
+        return candle_setup(long_, short, h, lo, "engulfing")
 
 
 # ------------------------------------------------- giant indecision reversal
@@ -197,7 +177,7 @@ class GiantIndecisionReversal(SetupBlock[GiantIndecisionParams]):
                 short &= hc < m
         # Beyond the opposite side of the wick: a long (wick below) triggers above the
         # candle's high; the invalidation and stop are the wick tip.
-        return _out(long_, short, h, lo, "giant_indecision")
+        return candle_setup(long_, short, h, lo, "giant_indecision")
 
 
 # --------------------------------------------------------- absorption wick
@@ -245,7 +225,7 @@ class AbsorptionWick(SetupBlock[AbsorptionWickParams]):
                 & ((h - body_hi) >= p.min_wick_ratio * body)
             )
         level = np.where(long_, support, np.where(short, resistance, np.nan))
-        return _out(long_, short, h, lo, "absorption_wick", {"level": level})
+        return candle_setup(long_, short, h, lo, "absorption_wick", {"level": level})
 
 
 # ------------------------------------------------------------ the LA setup
@@ -514,7 +494,7 @@ class MomentumContinuation(SetupBlock[MomentumContinuationParams]):
         use_pull, use_break = p.micro != "prior_high", p.micro != "sma_pullback"
         up = (pull_up & use_pull) | (break_up & use_break)
         dn = (pull_dn & use_pull) | (break_dn & use_break)
-        return _out(strong_up & up, strong_dn & dn, h, lo, "momentum_continuation")
+        return candle_setup(strong_up & up, strong_dn & dn, h, lo, "momentum_continuation")
 
 
 # ------------------------------------------------------------- chase guard

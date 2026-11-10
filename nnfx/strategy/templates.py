@@ -105,6 +105,9 @@ _TCP_BLOCKS: list[_Row] = [
     ("context", "chase_guard", False, {}, BlockSource((64,), "no chasing after an outsized bar")),
     ("context", "roc_ceiling", False, {}, BlockSource((55,), "4H ROC at its 200-bar ceiling")),
     ("context", "trend_health", False, {}, BlockSource((22, 23, 27, 67), "trend health flags")),
+    # --- Sessions (ticket 18): UTC windows, off by default
+    ("context", "session_filter", False, {}, BlockSource((58,), "no entries 21:00-00:00 UTC")),
+    ("context", "session_regime", False, {}, BlockSource((58,), "session correlation regimes")),
     # --- Setups: the Candle Setup and the Box Breakout lead
     ("setup", "candle_setup", True, {}, BlockSource((35, 36, 37))),
     ("setup", "box_breakout", True, {}, BlockSource((20, 21), "blueprint 01 (B)")),
@@ -130,6 +133,9 @@ _TCP_BLOCKS: list[_Row] = [
         BlockSource((87,), "binary scenario (09)"),
     ),
     ("setup", "momentum_continuation", False, {}, BlockSource((66,), "continuation mode (07)")),
+    # --- Bollinger setups (ticket 18)
+    ("setup", "bb_htf_touch", False, {}, BlockSource((14,), "HTF-directed touches and crosses")),
+    ("setup", "bb_squeeze", False, {}, BlockSource((14,), "squeeze and expansion")),
     # --- Candle Setup confirmations (the Second Wave is "ideally": a score, not a refusal)
     ("confirmation", "second_wave", True, {**_CANDLE, "hard": False}, BlockSource((35,))),
     ("confirmation", "rsi_momentum", True, _CANDLE, BlockSource((13,), "RSI 14 surge (01 A)")),
@@ -155,6 +161,9 @@ _TCP_BLOCKS: list[_Row] = [
     ("confirmation", "volume_climax", False, {}, BlockSource((30, 31), "no buying the climax")),
     ("confirmation", "low_volume_dip", False, {}, BlockSource((30, 31), "low-volume reversal")),
     ("confirmation", "volume_node", False, {}, BlockSource((32,), "200-bar volume profile")),
+    # --- Bollinger runway and floor pivots (ticket 18)
+    ("confirmation", "bb_runway", False, {}, BlockSource((14,), "double band momentum runway")),
+    ("confirmation", "pivot_breach", False, {}, BlockSource((57,), "beyond R1/S1 on 4H or weekly")),
     # --- Box Breakout confirmations
     ("confirmation", "touch_count", True, _BOX, BlockSource((21,))),
     ("confirmation", "breakout_body_close", True, {**_BOX, "hard": True}, BlockSource((21,))),
