@@ -34,6 +34,7 @@ from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
+from nnfx.strategy.analytics import review_status, statistics
 from nnfx.strategy.paper import LiveBars, PaperError, PaperManager
 from nnfx.strategy.store import StrategyStore
 from nnfx.ui.auth import Auth, AuthError, User
@@ -554,6 +555,10 @@ class App:
                 # Futures-to-spot recycling record (Profit Chain option); empty when off.
                 "spot_transfers": [asdict(t) for t in run.spot_transfers],
                 "spot_balance": run.spot_balance(),
+                # The blueprint's journal fields per position, statistics, review prompts.
+                "journal": [row.record() for row in run.journal],
+                "stats": statistics(run.journal),
+                "review": review_status(len(run.journal), 0, run.journal),
                 # A Market Filter lacked its series at some candidate (checked n/a): see ADR 10 §24.
                 "incomplete": run.incomplete,
                 "incomplete_blocks": run.incomplete_blocks,
@@ -634,6 +639,12 @@ class App:
         except PaperError as e:
             raise ValueError(str(e)) from None
         return {"ok": True}
+
+    def paper_journal(self, user: User, run_id: str) -> dict[str, Any]:
+        try:
+            return self._manager().journal(user.username, run_id)
+        except PaperError as e:
+            raise ValueError(str(e)) from None
 
     def alerts_feed(self, user: User, after: int = 0) -> dict[str, Any]:
         return {"alerts": self.notifier.store.feed(user.username, after)}
@@ -854,6 +865,9 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 self._dispatch(app.strategy_documents, user)
             elif path == "/api/paper/runs" and user is not None:
                 self._dispatch(app.paper_runs, user)
+            elif path == "/api/paper/journal" and user is not None:
+                q = parse_qs(urlparse(self.path).query)
+                self._dispatch(app.paper_journal, user, q.get("id", [""])[0])
             elif path == "/api/alerts" and user is not None:
                 q = parse_qs(urlparse(self.path).query)
                 try:

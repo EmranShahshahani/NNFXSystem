@@ -25,6 +25,7 @@ import pandas as pd
 from nnfx.alerts import Notifier, alerts_from_cycle, halt_alert, owner_hash
 from nnfx.brokers.costs import CostModel
 from nnfx.brokers.paper import PaperBroker
+from nnfx.brokers.sim import Trade
 from nnfx.config import SystemConfig
 from nnfx.data.bars import TIMEFRAMES, BarFrame
 from nnfx.data.feeds import BarFeed
@@ -32,6 +33,7 @@ from nnfx.harness.conversion import Conversion
 from nnfx.harness.live import LiveHarness
 from nnfx.instruments import InstrumentSpec
 from nnfx.journal.journal import Journal
+from nnfx.strategy.analytics import journal_rows, review_status, statistics
 from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument, validate_document
 from nnfx.strategy.engine import DocumentEngine, compile_document
@@ -182,6 +184,33 @@ class PaperManager:
             info = self._get(owner, run_id)
             if info.status == "running":
                 self._save(replace(info, status="stopped"))
+
+    # ---------------------------------------------------------------- journal
+    def journal(self, owner: str, run_id: str, now: pd.Timestamp | None = None) -> dict[str, Any]:
+        """The run's trade journal, statistics and review status (forward trades: all of them).
+
+        The adverse excursion needs the bars; it is left out for a trade the bar source no
+        longer reaches or when the source is down.
+        """
+        info = self._get(owner, run_id)
+        d = self.run_dir(owner, run_id)
+        try:
+            state = json.loads((d / "broker.json").read_text(encoding="utf-8"))
+            trades = [Trade(**t) for t in state.get("trades", [])]
+        except (OSError, ValueError):
+            trades = []
+        cycles = list(Journal(d / "journal.jsonl").records("cycle"))
+        try:
+            at = now or pd.Timestamp.now(tz="UTC")
+            frames: dict[str, BarFrame] | None = {s: self.bars(s, at) for s in info.symbols}
+        except OSError:
+            frames = None
+        rows = journal_rows(trades, cycles, frames, source="paper")
+        return {
+            "rows": [r.record() for r in rows],
+            "stats": statistics(rows),
+            "review": review_status(len(rows), len(rows), rows),
+        }
 
     # ------------------------------------------------------------------ cycle
     def tick(self, now: pd.Timestamp) -> None:

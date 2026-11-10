@@ -471,6 +471,7 @@ async function loadPaper() {
     const pick = el("select", {}, docs.map(d => el("option", { value: d.name }, d.name)));
     const syms = el("input", { placeholder: "نمادها (اختیاری، با ویرگول؛ پیش‌فرض: نمادهای سند)", dir: "ltr" });
     const msg = el("div", { class: "muted" });
+    const jbox = el("div", {});
     const act = (fn) => async () => { try { await fn(); await loadPaper(); } catch (e) { msg.className = "err"; msg.textContent = e.message; } };
     out.append(el("div", { class: "panel" }, el("h2", {}, "اجرای کاغذی روی دادهٔ زندهٔ نوبیتکس (۱۵ دقیقه)"),
       docs.length ? el("div", { class: "row" }, pick, syms,
@@ -483,7 +484,9 @@ async function loadPaper() {
           el("td", {}, `${r.name} v${r.version}`), el("td", { dir: "ltr" }, r.symbols.join(", ")),
           el("td", {}, ({ running: "در حال اجرا", stopped: "متوقف", error: "خطا" })[r.status] + (r.error ? ` — ${r.error}` : "")),
           el("td", { dir: "ltr" }, r.last_cycle ? r.last_cycle.slice(0, 16).replace("T", " ") : "–"),
-          el("td", {}, r.status === "running" ? el("button", { onclick: act(() => api("/api/paper/stop", { id: r.id })) }, "توقف") : null)))))) : el("div", { class: "muted" }, "اجرای فعالی نیست.")));
+          el("td", {}, r.status === "running" ? el("button", { onclick: act(() => api("/api/paper/stop", { id: r.id })) }, "توقف") : null,
+            el("button", { onclick: async () => { try { const j = await api("/api/paper/journal?id=" + r.id); jbox.replaceChildren(stJournal(j.rows, j.stats, j.review)); } catch (e) { msg.className = "err"; msg.textContent = e.message; } } }, "ژورنال"))))))) : el("div", { class: "muted" }, "اجرای فعالی نیست."),
+      jbox));
     const inSite = el("input", { type: "checkbox", checked: set.in_site });
     const bale = el("input", { type: "checkbox", checked: set.bale, disabled: !set.bale_available });
     const chat = el("input", { value: set.bale_chat, placeholder: "شناسهٔ عددی چت بله", dir: "ltr", disabled: !set.bale_available });
@@ -615,6 +618,31 @@ const EXIT_FA = { target_partial: "پلهٔ سود", target: "تارگت", stop:
 const STOP_FA = { justified: "موجه", unjustified: "ناموجه (قانون‌شکنی)", unknown: "نامشخص" };
 const OUTCOME_FA = { pass: "✓ قبول", fail: "✗ رد", na: "— نامربوط", skipped: "· انجام نشد" };
 const STAGE_FA = { context: "زمینه", risk: "ریسک", stop: "حد ضرر", order: "سفارش" };
+const DIM_FA = { setup: "ستاپ", session: "سشن", weekday: "روز هفته", asset: "دارایی", risk_tier: "پلهٔ ریسک" };
+const SESSION_FA = { asia: "آسیا", london: "لندن", new_york: "نیویورک", off_hours: "خارج از سشن" };
+const WEEKDAY_FA = { monday: "دوشنبه", tuesday: "سه‌شنبه", wednesday: "چهارشنبه", thursday: "پنجشنبه", friday: "جمعه", saturday: "شنبه", sunday: "یکشنبه" };
+// The journal: review prompt and rule-change warning, statistics per dimension, then the rows.
+function stJournal(rows, stats, review) {
+  const keyFa = (dim, k) => dim === "session" ? (SESSION_FA[k] || k) : dim === "weekday" ? (WEEKDAY_FA[k] || k) : k;
+  const notes = [
+    review.review_due ? el("div", { class: "panel" }, `مرور دوره‌ای: ${review.review_due} معامله انجام شده است. گروه‌های زیر را برای یافتن نشتی (ستاپ، سشن، روز، دارایی، پلهٔ ریسک) بررسی کنید؛ مرور بعدی در ${review.next_review_at} معامله.`) : null,
+    review.warning ? el("div", { class: "neg" }, review.warning) : null,
+    review.current_losing_streak ? el("div", { class: "muted" }, review.streak_is_normal
+      ? `${review.current_losing_streak} ضرر پشت‌سرهم؛ تا ۷ ضرر پیاپی طبیعی است و دلیلی برای تغییر قوانین نیست.`
+      : `${review.current_losing_streak} ضرر پشت‌سرهم؛ بیش از ۷ است، اجرا را مرور کنید.`) : null];
+  const tables = Object.keys(DIM_FA).map(dim => el("div", { class: "tablewrap", dir: "rtl" }, el("h3", {}, "آمار بر حسب " + DIM_FA[dim]),
+    stats[dim].length ? el("table", {}, el("tr", {}, ["مقدار", "تعداد", "برد", "امید ریاضی (R)", "جمع R"].map(h => el("th", {}, h))),
+      stats[dim].map(g => el("tr", {}, el("td", {}, keyFa(dim, g.key)), el("td", {}, g.count), el("td", {}, (g.win_rate * 100).toFixed(0) + "٪"),
+        el("td", { class: g.expectancy_r < 0 ? "neg" : "" }, signed(g.expectancy_r, 2)), el("td", {}, signed(g.total_r, 2))))) : el("div", { class: "muted" }, "معامله‌ای نیست.")));
+  const log = rows.length ? el("div", { class: "tablewrap", dir: "ltr" }, el("table", {},
+    el("tr", {}, ["زمان", "سشن", "دارایی", "جهت", "ستاپ", "ریسک", "حجم", "لوریج", "حد ضرر", "تارگت‌ها", "نتیجه", "R", "MAE (R)", "لغزش", "کارمزد"].map(h => el("th", {}, h))),
+    rows.map(r => el("tr", {}, el("td", {}, r.timestamp.slice(0, 16).replace("T", " ")), el("td", {}, SESSION_FA[r.session] || r.session), el("td", {}, r.asset),
+      el("td", {}, r.direction === "long" ? "خرید" : "فروش"), el("td", {}, r.setup), el("td", {}, r.risk_tier == null ? "–" : (r.risk_tier * 100).toFixed(2) + "%"),
+      el("td", {}, fmt(r.size, 4)), el("td", {}, r.leverage == null ? "–" : r.leverage + "x"), el("td", {}, r.stop == null ? "–" : fmt(r.stop, 4)),
+      el("td", {}, r.targets.map(x => fmt(x, 4)).join(" / ") || "–"), el("td", {}, ({ win: "برد", loss: "باخت", breakeven: "سربه‌سر" })[r.outcome]),
+      el("td", {}, signed(r.realised_r, 2)), el("td", {}, r.mae_r == null ? "–" : fmt(r.mae_r, 2)), el("td", {}, fmt(r.slippage, 4)), el("td", {}, fmt(r.fees, 4)))))) : null;
+  return el("div", { class: "panel" }, el("h2", {}, "ژورنال معاملات"), ...notes, ...tables, log);
+}
 function stCandidates(cands, total) {
   if (!cands.length) return el("div", { class: "panel muted" }, "هیچ ستاپی در این بازه پیدا نشد.");
   return el("div", { class: "panel" }, el("h2", {}, `چک‌لیست پیش از معامله (${total} ستاپ)`),
@@ -1031,6 +1059,7 @@ $("#st-run").addEventListener("click", async () => {
           el("bdi", { dir: "ltr" }, fmt(r.spot_balance, 2))) : null,
         el("pre", { dir: "ltr", class: "ltr" }, r.summary)),
       stCandidates(r.candidates, r.candidate_count),
+      stJournal(r.journal, r.stats, r.review),
       el("div", { class: "panel" }, el("h2", {}, "معاملات"), el("div", { class: "tablewrap", dir: "ltr" },
         el("table", {}, el("tr", {}, ["ورود", "خروج", "جهت", "قیمت ورود", "قیمت خروج", "حجم", "دلیل", "R", "حد ضرر"].map(h => el("th", {}, h))),
           r.trades.map(t => el("tr", {}, el("td", {}, t.entry_time.slice(0, 16).replace("T", " ")), el("td", {}, t.exit_time.slice(0, 16).replace("T", " ")),

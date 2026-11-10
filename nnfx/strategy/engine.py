@@ -367,6 +367,7 @@ class DocumentEngine:
         stop_status: StageStatus = "skipped"
         order_status: StageStatus = "skipped"
         book_missing: list[str] = []
+        targets: list[float] = []  # the exit plan's target prices, for the journal
         if not blocked:
             # Order-book Blocks without a book at this time act as their plain counterparts.
             book_missing = [
@@ -385,6 +386,12 @@ class DocumentEngine:
                     blocked.append(problem[0])
                     record["leverage_detail"] = problem[1]
             stop_status = "fail" if blocked else "pass"
+            if not blocked:
+                dist = abs(cand.trigger - stop)
+                targets = [
+                    cand.trigger + cand.direction * s.r * dist
+                    for s in self.compiled.exit.plan(cand, comp.data, stop).steps
+                ]
             if not blocked:
                 intents, problems = self._orders(cand, comp, stop, risk.risk_fraction)
                 blocked += problems
@@ -423,6 +430,7 @@ class DocumentEngine:
                 "score": score,
                 "risk_tier": risk.base_risk,
                 "risk": record,
+                "targets": targets,
                 "decision": "placed" if placed else "refused",
                 "reasons": blocked,
                 **({"book_missing": book_missing} if self.compiled.book_blocks else {}),

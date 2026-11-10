@@ -898,6 +898,40 @@ when a fresh process runs each bar, and also during a Bale outage.
   nothing anywhere (a `seen` set per user). The Bale chat id is not verified to belong to the
   user, so a handshake (`/start` with a code) is needed before wide use.
 
+### 27. Journal analytics (ticket 23)
+
+Every closed position is one `JournalRow` (`strategy/analytics.py`) with the blueprint's fields:
+timestamp, session, weekday, asset, direction, setup type, risk tier, size (units), leverage,
+the initial stop, the exit plan's target prices, outcome (win / loss / breakeven on the whole
+position's net result), realised R, MAE, slippage, fees (and the spread, kept apart). Backtest
+and paper runs build rows the same way from the broker's trades, the journaled cycles and, when at
+hand, the bars: the cycle joins a position to its candidate through the fill's order key, so the
+setup, tier, leverage, stop and targets are what the engine journaled (`targets` is new in the
+candidate's values: the Exit Block's plan priced from the trigger and the stop). `Trade` itself is
+unchanged, so the determinism digest is.
+
+- **Session** is the session the entry bar traded in, by the bar's open (the label minus the bar):
+  Asia, London or New York in UTC (§22); where two overlap the later-opening one; `off_hours`
+  outside all. **Weekday** is the same instant's UTC weekday.
+- **MAE** is the deepest drawdown from the entry price, in initial-stop distances, over the bars
+  after the entry bar through the exit bar. The entry bar's own range may precede the fill, so it
+  is left out (a small understatement). Without bars (a paper run whose window no longer reaches
+  the trade, or a source that is down) MAE is `None`, not zero.
+- **Statistics** per setup, session, weekday, asset and risk tier: count, wins, win rate,
+  expectancy and total R, mean MAE. Weekdays keep calendar order.
+- **Review and rule changes.** A review is prompted from 50 trades (the latest multiple of 50 is
+  reported, the next one named); changing rules is warned against until 100 forward trades exist.
+  A backtest has none (a backtest is not forward), a paper run's trades all count. A losing streak
+  up to 7 is called normal. The prompt is stateless: nothing records that the user reviewed, so it
+  stays shown from the 50th trade on.
+- **API and UI.** `/api/strategy/backtest` returns `journal`, `stats` and `review`;
+  `GET /api/paper/journal?id=` returns the same for a user's own paper run. The backtest result
+  and the paper tab show the review notes, the five tables and the rows.
+
+Limits: the journal is per position, not per leg (partial closes are summed); a paper run's trades
+come from the broker's persisted state, so a run started before this ticket has them but no
+journaled `targets`; the leverage is the document's, not an exchange fact.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

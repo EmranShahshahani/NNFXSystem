@@ -22,6 +22,7 @@ from nnfx.journal.journal import Journal
 from nnfx.research.metrics import Metrics, compute_metrics
 from nnfx.research.partition import HoldoutAccessError, Market, Partition, SegmentName
 from nnfx.research.trials import ResearchState
+from nnfx.strategy.analytics import JournalRow, journal_rows
 from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument
 from nnfx.strategy.engine import CompiledDocument, DocumentEngine, compile_document
@@ -84,6 +85,8 @@ class DocumentRun:
     # Stretches of the run with no order-book snapshot, for the order-book Blocks (ticket 21):
     # {"symbol", "start", "end"}. Empty when the document has no such Block or the book was full.
     book_gaps: list[dict[str, str]] = field(default_factory=list)
+    # One row per closed position with the blueprint's journal fields (ticket 23).
+    journal: list[JournalRow] = field(default_factory=list)
 
     @property
     def incomplete(self) -> bool:
@@ -238,7 +241,8 @@ def backtest_document(
         else []
     )
     gaps = book_gaps(compiled, frames, book_data or BookData(), start, end)
-    return DocumentRun(fp, result, trial, candidates, labels, transfers, gaps)
+    rows = journal_rows(result.trades, journal.records("cycle"), frames, source="backtest")
+    return DocumentRun(fp, result, trial, candidates, labels, transfers, gaps, rows)
 
 
 def book_gaps(

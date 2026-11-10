@@ -143,3 +143,19 @@ def test_starting_an_unsaved_strategy_is_refused(beta: Beta):
     c = beta.user("ali")
     code, res = _call(c, beta.base + "/api/paper/start", {"name": "nope"})
     assert code == 400 and "پیدا نشد" in res["error"]
+
+
+def test_a_paper_run_has_its_own_journal_with_statistics_and_review_status(beta: Beta):
+    ali, sara = beta.user("ali"), beta.user("sara")
+    save(beta, ali)
+    rid = _call(ali, beta.base + "/api/paper/start", {"name": "tracer"})[1]["run"]["id"]
+    play(beta)
+    code, res = _call(ali, beta.base + f"/api/paper/journal?id={rid}")
+    assert code == 200
+    (row,) = res["rows"]
+    assert row["source"] == "paper" and row["setup"] == "candle_setup" and row["asset"] == SYM
+    assert res["stats"]["setup"][0]["count"] == 1
+    assert res["review"]["forward_trades"] == 1 and res["review"]["rules_locked"] is True
+    code, err = _call(sara, beta.base + f"/api/paper/journal?id={rid}")
+    assert code == 400 and "پیدا نشد" in err["error"]
+    assert _call(_client(), beta.base + f"/api/paper/journal?id={rid}")[0] == 401

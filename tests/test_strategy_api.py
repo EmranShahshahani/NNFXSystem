@@ -77,6 +77,22 @@ def test_backtest_runs_the_document_and_logs_a_trial(base: str, dirs: tuple[Path
     assert json.loads(rows[-1])["id"] == res["trial_id"]
 
 
+def test_backtest_returns_the_journal_statistics_and_review_status(
+    base: str, dirs: tuple[Path, Path]
+):
+    code, res = post(
+        base + "/api/strategy/backtest",
+        {"document": DOC, "datasets": [dataset(dirs)], "zero_costs": True},
+    )
+    assert code == 200
+    (row,) = res["journal"]
+    assert row["setup"] == "candle_setup" and row["outcome"] == "win" and row["source"] == "backtest"
+    assert row["realised_r"] == pytest.approx(2.0) and row["targets"]
+    assert res["stats"]["setup"][0]["count"] == 1
+    assert res["stats"]["setup"][0]["expectancy_r"] == pytest.approx(2.0)
+    assert res["review"]["trades"] == 1 and res["review"]["rules_locked"] is True
+
+
 def test_backtest_of_an_invalid_document_returns_the_issues(base: str, dirs: tuple[Path, Path]):
     bad = copy.deepcopy(DOC)
     del bad["blocks"][3]
