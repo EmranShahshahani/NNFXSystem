@@ -1257,6 +1257,12 @@ class ProfitChainParams(HealthParams):
     )
 
     @model_validator(mode="after")
+    def _health_reachable(self) -> ProfitChainParams:
+        if self.health_min_signals > len(self.metrics):
+            raise ValueError("health_min_signals از تعداد معیارهای انتخاب‌شده بیشتر است")
+        return self
+
+    @model_validator(mode="after")
     def _ladder(self) -> ProfitChainParams:
         total = self.f1 + self.f2 + self.f3 + self.runner
         if abs(total - 1.0) > 1e-9:

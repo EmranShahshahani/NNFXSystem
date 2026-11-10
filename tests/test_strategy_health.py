@@ -296,7 +296,24 @@ def test_trend_health_closes_after_a_step_tightens_always_and_is_off_by_default(
     assert "trend_health" not in exit_reasons(close, path, 0)  # the 2R floor
     assert "trend_health_tighten" in exit_reasons(tighten, path, 0)  # a tighter stop is safe
     assert "trend_health" not in exit_reasons(tighten, path, 1)  # and never a close
-    assert not exit_reasons(ProfitChainParams(metrics=["amplitude"]), path, 1) & {"trend_health"}
+    assert not exit_reasons(
+        ProfitChainParams(metrics=["amplitude"], health_min_signals=1), path, 1
+    ) & {"trend_health"}
     assert "trend_health" not in exit_reasons(close, path, 1, -1)  # a short does not sell the top
     both = ProfitChainParams(health_exit="both", health_min_signals=1, metrics=["amplitude"])
     assert {"trend_health", "trend_health_tighten"} & exit_reasons(both, path, 1)
+
+
+def test_single_bar_flags_are_held_so_different_metrics_can_coincide():
+    trend = noisy_trend(70, 0.5)
+    after = [trend[-1] + 0.5 * k for k in range(2, 6)]  # back inside the channel
+    path = [*trend, trend[-1] + 6.5, *after]
+    held = flagged(path, "channel")
+    brief = flagged(path, "channel", HealthParams(hold_bars=1))
+    assert brief[70] and not brief[71:].any()
+    assert held[70:73].all() and not held[73:].any()
+
+
+def test_the_profit_chain_refuses_more_signals_than_metrics():
+    with pytest.raises(ValidationError):
+        ProfitChainParams(metrics=["body"], health_min_signals=2)

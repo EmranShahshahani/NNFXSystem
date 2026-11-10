@@ -283,3 +283,10 @@ def test_a_node_beyond_the_reach_does_not_block_and_short_history_is_na():
     wide = VolumeNode(VolumeNodeParams(role="lwc", window=30, bins=12, clear_atr=4.0, lookback=5))
     assert wide.check(replace(cand(d, 29, 1), trigger=107.0), d).outcome == "fail"
     assert block.check(cand(d, 10), d).outcome == "na"
+
+
+def test_absorption_after_a_decline_is_accumulation_and_does_not_block_a_long():
+    fall = [(100 - k, 100.5 - k, 99.5 - k, 99.6 - k, 100.0) for k in range(30)]
+    d = data([*fall, (70.0, 71.0, 69.0, 70.05, 400.0)])
+    assert verdict(EFFORT, d, 30, 1) == "pass"  # buyers soaking up the selling
+    assert verdict(EFFORT, d, 30, -1) == "fail"  # but a short is selling into it

@@ -667,6 +667,13 @@ collapsed to the more extreme so legs alternate):
   closes, projected one bar, with bands `channel_width` (2) standard deviations out and the
   channel sloping with the trend.
 
+Single-bar metrics (body, close placement, colour, channel) stay flagged for `hold_bars` (3) bars so
+signals of different bars can coincide. `effort_result` fails absorption only after a `trend_bars`
+(10) move the trade's way (against it, it is accumulation, video 33); the vacuum is direction-blind.
+Not built: the 200-bar volume ceiling/floor envelope (video 31), level context for climax and
+low-volume dips (pair them with `level_location`), impulse/correction *distance* (only duration),
+and a climax exit before the first step (the 2R floor).
+
 **Decisions and limits.** The blueprint gives few numbers; those above are my defaults, all
 parameters. The channel is a regression channel, not a drawn trendline channel (ticket 19 adds
 trendlines; this metric can then read them). The "curvature" metric (video 23 C) and candle

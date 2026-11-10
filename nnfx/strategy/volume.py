@@ -226,6 +226,11 @@ class EffortResultParams(VolumeParams):
     big_body_atr: float = Field(1.5, gt=0, description="خلأ: بدنه دست‌کم این‌قدر ATR")
     light: float = Field(0.8, gt=0, description="خلأ: حجم حداکثر این ضریبِ خط پایه")
     fresh_bars: int = Field(1, ge=1, description="ناهنجاری در این تعداد کندل اخیر دیده شود")
+    trend_bars: int = Field(
+        10,
+        ge=1,
+        description="جذب فقط وقتی رد می‌کند که قیمت در این تعداد کندل هم‌جهت معامله حرکت کرده باشد",
+    )
 
 
 def effort_flags(data: StrategyData, p: EffortResultParams) -> tuple[np.ndarray, np.ndarray]:
@@ -253,7 +258,8 @@ class EffortResult(VolumeBlock[EffortResultParams]):
     *Absorption*: abnormal volume with a compressed body, aggressive orders met by
     passive walls (hidden distribution in an uptrend). *Vacuum*: an outsized body on
     below-average volume, price sliding through an empty book with a sharp retest to
-    follow. Either within ``fresh_bars`` bars fails the candidate; ``na`` without
+    follow. Either within ``fresh_bars`` bars fails the candidate (absorption only after a
+    ``trend_bars`` move the trade's way: against it, it is accumulation); ``na`` without
     volume or history.
     """
 
@@ -270,7 +276,15 @@ class EffortResult(VolumeBlock[EffortResultParams]):
         if m < p.lookback:
             return CheckResult("na", f"needs {p.lookback} bars of volume history")
         absorption, vacuum = effort_flags(data, p)
-        if p.anomaly in ("both", "absorption") and fresh(absorption, m, p.fresh_bars):
+        close = data.frames[p.role].close
+        move = close[m] - close[m - p.trend_bars] if m >= p.trend_bars else 0.0
+        # Absorption after a move the trade's way (or none) is distribution; after a clear move
+        # against it (over half an ATR), accumulation.
+        if (
+            p.anomaly in ("both", "absorption")
+            and fresh(absorption, m, p.fresh_bars)
+            and move * candidate.direction >= -0.5 * float(np.nan_to_num(data.atr(p.role)[m]))
+        ):
             return CheckResult("fail", "absorption: heavy volume with a compressed body")
         if p.anomaly in ("both", "vacuum") and fresh(vacuum, m, p.fresh_bars):
             return CheckResult("fail", "liquidity vacuum: a big body on light volume")

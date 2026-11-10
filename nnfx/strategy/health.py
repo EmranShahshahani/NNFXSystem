@@ -77,6 +77,11 @@ class HealthParams(BlockParams):
     )
     channel_window: int = Field(50, ge=10, description="کانال: تعداد کندل‌های برازش رگرسیون")
     channel_width: float = Field(2.0, gt=0, description="کانال: فاصلهٔ باندها (انحراف معیار)")
+    hold_bars: int = Field(
+        3,
+        ge=1,
+        description="هشدار معیارهای تک‌کندلی (بدنه، جای کلوز، رنگ، کانال) این‌قدر کندل می‌ماند",
+    )
 
     @field_validator("metrics")
     @classmethod
@@ -91,7 +96,7 @@ class HealthParams(BlockParams):
             self.pivot_bars, self.amp_legs, self.amp_shrink, self.dur_correction,
             self.dur_slowdown, self.body_bars, self.body_floor, self.close_bars,
             self.close_limit, self.color_window, self.color_max_opposite,
-            self.channel_window, self.channel_width,
+            self.channel_window, self.channel_width, self.hold_bars,
         )  # fmt: skip
 
 
@@ -229,6 +234,14 @@ def channel_weakness(c: np.ndarray, p: HealthParams) -> tuple[np.ndarray, np.nda
     return up, down
 
 
+def _hold(flags: np.ndarray, bars: int) -> np.ndarray:
+    """A single-bar flag stays up for ``bars`` bars, so signals of different bars can coincide."""
+    held: np.ndarray = (
+        pd.Series(flags).rolling(bars, min_periods=1).max().fillna(0).astype(bool).to_numpy()
+    )
+    return held
+
+
 @dataclass(frozen=True)
 class Weakness:
     """Per role bar and metric: the up- and down-trend shows this weakness."""
@@ -252,11 +265,14 @@ def weakness(data: StrategyData, role: str, p: HealthParams) -> Weakness:
         place = close_weakness(f.high, f.low, f.close, p)
         colour = color_weakness(f.open, f.close, p)
         chan = channel_weakness(f.close, p)
+        h = p.hold_bars
         return Weakness(
-            {"amplitude": amp_u, "duration": dur_u, "body": body[0],
-             "close_placement": place[0], "color": colour[0], "channel": chan[0]},
-            {"amplitude": amp_d, "duration": dur_d, "body": body[1],
-             "close_placement": place[1], "color": colour[1], "channel": chan[1]},
+            {"amplitude": amp_u, "duration": dur_u, "body": _hold(body[0], h),
+             "close_placement": _hold(place[0], h), "color": _hold(colour[0], h),
+             "channel": _hold(chan[0], h)},
+            {"amplitude": amp_d, "duration": dur_d, "body": _hold(body[1], h),
+             "close_placement": _hold(place[1], h), "color": _hold(colour[1], h),
+             "channel": _hold(chan[1], h)},
         )  # fmt: skip
 
     return data.memo(("health", role, p.key()), make)
