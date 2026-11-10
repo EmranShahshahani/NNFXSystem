@@ -22,7 +22,7 @@ def store_with_chat(tmp_path: Path, chat: str = "42") -> AlertStore:
 
 def test_the_right_code_verifies_the_saved_chat(tmp_path: Path):
     s = store_with_chat(tmp_path)
-    code = s.issue_code("ali", now=1000.0)
+    code, _chat = s.issue_code("ali", now=1000.0)
     assert len(code) == 6 and code.isdigit()
     assert s.settings("ali").bale_verified is False
     assert s.check_code("ali", code, now=1100.0) is True
@@ -32,7 +32,7 @@ def test_the_right_code_verifies_the_saved_chat(tmp_path: Path):
 
 def test_a_wrong_or_expired_code_does_not_verify(tmp_path: Path):
     s = store_with_chat(tmp_path)
-    code = s.issue_code("ali", now=1000.0)
+    code, _chat = s.issue_code("ali", now=1000.0)
     wrong = "000000" if code != "000000" else "111111"
     assert s.check_code("ali", wrong, now=1010.0) is False
     assert s.check_code("ali", code, now=1000.0 + 601) is False  # ten minutes
@@ -41,7 +41,7 @@ def test_a_wrong_or_expired_code_does_not_verify(tmp_path: Path):
 
 def test_five_wrong_tries_burn_the_code(tmp_path: Path):
     s = store_with_chat(tmp_path)
-    code = s.issue_code("ali", now=1000.0)
+    code, _chat = s.issue_code("ali", now=1000.0)
     wrong = "000000" if code != "000000" else "111111"
     for _ in range(5):
         assert s.check_code("ali", wrong, now=1010.0) is False
@@ -61,7 +61,7 @@ def test_a_code_needs_a_saved_chat_and_belongs_to_that_chat(tmp_path: Path):
     with pytest.raises(VerificationError, match="شناسه"):
         s.issue_code("ali", now=1.0)
     s = store_with_chat(tmp_path, "42")
-    code = s.issue_code("ali", now=1.0)
+    code, _chat = s.issue_code("ali", now=1.0)
     s.set_settings("ali", AlertSettings(True, False, "43"))  # the chat changed since
     assert s.check_code("ali", code, now=2.0) is False
     assert s.settings("ali").bale_verified is False
@@ -142,3 +142,74 @@ def test_an_unverified_chat_never_receives_alerts(tmp_path: Path):
     n.submit("ali", alerts_from_cycle("r", CYCLE, SYMBOLS)[:1])
     n.flush()
     assert posts == [] and len(n.store.feed("ali")) == 1  # the feed still works
+
+
+def test_a_checked_bale_box_with_a_new_chat_turns_bale_off_instead_of_failing(beta):
+    base, _app, auth, sent = beta
+    c = login(base, auth, "ali")
+    _call(c, base + "/api/alerts/settings", {"bale_chat": "42"})
+    _call(c, base + "/api/alerts/bale/code", {})
+    digits = "".join(ch for ch in sent[0]["text"] if ch.isdigit())
+    _call(c, base + "/api/alerts/bale/verify", {"code": digits})
+    _call(c, base + "/api/alerts/settings", {"bale": True})
+    code, res = _call(c, base + "/api/alerts/settings", {"bale": True, "bale_chat": "99"})
+    assert code == 200 and res["bale"] is False and res["bale_chat"] == "99"  # saved, switched off
+
+
+def test_a_user_from_before_verification_is_switched_off_on_save_not_stuck(beta):
+    from nnfx.alerts import AlertSettings
+
+    base, app, auth, _sent = beta
+    c = login(base, auth, "ali")
+    app.notifier.store.set_settings("ali", AlertSettings(True, True, "42"))  # old file: unproven
+    assert _call(c, base + "/api/alerts/settings")[1]["bale"] is False  # shown as off
+    code, res = _call(c, base + "/api/alerts/settings", {"in_site": True, "bale": True})
+    assert code == 200 and res["bale"] is False
+
+
+def test_the_code_goes_to_the_chat_it_was_issued_for(tmp_path: Path):
+    s = store_with_chat(tmp_path, "42")
+    code, chat = s.issue_code("ali", now=1.0)
+    assert chat == "42"
+    s.set_settings("ali", AlertSettings(True, False, "7"))  # saved elsewhere right after
+    s.set_settings("ali", AlertSettings(True, False, "42"))  # and back: the pending code is for 42
+    assert s.check_code("ali", code, now=2.0) is True  # it was sent to 42, where the user reads it
+
+
+def test_a_failed_send_does_not_reset_the_minutes_limit(tmp_path: Path):
+    s = store_with_chat(tmp_path)
+    code, _ = s.issue_code("ali", now=1000.0)
+    s.void_code("ali")
+    assert s.check_code("ali", code, now=1001.0) is False  # nothing was delivered: dead
+    with pytest.raises(VerificationError):
+        s.issue_code("ali", now=1010.0)
+
+
+def test_ten_wrong_codes_in_an_hour_lock_the_user_out(tmp_path: Path):
+    s = store_with_chat(tmp_path)
+    t = 1000.0
+    for _ in range(2):  # two codes, five wrong tries each
+        code, _ = s.issue_code("ali", now=t)
+        wrong = "000000" if code != "000000" else "111111"
+        for _ in range(5):
+            s.check_code("ali", wrong, now=t + 1)
+        t += 61
+    with pytest.raises(VerificationError, match="ناموفق"):
+        s.issue_code("ali", now=t)
+    s.issue_code("ali", now=1000.0 + 3700)  # the hour has passed
+
+
+def test_one_chat_gets_a_code_a_minute_whoever_asks(tmp_path: Path):
+    s = AlertStore(tmp_path)
+    s.set_settings("ali", AlertSettings(True, False, "42"))
+    s.set_settings("sara", AlertSettings(True, False, "42"))  # the same chat id
+    s.issue_code("ali", now=1000.0)
+    with pytest.raises(VerificationError, match="چت"):
+        s.issue_code("sara", now=1010.0)
+
+
+def test_a_chat_id_must_be_plain_digits(beta):
+    base, _app, auth, _sent = beta
+    c = login(base, auth, "ali")
+    code, res = _call(c, base + "/api/alerts/settings", {"bale_chat": "۱۲۳"})  # Persian digits
+    assert code == 400 and "شناسه" in res["error"]

@@ -893,8 +893,8 @@ when a fresh process runs each bar, and also during a Bale outage.
   retried each round. Paper results are not research trials. A run whose bar source fails stays alive for 3
   rounds, then errors (terminal: start a new run); reconciliation and gate failures error at once.
   Queued Bale messages are lost if the process dies (the feed is not); a replayed cycle adds
-  nothing anywhere (a `seen` set per user). The Bale chat id is not verified to belong to the
-  user, so a handshake (`/start` with a code) is needed before wide use.
+  nothing anywhere (a `seen` set per user). The Bale chat id is verified by a one-time code
+  the bot sends to it (§29).
 
 ### 27. Journal analytics (ticket 23)
 
@@ -987,15 +987,22 @@ alerts sent to a stranger, or have the bot post to a chat that is not theirs. Th
 show they can read the chat. `POST /api/alerts/bale/code` sends a six-digit one-time code to the
 saved chat id through the bot; `POST /api/alerts/bale/verify` takes it back and marks the chat
 verified. The code is generated with `secrets`, stored only as a salted hash (`verify.json` per
-user), lives ten minutes, allows five tries, and a user gets one code a minute; if sending fails
-the pending code is dropped so the user can retry at once. A code is good only for the chat that
-was saved when it was issued. Changing the chat id removes the verification and turns Bale off;
+user), lives ten minutes and allows five tries. Guesses and spam are limited three ways: a user
+gets one code a minute (kept even when the send failed: the failed code is voided, not erased), a
+chat id gets one code a minute whoever asks (in memory, so a restart forgets it), and ten wrong
+codes in an hour, over all of a user's codes, lock the user out for the hour. Issuing returns the
+chat the code belongs to and the server sends it there, so saving another chat at the same moment
+cannot redirect a code; checking, saving settings and issuing run under the store's re-entrant
+lock. A code is good only for the chat that was saved when it was issued; chat ids are plain ASCII
+digits. Changing the chat id removes the verification and turns Bale off;
 switching Bale on needs a verified chat; the notifier never sends to an unverified one, whatever
 the stored switches say (settings files written before this ticket have no `bale_verified`, so
-those users verify once). No inbound webhook or polling is needed: the proof is that the code,
+those users verify once; saving their settings turns the unproven switch off, and the settings
+reply shows Bale on only for a proven chat). No inbound webhook or polling is needed: the proof is that the code,
 sent to the chat, came back. Limits: a user must have started a conversation with the bot for
 Bale to deliver at all (the error says so); verification proves the user can read that chat, not
-that the chat is private to them (a group chat is the user's call); the code messages go through
+that the chat is private to them (a group chat is the user's call); a signed-up user can still
+make the bot message any numeric chat id, one code a minute per account and chat; the code messages go through
 the same retried sender as alerts.
 
 ## Consequences

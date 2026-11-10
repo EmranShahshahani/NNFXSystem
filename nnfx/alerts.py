@@ -108,6 +108,8 @@ class AlertSettings:
 CODE_TTL = 600.0  # seconds a verification code lives
 CODE_INTERVAL = 60.0  # seconds between two codes for one user
 CODE_TRIES = 5
+FAIL_LIMIT = 10  # wrong codes in an hour (over all of a user's codes) before a lockout
+FAIL_WINDOW = 3600.0
 
 
 class VerificationError(ValueError):
@@ -123,8 +125,9 @@ class AlertStore:
 
     def __init__(self, root: Path) -> None:
         self.root = root
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()  # public as ``lock``: callers read-modify-write settings
         self._seen: dict[str, set[str]] = {}
+        self._chat_sent: dict[str, float] = {}  # chat id -> when a code last went there
 
     def _dir(self, user: str) -> Path:
         return self.root / owner_hash(user)
@@ -142,54 +145,68 @@ class AlertStore:
         except (OSError, ValueError, KeyError):
             return AlertSettings()
 
-    def set_settings(self, user: str, s: AlertSettings, *, _locked: bool = False) -> None:
-        d = self._dir(user)
+    @property
+    def lock(self) -> threading.RLock:
+        """The store's lock (re-entrant): hold it to read settings, decide, and write them."""
+        return self._lock
 
-        def write() -> None:
+    def set_settings(self, user: str, s: AlertSettings) -> None:
+        d = self._dir(user)
+        with self._lock:
             d.mkdir(parents=True, exist_ok=True)
             tmp = d / "settings.tmp"
             tmp.write_text(json.dumps(asdict(s)), encoding="utf-8")
             tmp.replace(d / "settings.json")
 
-        if _locked:  # the caller holds the store's lock already
-            write()
-        else:
-            with self._lock:
-                write()
-
     # ------------------------------------------------------- chat verification
-    def issue_code(self, user: str, *, now: float | None = None) -> str:
-        """A fresh one-time code for the user's saved chat; the caller sends it to that chat.
+    def issue_code(self, user: str, *, now: float | None = None) -> tuple[str, str]:
+        """A fresh one-time code and the chat it must be sent to (the chat saved right now).
 
-        Only a hash is kept. A user gets one code a minute; each code lives ten minutes and
-        allows five tries. Reading the code in the chat is what shows the chat is the user's.
+        Only a hash is kept. A user gets one code a minute, a chat id one code a minute from
+        anyone, and ten wrong codes in an hour lock the user out for the rest of the hour. Each
+        code lives ten minutes and allows five tries. Reading the code in the chat is what
+        shows the chat is the user's, so the caller must send it to the returned chat.
         """
         now = time.time() if now is None else now
-        chat = self.settings(user).bale_chat
-        if not chat:
-            raise VerificationError("ابتدا شناسهٔ چت بله را ذخیره کنید")
         d = self._dir(user)
         with self._lock:
+            chat = self.settings(user).bale_chat
+            if not chat:
+                raise VerificationError("ابتدا شناسهٔ چت بله را ذخیره کنید")
             d.mkdir(parents=True, exist_ok=True)
-            cur = self._pending(d)
-            if cur and now - cur["issued"] < CODE_INTERVAL:
+            cur = self._pending(d) or {}
+            since, fails = cur.get("fails_since", now), cur.get("fails", 0)
+            if now - since > FAIL_WINDOW:
+                since, fails = now, 0
+            if fails >= FAIL_LIMIT:
+                raise VerificationError("تلاش‌های ناموفق زیاد بود؛ بعداً دوباره امتحان کنید")
+            if now - cur.get("issued", -CODE_INTERVAL) < CODE_INTERVAL:
                 raise VerificationError("کد تازه‌ای به‌تازگی فرستاده شد؛ یک دقیقه صبر کنید")
+            if now - self._chat_sent.get(chat, -CODE_INTERVAL) < CODE_INTERVAL:
+                raise VerificationError("برای این چت به‌تازگی کد فرستاده شد؛ یک دقیقه صبر کنید")
             code = f"{secrets.randbelow(10**6):06d}"
             salt = secrets.token_hex(8)
-            row = {
-                "chat": chat,
-                "salt": salt,
-                "hash": self._code_hash(salt, code),
-                "issued": now,
-                "tries": 0,
-            }
-            self._write_pending(d, row)
-        return code
+            self._chat_sent[chat] = now
+            self._write_pending(
+                d,
+                {
+                    "chat": chat,
+                    "salt": salt,
+                    "hash": self._code_hash(salt, code),
+                    "issued": now,
+                    "tries": 0,
+                    "fails": fails,
+                    "fails_since": since,
+                },
+            )
+        return code, chat
 
-    def drop_code(self, user: str) -> None:
-        """Forget a pending code (its message could not be sent)."""
+    def void_code(self, user: str) -> None:
+        """The code could not be delivered: it can never verify. The minute's limit stays."""
         with self._lock:
-            (self._dir(user) / "verify.json").unlink(missing_ok=True)
+            row = self._pending(self._dir(user))
+            if row is not None:
+                self._write_pending(self._dir(user), {**row, "hash": "", "tries": CODE_TRIES})
 
     def check_code(self, user: str, code: str, *, now: float | None = None) -> bool:
         """Whether ``code`` is the pending one for the chat still saved; marks the chat verified."""
@@ -201,16 +218,20 @@ class AlertStore:
                 return False
             cur = self.settings(user)
             if (
-                now - row["issued"] > CODE_TTL
+                not row["hash"]
+                or now - row["issued"] > CODE_TTL
                 or row["tries"] >= CODE_TRIES
                 or row["chat"] != cur.bale_chat
             ):
                 return False
             if not hmac.compare_digest(row["hash"], self._code_hash(row["salt"], code.strip())):
-                self._write_pending(d, {**row, "tries": row["tries"] + 1})
+                self._write_pending(
+                    d, {**row, "tries": row["tries"] + 1, "fails": row.get("fails", 0) + 1}
+                )
                 return False
-            (d / "verify.json").unlink(missing_ok=True)
-            self.set_settings(user, replace(cur, bale_verified=True), _locked=True)
+            # Spent: only the rate-limit memory stays, so no code can be asked for again at once.
+            self._write_pending(d, {**row, "hash": "", "tries": CODE_TRIES, "fails": 0})
+            self.set_settings(user, replace(cur, bale_verified=True))
             return True
 
     @staticmethod

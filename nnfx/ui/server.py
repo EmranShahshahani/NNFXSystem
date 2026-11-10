@@ -661,29 +661,39 @@ class App:
         return {"alerts": self.notifier.store.feed(user.username, after)}
 
     def _settings_reply(self, s: AlertSettings) -> dict[str, Any]:
-        return {**asdict(s), "bale_available": self.notifier.bale is not None}
+        # Bale counts as on only for a proven chat (settings written before ticket 27 have none).
+        reply = {**asdict(s), "bale": s.bale and s.bale_verified}
+        return {**reply, "bale_available": self.notifier.bale is not None}
 
     def alert_settings(self, user: User) -> dict[str, Any]:
         return self._settings_reply(self.notifier.store.settings(user.username))
 
     def alert_settings_save(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
-        cur = self.notifier.store.settings(user.username)
-        chat = str(req.get("bale_chat", cur.bale_chat)).strip()
-        if chat and not re.fullmatch(r"-?\d{1,20}", chat):
-            raise ValueError("شناسهٔ چت بله باید عدد باشد")
-        changed = chat != cur.bale_chat
-        verified = cur.bale_verified and not changed  # a new chat has to be proven again
-        # Changing the chat turns Bale off unless the user asks for it and the chat is proven.
-        want = bool(req.get("bale", False if changed else cur.bale))
-        if want and not chat:
-            raise ValueError("برای دریافت در بله شناسهٔ چت را وارد کنید")
-        if want and self.notifier.bale is None:
-            raise ValueError("ربات بله روی این سرور تنظیم نشده است")
-        if want and not verified:
-            raise ValueError("شناسهٔ چت هنوز تأیید نشده است؛ ابتدا کد تأیید را بگیرید و وارد کنید")
-        new = AlertSettings(bool(req.get("in_site", cur.in_site)), want, chat, verified)
-        self.notifier.store.set_settings(user.username, new)
-        return {"ok": True, **self._settings_reply(new)}
+        with self.notifier.store.lock:  # read, decide and write as one step
+            cur = self.notifier.store.settings(user.username)
+            chat = str(req.get("bale_chat", cur.bale_chat)).strip()
+            if chat and not re.fullmatch(r"-?[0-9]{1,20}", chat):
+                raise ValueError("شناسهٔ چت بله باید عدد باشد")
+            verified = (
+                cur.bale_verified and chat == cur.bale_chat
+            )  # a new chat has to be proven again
+            want = bool(req.get("bale", cur.bale))
+            if want and not chat:
+                raise ValueError("برای دریافت در بله شناسهٔ چت را وارد کنید")
+            if want and self.notifier.bale is None:
+                raise ValueError("ربات بله روی این سرور تنظیم نشده است")
+            if want and not verified:
+                if chat != cur.bale_chat or cur.bale:
+                    want = (
+                        False  # a new chat, or an old switch on a chat never proven: Bale goes off
+                    )
+                else:
+                    raise ValueError(
+                        "شناسهٔ چت هنوز تأیید نشده است؛ ابتدا کد تأیید را بگیرید و وارد کنید"
+                    )
+            new = AlertSettings(bool(req.get("in_site", cur.in_site)), want, chat, verified)
+            self.notifier.store.set_settings(user.username, new)
+            return {"ok": True, **self._settings_reply(new)}
 
     def bale_code(self, user: User) -> dict[str, Any]:
         """Send a one-time code to the saved chat; reading it there proves the chat is theirs."""
@@ -692,15 +702,15 @@ class App:
             raise ValueError("ربات بله روی این سرور تنظیم نشده است")
         store = self.notifier.store
         try:
-            code = store.issue_code(user.username)
+            code, chat = store.issue_code(user.username)  # sent to the chat it was issued for
         except VerificationError as e:
             raise ValueError(str(e)) from None
         error = bale.send(
-            store.settings(user.username).bale_chat,
+            chat,
             f"کد تأیید NNFX: {code}\nاین کد ده دقیقه معتبر است. اگر شما نخواسته‌اید، نادیده بگیرید.",
         )
         if error is not None:
-            store.drop_code(user.username)  # nothing was delivered: allow an immediate retry
+            store.void_code(user.username)  # nothing was delivered; the minute's limit stays
             raise ValueError("ارسال به بله ناموفق بود؛ شناسهٔ چت و شروع گفتگو با ربات را بررسی کنید")
         return {"ok": True}
 

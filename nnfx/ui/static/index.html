@@ -501,7 +501,7 @@ async function loadPaper() {
         set.bale_chat && !set.bale_verified ? el("button", { onclick: async () => { try { await api("/api/alerts/bale/code", {}); smsg.className = "muted"; smsg.textContent = "کد در بله فرستاده شد"; } catch (e) { smsg.className = "err"; smsg.textContent = e.message; } } }, "ارسال کد تأیید") : null,
         set.bale_chat && !set.bale_verified ? vcode : null,
         set.bale_chat && !set.bale_verified ? el("button", { onclick: async () => { try { await api("/api/alerts/bale/verify", { code: vcode.value }); await loadPaper(); } catch (e) { smsg.className = "err"; smsg.textContent = e.message; } } }, "تأیید کد") : null) : null,
-      el("button", { onclick: async () => { try { await api("/api/alerts/settings", { in_site: inSite.checked, bale: bale.checked, bale_chat: chat.value }); smsg.className = "muted"; smsg.textContent = "ذخیره شد"; } catch (e) { smsg.className = "err"; smsg.textContent = e.message; } } }, "ذخیرهٔ تنظیمات"),
+      el("button", { onclick: async () => { try { await api("/api/alerts/settings", { in_site: inSite.checked, bale: bale.checked, bale_chat: chat.value }); await loadPaper(); } catch (e) { smsg.className = "err"; smsg.textContent = e.message; } } }, "ذخیرهٔ تنظیمات"),
       smsg));
     const list = el("div", {});
     const draw = rows => { list.innerHTML = ""; rows.slice().reverse().forEach(a => list.append(el("div", { class: "alert-row" }, el("b", {}, ALERT_KINDS[a.kind] || a.kind), " · ", el("span", { dir: "ltr" }, a.time.slice(0, 16).replace("T", " ")), el("div", {}, a.text)))); if (!rows.length) list.append(el("div", { class: "muted" }, "هنوز هشداری نیامده است.")); };
