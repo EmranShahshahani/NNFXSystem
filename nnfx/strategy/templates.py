@@ -102,10 +102,32 @@ _TCP_BLOCKS: list[_Row] = [
     ("context", "dow_trend", False, {}, BlockSource((3, 28))),  # wave_cycles reads Dow states
     ("context", "overextension_guard", False, {}, BlockSource((34,), "99 SMA gravity filter")),
     ("context", "sma_slope_gate", False, {}, BlockSource((34,), "slope degradation governor")),
+    ("context", "chase_guard", False, {}, BlockSource((64,), "no chasing after an outsized bar")),
     # --- Setups: the Candle Setup and the Box Breakout lead
     ("setup", "candle_setup", True, {}, BlockSource((35, 36, 37))),
     ("setup", "box_breakout", True, {}, BlockSource((20, 21), "blueprint 01 (B)")),
     ("setup", "box_extremes", False, {}, BlockSource((64,), "two-way trading box")),
+    # --- The other setups, present but disabled (ticket 14): a clone switches on what it trades
+    ("setup", "engulfing", False, {}, BlockSource((38,), "engulfing without gaps (04)")),
+    ("setup", "giant_indecision", False, {}, BlockSource((26,), "giant indecision reversal (03)")),
+    ("setup", "absorption_wick", False, {}, BlockSource((68,), "absorption wick at support (07)")),
+    ("setup", "layered_setup", False, {}, BlockSource((69,), "the LA layers setup (07)")),
+    ("setup", "dow_continuation", False, {}, BlockSource((62,), "Dow wave continuation (07)")),
+    (
+        "setup",
+        "binary_scenario",
+        False,
+        {"side": "long"},
+        BlockSource((87,), "binary scenario (09)"),
+    ),
+    (
+        "setup",
+        "binary_scenario",
+        False,
+        {"side": "short"},
+        BlockSource((87,), "binary scenario (09)"),
+    ),
+    ("setup", "momentum_continuation", False, {}, BlockSource((66,), "continuation mode (07)")),
     # --- Candle Setup confirmations (the Second Wave is "ideally": a score, not a refusal)
     ("confirmation", "second_wave", True, {**_CANDLE, "hard": False}, BlockSource((35,))),
     ("confirmation", "rsi_momentum", True, _CANDLE, BlockSource((13,), "RSI 14 surge (01 A)")),

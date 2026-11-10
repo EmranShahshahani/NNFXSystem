@@ -44,7 +44,9 @@ def test_every_block_of_the_library_is_in_the_template_with_its_source():
     """From ticket 12 on, a new Block ticket adds its Block here, enabled or not."""
     listed = [b.type for b in TCP.document.blocks]
     registered = {t for t, c in REGISTRY.items() if c.kind not in (BlockKind.RISK,)}
-    assert set(listed) == registered and len(listed) == len(set(listed))
+    assert set(listed) == registered
+    pairs = {t for t in listed if listed.count(t) > 1}
+    assert pairs <= {"binary_scenario"}  # a two-sided setup is one Block per side
     assert len(TCP.sources) == len(TCP.document.blocks)
     assert all(s.videos or s.note for s in TCP.sources) and (TCP.risk_sources.videos)
     assert all(v > 0 for s in TCP.sources for v in s.videos)

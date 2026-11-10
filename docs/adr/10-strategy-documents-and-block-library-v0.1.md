@@ -513,6 +513,49 @@ and honest trial counting.
     it); and each comparison logs two Strategy Trials, which count as tried
     variants for that family.
 
+### 18. The remaining setups and the chase guard (ticket 14)
+
+`strategy/setups.py` holds eight Blocks, all in the Template **disabled** (a clone
+switches on what it trades). The candle setups read the LWC bars; the structural ones
+read the timeframe role their parameters name. Each emits a trigger, an invalidation
+and a proposed stop; every number is a parameter.
+
+| Block | Fires when | Trigger / stop |
+|---|---|---|
+| `engulfing` (38) | the body covers the previous candle's whole range (wicks too), after a leg the other way of at least `min_prior_move_atr` whose pushes were fading (recent bodies at most `weakness_ratio` x earlier; optionally volume too) | high / low of the engulfing bar (mirrored) |
+| `giant_indecision` (26) | range (and volume, where the venue has it) above all of the last 10 bars, small body, one long wick, after a move into it, with the higher timeframe already weak | beyond the *opposite* side of the candle; stop at the wick tip |
+| `absorption_wick` (68) | the low pierces the lowest low of the last `lookback` bars and the body closes back above it (mirrored at resistance) | above the candle's high; stop at its low |
+| `layered_setup` (69, "LA") | an impulse, then a box whose latest confirmed swing low is above its first, and whose pushes up take fewer bars than the pullbacks | above the ceiling; stop under the inner higher low; invalidation the box bottom. One instance per side |
+| `dow_continuation` (62) | in a Dow trend, the first close beyond the last confirmed swing | break bar's extreme; invalidation the broken swing; stop the previous swing |
+| `binary_scenario` (87) | a box is confirmed: the long arms the top, the short the bottom, once per box (or every `refresh_bars`) | `stop_market` with `oco` cancels the loser |
+| `momentum_continuation` (66) | RSI beyond 70 (30) on every listed timeframe, then a micro-setup (pullback to the 7 SMA, or a bar taking out the prior bar's extreme) | the bar's extreme |
+| `chase_guard` (64, Context) | a bar whose range is over `multiple` x the mean of the previous `lookback` | refuses new candidates in the bar's direction for `cooldown_bars`; resting orders are kept |
+
+Decisions and known limits:
+
+* **Binary scenario.** The pair is two Setup Blocks (one per side) sharing the Execution
+  Block's `oco` (ticket 02). The video's volume and RSI>70 / <30 readings belong to the
+  *breakout moment*, which a pre-placed order cannot see, so they are Confirmation Blocks
+  (`only_setups: ["binary_scenario"]`) that judge the candidate when it is armed.
+* **Giant indecision.** "Higher-timeframe weakness" is read as the higher timeframe's last
+  close being above (for a long) its short SMA: the old trend has lost it. It is an
+  interpretation; the parameters let a clone change it or switch it off.
+* **Absorption wick.** Support is the rolling low of the previous bars; whether it is a
+  *key* level is the existing `level_location` confirmation's job.
+* **Chase guard** is disabled in the Template: the box-breakout's own range rule asks for
+  a big candle, and blocking by default would suppress valid breakouts. Whoever wants the
+  blueprint's "never chase" switches it on and picks the multiple.
+* **Momentum continuation** defaults to the SMA pullback; `prior_high` takes every bar that
+  breaks the previous bar's extreme while momentum lasts, which is noisy. Roles are the
+  three timeframe roles, so "15m, 1H and 4H" is expressed as the roles a document maps.
+  The "15m consolidation breakout" micro-setup is the existing `box_breakout`.
+* **Not built in:** the Template's binary pair carries no volume/RSI confirmations (a clone
+  attaches them), `dow_continuation` does not check that the way is clear of higher-timeframe
+  barriers, and the engulfing weakness is the fading-body test (volume contraction optional;
+  boundary rejections and divergence are not read).
+* The LA's "faster pushes" are counted in bars between confirmed swings, so they appear
+  `pivot_bars` late; every output is causal and tested to be.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

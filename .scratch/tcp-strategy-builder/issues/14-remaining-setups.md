@@ -4,7 +4,7 @@
 
 **Blocked by:** 10 (3-SMA system and full Candle Setup), 11 (Levels, touches, boxes and breakout confirmation), 12 (TCP Azizpour Template (core))
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Each setup emits candidates with trigger, invalidation and stop per the blueprint
 - [ ] Binary scenario uses OCO from ticket 02
@@ -12,3 +12,7 @@
 - [ ] Fixtures for fire / no-fire per setup; Template updated
 
 Spec: `.scratch/tcp-strategy-builder/spec.md`
+
+## Resolution
+
+`strategy/setups.py` (eight Blocks), the Template rows (all disabled), ADR 10 §18. Notes: the binary scenario is a pair of Setup Blocks with the existing `oco`; its volume and RSI readings are Confirmation Blocks; `chase_guard` is a Context Block that is off in the Template so the box breakout's big-candle rule is not suppressed.

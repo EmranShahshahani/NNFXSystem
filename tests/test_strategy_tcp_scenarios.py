@@ -211,11 +211,12 @@ def test_a_breakout_on_its_first_touch_is_refused_and_needs_three_touches_to_arm
     # A cloner who allows one-touch boxes still meets the touch-count rule.
     loose, journal = run(t, template(box_breakout={"min_touches": 1}))
     assert loose.candidates
-    assert all(c["reasons"] == ["confirmation:touch_count#16"] for c in loose.candidates)
+    label = f"touch_count#{[b.type for b in get_template('tcp_azizpour').document.blocks].index('touch_count')}"
+    assert all(c["reasons"] == [f"confirmation:{label}"] for c in loose.candidates)
     assert "rsi_momentum" not in {
         i["block"].split("#")[0] for i in loose.candidates[0]["checklist"]
     }
-    item = next(i for i in loose.candidates[0]["checklist"] if i["block"] == "touch_count#16")
+    item = next(i for i in loose.candidates[0]["checklist"] if i["block"] == label)
     assert item["outcome"] == "fail" and "first touch" in item["reason"]
     assert events(journal) == [] and loose.result.trades == []
     # The same breakout with three touches passes the rule and is placed.

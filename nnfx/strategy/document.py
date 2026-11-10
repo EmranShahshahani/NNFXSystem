@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, ValidationError, 
 from nnfx.data.bars import BASE_TIMEFRAMES, TIMEFRAMES
 from nnfx.research.logs import canonical_json
 from nnfx.strategy import library as _library  # noqa: F401  (registers the Blocks)
+from nnfx.strategy import setups as _setups  # noqa: F401  (registers the remaining setups)
 from nnfx.strategy.blocks import KIND_FA, REGISTRY, Block, BlockKind
 
 REQUIRED_KINDS = (BlockKind.SETUP, BlockKind.EXECUTION, BlockKind.STOP, BlockKind.EXIT)
