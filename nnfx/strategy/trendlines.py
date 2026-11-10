@@ -217,13 +217,13 @@ def track_trendlines(
 ) -> TrendTrack:
     """The support and resistance lines of one timeframe, as of every bar."""
     swing_lows, swing_highs = pivots(low, high, pivot_bars, pivot_bars)
-    kw = TrendRules(pivot_bars, window, min_slope, max_slope, tol_atr, min_touches)
+    rules = TrendRules(pivot_bars, window, min_slope, max_slope, tol_atr, min_touches)
     support = _track_side(
-        [(int(k), float(low[k])) for k in swing_lows], low, close, rng, kw, sign=1.0
+        [(int(k), float(low[k])) for k in swing_lows], low, close, rng, rules, sign=1.0
     )
     # Resistance mirrors the price: a falling line through highs is a rising line through -highs.
     resistance = _track_side(
-        [(int(k), float(-high[k])) for k in swing_highs], -high, -close, rng, kw, sign=-1.0
+        [(int(k), float(-high[k])) for k in swing_highs], -high, -close, rng, rules, sign=-1.0
     )
     return TrendTrack(support, resistance)
 
@@ -252,8 +252,9 @@ def trend_track(data: StrategyData, p: TrendParams) -> TrendTrack:
     """The block's trendlines on its timeframe (cached per parameter set)."""
     role = p.timeframe
     key = (
-        *("trendlines", role, p.pivot_bars, p.window, p.min_slope, p.max_slope),
-        *(p.tol_atr, p.min_touches),
+        "trendlines",
+        role,
+        *(p.pivot_bars, p.window, p.min_slope, p.max_slope, p.tol_atr, p.min_touches),
     )
 
     def make() -> TrendTrack:

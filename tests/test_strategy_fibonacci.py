@@ -153,13 +153,16 @@ def test_the_fib_track_is_causal():
 
 
 # --------------------------------------------------------------- the reclaim
+NEAR = {"sma_fast": 3, "sma_slow": 5, "tol_atr": 1.5}  # short averages resting on the level
+
+
 def reclaim(**kw: object) -> FibReclaim:
     return FibReclaim(FibReclaimParams(min_impulse_atr=1.0, **kw))
 
 
 def test_a_sweep_below_the_382_that_closes_back_over_it_is_a_long():
     d = build(sweep(uptrend()))
-    out = reclaim(min_confluence=0).compute(d)
+    out = reclaim(**NEAR, min_confluence=1).compute(d)
     assert list(np.flatnonzero(out.direction)) == [SWEEP]
     assert out.trigger[SWEEP] == d.base.high[SWEEP] and out.stop[SWEEP] == d.base.low[SWEEP]
     assert out.meta["level"][SWEEP] == pytest.approx(level(d))
@@ -167,10 +170,12 @@ def test_a_sweep_below_the_382_that_closes_back_over_it_is_a_long():
 
 def test_closing_under_the_level_is_a_failed_pullback_not_a_reclaim():
     d = build(sweep(uptrend(), close=117.0))
-    assert not reclaim(min_confluence=0).compute(d).direction.any()
+    assert not reclaim(**NEAR, min_confluence=1).compute(d).direction.any()
 
 
 def test_a_lone_fib_level_never_produces_a_candidate():
+    with pytest.raises(ValueError):
+        FibReclaimParams(min_confluence=0)  # the rule cannot be switched off
     d = build(sweep(uptrend()))
     assert not reclaim().compute(d).direction.any()  # the default asks for two other factors
     assert not reclaim(min_confluence=2).compute(d).direction.any()
@@ -193,7 +198,7 @@ def test_the_mirror_down_leg_gives_a_short():
     k = 10_000.0
     rows = [(k / o, k / lo, k / h, k / c) for o, h, lo, c in sweep(uptrend())]
     d = build(rows)
-    out = reclaim(min_confluence=0).compute(d)
+    out = reclaim(**NEAR, min_confluence=1).compute(d)
     assert out.direction[SWEEP] == -1 and out.trigger[SWEEP] == d.base.low[SWEEP]
     assert out.meta["level"][SWEEP] == pytest.approx(level(d))
 
@@ -233,7 +238,9 @@ def test_the_confirmation_passes_with_enough_factors_and_fails_a_lone_line():
 
 def test_the_confirmation_wants_a_level_in_range_and_a_leg_with_the_trade():
     d = build(sweep(uptrend()))
-    p = FibConfluenceParams(min_impulse_atr=1.0, min_confluence=0)
+    p = FibConfluenceParams(
+        min_impulse_atr=1.0, min_confluence=1, sma_fast=3, sma_slow=5, tol_atr=1.5
+    )
     block = FibConfluence(p)
     assert block.check(candidate(d), d).outcome == "pass"
     assert block.check(candidate(d, -1), d).outcome == "fail"  # the leg runs against a short

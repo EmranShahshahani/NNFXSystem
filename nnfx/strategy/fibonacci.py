@@ -149,7 +149,7 @@ class FibParams(BlockParams):
     min_impulse_atr: float = Field(3.0, gt=0, description="کمترین طول موج ایمپالس (ATR)")
     tol_atr: float = Field(0.3, gt=0, description="فاصلهٔ مجاز عوامل هم‌پوشان از سطح فیبو (ATR)")
     min_confluence: int = Field(
-        2, ge=0, description="دست‌کم این‌قدر عامل دیگر روی سطح فیبو (۰: بدون شرط؛ جزوه: ۲)"
+        2, ge=1, description="دست‌کم این‌قدر عامل دیگر روی سطح فیبو (جزوه: ۲؛ خط فیبوی تنها هرگز)"
     )
     level_pivot_bars: int = Field(2, ge=1, description="سطح افقی: پیوت")
     level_tolerance_atr: float = Field(0.5, gt=0, description="سطح افقی: فاصلهٔ لمس‌ها (ATR)")
@@ -204,7 +204,7 @@ class FibReclaim(SetupBlock[FibReclaimParams]):
     In an up-leg, a bar whose low wicks under the ``ratio`` retracement and whose close is
     back on or above it has swept the liquidity below the level and reclaimed it: a long,
     straight away rather than at the leg's high. A down-leg mirrors it. The level is on a log
-    scale. With ``min_confluence`` (default 2) the level must also stand on that many other
+    scale. With ``min_confluence`` (default 2, never below 1) the level must also stand on that many other
     factors (a horizontal level, SMA 25, SMA 99), so a lone Fibonacci line makes none. Trigger:
     the bar's high (low); invalidation and stop: its far side, the sweep's extreme.
     """

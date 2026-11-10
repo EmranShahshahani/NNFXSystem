@@ -769,7 +769,11 @@ Extensions project the leg from `C`: `C * (B/A)^ratio` for an up-leg.
 and the SMA 99, each counted separately, within `tol_atr` ATR of the Fibonacci price. The
 order-book wall named in the blueprint joins when ticket 21 lands.
 
-**Decisions and limits.** Of the blueprint's three "objective reactions" (a counter-trend
+**Decisions and limits.** `min_confluence` cannot go below 1: the lone-Fibonacci rule is not a
+switch. The impulse swing excluded from anchoring is the first swing inside the rolling window,
+so as the window slides a later swing takes that role; a line's window edge is `anchor + window`.
+When the impulse extends, `C` is forgotten and `fib_target` is silent until a new retracement
+low is confirmed. A leg's start `A` stays at the original swing low. Of the blueprint's three "objective reactions" (a counter-trend
 candle, a lower high on a lower timeframe, a break of the 7 SMA), the confirmed swing is the one
 built. The "Fib 1.618 without momentum" exhaustion exit is not built (`fib_target` closes at the
 level unconditionally). The macro Weekly/Daily Fibonacci floors are available by choosing the
