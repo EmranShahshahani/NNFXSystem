@@ -1212,9 +1212,9 @@ class ProfitChainParams(BlockParams):
     roc_period: int = Field(14, ge=2, description="دورهٔ ROC")
     roc_window: int = Field(200, ge=10, description="پنجرهٔ قلهٔ غلتان ROC")
     roc_fraction: float = Field(0.95, gt=0, le=1, description="سقف: این کسر از قلهٔ غلتان ROC")
-    adx_exhaustion: Literal["off", "tighten", "close"] = Field(
+    adx_exhaustion: Literal["off", "tighten", "close", "both"] = Field(
         "off",
-        description="ADX بالای سطح و در حال برگشت: خاموش، حد ضرر تنگ‌تر، یا گرفتن سود (پس از پلهٔ اول)",
+        description="ADX بالای سطح و در حال برگشت: خاموش، حد ضرر تنگ‌تر، گرفتن سود، یا هر دو (پس از پلهٔ اول)",
     )
     adx_period: int = Field(14, ge=2, description="دورهٔ ADX")
     adx_level: float = Field(45.0, gt=0, lt=100, description="سطح فرسودگی ADX (۴۵ تا ۵۰)")
@@ -1385,7 +1385,7 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             data, role, p.roc_period, p.roc_window, p.roc_fraction, m, d
         ):
             return "roc_ceiling"
-        if p.adx_exhaustion == "close" and self._adx_exhausted(data, m):
+        if p.adx_exhaustion in ("close", "both") and self._adx_exhausted(data, m):
             return "adx_exhaustion"
         return None
 
@@ -1437,6 +1437,6 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             trail = level - d * level * p.trail_buffer_pct / 100.0
             if steps and has_runner and position.steps_filled >= trail_from:
                 moves.append(StopMove(trail, "runner_trail"))
-            elif p.adx_exhaustion == "tighten" and self._adx_exhausted(data, m):
+            elif p.adx_exhaustion in ("tighten", "both") and self._adx_exhausted(data, m):
                 moves.append(StopMove(trail, "adx_exhaustion_tighten"))  # strength is fading
         return max(moves, key=lambda mv: mv.stop * d, default=None)

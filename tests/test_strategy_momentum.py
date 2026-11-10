@@ -328,3 +328,9 @@ def test_the_engine_turns_the_same_candle_setup_into_a_stop_or_a_market_entry():
     assert ev2["blocked"] == [] and ev2["intents"][0]["kind"] == "open"
     assert ev2["intents"][0]["stop_distance"] == pytest.approx(111.2 - 106.0)
     assert out2.result.trades  # and the market entry trades
+
+
+def test_adx_exhaustion_both_tightens_and_closes():
+    both = ProfitChainParams(adx_exhaustion="both", adx_level=45.0)
+    assert {"adx_exhaustion", "adx_exhaustion_tighten"} & reasons(both, STRONG_THEN_SIDEWAYS, 1)
+    assert "adx_exhaustion" not in reasons(both, STRONG_THEN_SIDEWAYS, 0)

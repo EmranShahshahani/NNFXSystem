@@ -616,7 +616,7 @@ exit-side signals) and `library` (the Execution Block and the Profit Chain optio
 | `adx_order_type` | Execution | DI separated (\|+DI - -DI\| >= 10) with ADX above its value `slope_bars` ago: the usual stop-market order. DI tangled (< 5): a market entry at the next open, only once the last LWC close is beyond the candidate's invalidation, otherwise no order (the engine journals `no_order`). Between the two: `between` (stop by default) |
 | `macd_decel_exit` | Profit Chain | histogram on the trade's side shrinking `macd_decel_bars` in a row while a close set a new `macd_extreme_bars` high in that window; closes what remains (after step 1) |
 | `roc_ceiling_exit` | Profit Chain | ROC at its ceiling (shorts: floor) closes what remains (after step 1) |
-| `adx_exhaustion` | Profit Chain | ADX reached `adx_level` (45) within `adx_peak_bars` and turned down: `close` takes the profit (after step 1), `tighten` trails the stop behind the last management swing at once |
+| `adx_exhaustion` | Profit Chain | ADX reached `adx_level` (45) within `adx_peak_bars` and turned down: `close` takes the profit (after step 1), `both` does both, `tighten` trails the stop behind the last management swing at once |
 
 Engine: an `OrderSpec` may now be `market`; the engine turns it into an `OpenIntent` whose stop
 distance runs from the confirming close to the stop. The reference run is unchanged.

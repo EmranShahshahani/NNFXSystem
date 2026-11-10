@@ -25,6 +25,8 @@ tested (``series.prior_extremes``), so a new extreme can still break them.
 
 from __future__ import annotations
 
+from typing import Literal
+
 import numpy as np
 from pydantic import Field, model_validator
 
@@ -95,6 +97,8 @@ def roc_at_extreme(
 ) -> bool:
     """ROC at ``role`` bar ``m`` is at its ceiling (shorts: floor) in the trade's direction."""
     v, ceiling, floor = roc_band(data, role, period, window, fraction)
+    if m < 0:
+        return False
     edge = ceiling[m] if d > 0 else floor[m]
     return bool(np.isfinite(v[m]) and np.isfinite(edge) and (v[m] - edge) * d >= 0)
 
@@ -127,7 +131,8 @@ def macd_decelerating(
     c = data.frames[role].close * d
     for j in range(m - bars, m + 1):
         lo = max(0, j - extreme_bars)
-        if j > lo and c[j] > np.nanmax(c[lo:j]):
+        prior = c[lo:j]
+        if np.isfinite(prior).any() and c[j] > np.nanmax(prior):
             return True
     return False
 
@@ -140,7 +145,10 @@ def adx_exhausted(
     if m < 1 or not (np.isfinite(adx[m]) and np.isfinite(adx[m - 1])):
         return False
     recent = adx[max(0, m - peak_bars) : m]
-    return bool(np.nanmax(recent) >= level and adx[m] < adx[m - 1])
+    return bool(np.isfinite(recent).any() and np.nanmax(recent) >= level and adx[m] < adx[m - 1])
+
+
+DiState = Literal["separated", "tangled", "between", "unknown"]
 
 
 def di_state(
@@ -152,7 +160,7 @@ def di_state(
     separation: float,
     tangled: float,
     slope_bars: int,
-) -> str:
+) -> DiState:
     """``"separated"`` (|+DI - -DI| >= ``separation`` and ADX rising), ``"tangled"``
     (|+DI - -DI| < ``tangled``), ``"between"``, or ``"unknown"`` while the series warms up."""  # fmt: skip
     pdi, mdi, adx = dmi_of(data, role, period)
