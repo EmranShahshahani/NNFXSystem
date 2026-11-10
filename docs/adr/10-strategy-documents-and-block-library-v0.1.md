@@ -603,6 +603,33 @@ Decisions and limits:
   the apex timing principle, scaling MACD and SMA by MF (RSI only; MACD is ticket 16), and
   a price-at-resistance condition on the RSI exhaustion exit.
 
+## 20. MACD, ROC and ADX/DMI (ticket 16)
+
+Videos 54-56. The rules live in `strategy/momentum.py` (series helpers, three Blocks, the
+exit-side signals) and `library` (the Execution Block and the Profit Chain options).
+
+| Block / option | Kind | Rule |
+|---|---|---|
+| `macd_cross` | Confirmation (oscillator) | the MACD line crossed its signal line in the trade's favour within `cross_bars`; a cross whose \|MACD\| is under `zero_band` (0.1) of the prior 200-bar maximum \|MACD\| is chop and ignored, and the newest cross outside the band decides |
+| `roc_ceiling` | Context (oscillator) | no longs while the ROC (default 4H, period 14) is at `extreme_fraction` (0.95) of its prior 200-bar high; `mirror` closes shorts at the floor. Unknown history forbids nothing |
+| `roc_box_breakout` | Confirmation (oscillator) | ROC beyond the high-low range of its previous `box_bars` (20) within `fresh_bars` |
+| `adx_order_type` | Execution | DI separated (\|+DI - -DI\| >= 10) with ADX above its value `slope_bars` ago: the usual stop-market order. DI tangled (< 5): a market entry at the next open, only once the last LWC close is beyond the candidate's invalidation, otherwise no order (the engine journals `no_order`). Between the two: `between` (stop by default) |
+| `macd_decel_exit` | Profit Chain | histogram on the trade's side shrinking `macd_decel_bars` in a row while a close set a new `macd_extreme_bars` high in that window; closes what remains (after step 1) |
+| `roc_ceiling_exit` | Profit Chain | ROC at its ceiling (shorts: floor) closes what remains (after step 1) |
+| `adx_exhaustion` | Profit Chain | ADX reached `adx_level` (45) within `adx_peak_bars` and turned down: `close` takes the profit (after step 1), `tighten` trails the stop behind the last management swing at once |
+
+Engine: an `OrderSpec` may now be `market`; the engine turns it into an `OpenIntent` whose stop
+distance runs from the confirming close to the stop. The reference run is unchanged.
+
+**Decisions and limits.** The blueprint gives no ROC period, MACD band or DI thresholds; the
+numbers above are parameters with my reading as default. The ROC ceiling is 0.95 of the prior
+extreme because "hits or exceeds" is a hand-drawn line, not a new high (1.0 means only new highs).
+The ROC "box" is the rolling range of the previous bars, not a drawn consolidation. "Tangled DI
+requires a body close" is built as a market entry on a close beyond the invalidation level, which
+for a Box Breakout candidate is the broken edge; the resting-order cancellation rules do not apply
+to it. MF scaling of MACD and SMA periods is not built (only RSI scales); the Template keeps all of
+this off.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

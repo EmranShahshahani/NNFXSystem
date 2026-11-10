@@ -43,6 +43,7 @@ from nnfx.engine.types import (
     EngineState,
     GovernorState,
     ModifyIntent,
+    OpenIntent,
     PendingOrderIntent,
     PositionView,
     SymbolState,
@@ -69,6 +70,12 @@ from nnfx.strategy.blocks import (
 from nnfx.strategy.document import StrategyDocument
 from nnfx.strategy.risk import govern, leverage_problem, margin, update_state
 from nnfx.strategy.series import atr
+
+
+def _stop_distance(entry: float, stop: float, direction: int) -> float:
+    if (entry - stop) * direction <= 0:
+        raise ValueError(f"stop {stop} must be on the losing side of the entry {entry}")
+    return abs(entry - stop)
 
 
 @dataclass(frozen=True)
@@ -421,6 +428,26 @@ class DocumentEngine:
         for eidx, ex in self.compiled.executions:
             for spec in ex.orders(cand, data):
                 try:
+                    key = f"{cand.symbol}|{cand.time}|b{cand.block_index}|e{eidx}|{k}"
+                    if spec.market:
+                        out.append(
+                            OpenIntent(
+                                symbol=cand.symbol,
+                                direction=cand.direction,
+                                leg="single",
+                                leg_index=k,
+                                entry_type="setup",
+                                signal_time=cand.time,
+                                atr=a if np.isfinite(a) else 0.0,
+                                risk_fraction=risk_fraction,
+                                idempotency_key=key,
+                                stop_distance=_stop_distance(spec.level, stop, cand.direction),
+                                target_distance=None,
+                                exit_plan=plan,
+                            )
+                        )
+                        k += 1
+                        continue
                     out.append(
                         PendingOrderIntent(
                             symbol=cand.symbol,
@@ -431,7 +458,7 @@ class DocumentEngine:
                             signal_time=cand.time,
                             atr=a if np.isfinite(a) else 0.0,
                             risk_fraction=risk_fraction,
-                            idempotency_key=f"{cand.symbol}|{cand.time}|b{cand.block_index}|e{eidx}|{k}",
+                            idempotency_key=key,
                             level=spec.level,
                             buffer=spec.buffer,
                             stop=stop,
@@ -444,4 +471,6 @@ class DocumentEngine:
                 except ValueError as exc:  # e.g. a stop on the wrong side of the trigger
                     problems.append(f"invalid_order:{str(exc).splitlines()[0][:120]}")
                 k += 1
+        if not out and not problems:
+            problems.append("no_order")  # every Execution Block is waiting (e.g. for a body close)
         return out, problems

@@ -433,6 +433,9 @@ class OrderSpec:
     invalidation: float | None
     expires_after_bars: int
     oco_group: str | None = None
+    # True: not a resting stop order but a market entry at the next bar's open (``level`` is
+    # the price it is judged at); used when a candle close, not a touch, must confirm.
+    market: bool = False
 
 
 # ----------------------------------------------------------------- blocks

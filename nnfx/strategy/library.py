@@ -37,6 +37,12 @@ from nnfx.strategy.blocks import (
     register,
 )
 from nnfx.strategy.levels import BoxTrack
+from nnfx.strategy.momentum import (
+    adx_exhausted,
+    di_state,
+    macd_decelerating,
+    roc_at_extreme,
+)
 from nnfx.strategy.series import bollinger, falling, rising, rsi, sma
 from nnfx.strategy.structure import wave_bias
 
@@ -1053,6 +1059,65 @@ class StopMarket(ExecutionBlock[StopMarketParams]):
         ]
 
 
+class AdxOrderTypeParams(StopMarketParams):
+    role: Role = Field("lwc", description="تایم‌فریمی که ADX/DMI روی آن خوانده می‌شود")
+    period: int = Field(14, ge=2, description="دورهٔ ADX/DMI")
+    separation: float = Field(10.0, gt=0, description="فاصلهٔ |DI+ − DI−| از این مقدار: جدا از هم")
+    tangled: float = Field(5.0, ge=0, description="فاصلهٔ |DI+ − DI−| کمتر از این مقدار: درهم‌تنیده")
+    slope_bars: int = Field(3, ge=1, description="ADX نسبت به این تعداد کندل پیش باید بالاتر باشد")
+    between: Literal["stop", "close"] = Field(
+        "stop", description="حالت میانی (نه جدا، نه درهم): سفارش استاپ یا ورود با بسته‌شدن کندل"
+    )
+
+    @model_validator(mode="after")
+    def _gap(self) -> AdxOrderTypeParams:
+        if self.tangled > self.separation:
+            raise ValueError("آستانهٔ درهم‌تنیدگی نباید از آستانهٔ جدایی بیشتر باشد")
+        return self
+
+
+@register
+class AdxOrderType(ExecutionBlock[AdxOrderTypeParams]):
+    """The ADX order-type switch (video 56): the same candidate, two ways in.
+
+    - **DI separated and ADX rising** (high-velocity expansion): the usual stop-market
+      order just beyond the trigger.
+    - **DI tangled** (fakeout-prone): no resting stop order. The candidate enters at
+      the next open, as a market order, only once the last closed LWC bar's *close* is
+      beyond its invalidation level (the boundary); until then nothing is placed.
+    - Anything else (or no DMI yet): ``between``.
+    """
+
+    kind = BlockKind.EXECUTION
+    type = "adx_order_type"
+    title_fa = "نوع سفارش بر پایهٔ ADX"
+    sources = ("tcp-blueprint 06: video 56 (order type confirmation)",)
+    Params = AdxOrderTypeParams
+
+    def orders(self, candidate: SetupCandidate, data: StrategyData) -> list[OrderSpec]:
+        p = self.p
+        m = int(data.positions[p.role][candidate.bar])
+        state = di_state(
+            data, p.role, p.period, m,
+            separation=p.separation, tangled=p.tangled, slope_bars=p.slope_bars,
+        )  # fmt: skip
+        by_close = state == "tangled" or (state in ("between", "unknown") and p.between == "close")
+        if not by_close:
+            return StopMarket(p).orders(candidate, data)
+        close = float(data.base.close[candidate.bar])
+        if (close - candidate.invalidation) * candidate.direction <= 0:
+            return []  # no body close beyond the boundary yet: wait
+        return [
+            OrderSpec(
+                level=close,
+                buffer=0.0,
+                invalidation=None,
+                expires_after_bars=1,
+                market=True,
+            )
+        ]
+
+
 # ------------------------------------------------------------------- stop
 class StructuralStopParams(BlockParams):
     buffer_pct: float = Field(0.05, ge=0, description="فاصلهٔ حد ضرر پشت سطح ساختاری، درصد قیمت")
@@ -1132,6 +1197,28 @@ class ProfitChainParams(BlockParams):
     )
     hold_overbought: float = Field(70.0, gt=50, lt=100, description="مرز اشباع خرید برای نگه‌داشتن")
     hold_oversold: float = Field(30.0, gt=0, lt=50, description="مرز اشباع فروش برای نگه‌داشتن")
+    macd_decel_exit: bool = Field(
+        False,
+        description="سود را بگیر وقتی هیستوگرام MACD در قله‌ای تازهٔ قیمت پیوسته کوچک می‌شود (پس از پلهٔ اول)",
+    )
+    macd_fast: int = Field(12, ge=2, description="MACD: EMA سریع")
+    macd_slow: int = Field(26, ge=3, description="MACD: EMA کند")
+    macd_signal: int = Field(9, ge=2, description="MACD: دورهٔ سیگنال")
+    macd_decel_bars: int = Field(2, ge=1, description="تعداد کندل‌های پیوستهٔ کوچک‌شدن هیستوگرام")
+    macd_extreme_bars: int = Field(20, ge=2, description="قلهٔ تازه نسبت به این تعداد کندل قبل")
+    roc_ceiling_exit: bool = Field(
+        False, description="سود را بگیر وقتی ROC به سقف غلتان خود رسید (پس از پلهٔ اول)"
+    )
+    roc_period: int = Field(14, ge=2, description="دورهٔ ROC")
+    roc_window: int = Field(200, ge=10, description="پنجرهٔ قلهٔ غلتان ROC")
+    roc_fraction: float = Field(0.95, gt=0, le=1, description="سقف: این کسر از قلهٔ غلتان ROC")
+    adx_exhaustion: Literal["off", "tighten", "close"] = Field(
+        "off",
+        description="ADX بالای سطح و در حال برگشت: خاموش، حد ضرر تنگ‌تر، یا گرفتن سود (پس از پلهٔ اول)",
+    )
+    adx_period: int = Field(14, ge=2, description="دورهٔ ADX")
+    adx_level: float = Field(45.0, gt=0, lt=100, description="سطح فرسودگی ADX (۴۵ تا ۵۰)")
+    adx_peak_bars: int = Field(3, ge=1, description="ADX در این تعداد کندل اخیر به سطح رسیده باشد")
     trail_after_step: int = Field(
         3, ge=1, le=3, description="تریل حد ضرر پس از پر شدن این تعداد پله (۳: فقط رانر)"
     )
@@ -1286,6 +1373,26 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
         pierced = (r[lo:m] - band[lo:m]) * d > 0
         return bool(np.any(pierced & np.isfinite(band[lo:m])))
 
+    def _momentum_exit(self, data: StrategyData, m: int, d: int) -> str | None:
+        """The reason of a momentum-exhaustion close at management bar ``m``, if any (ticket 16)."""
+        p, role = self.p, self.ROLE
+        if p.macd_decel_exit and macd_decelerating(
+            data, role, p.macd_fast, p.macd_slow, p.macd_signal, m, d,
+            bars=p.macd_decel_bars, extreme_bars=p.macd_extreme_bars,
+        ):  # fmt: skip
+            return "macd_decel"
+        if p.roc_ceiling_exit and roc_at_extreme(
+            data, role, p.roc_period, p.roc_window, p.roc_fraction, m, d
+        ):
+            return "roc_ceiling"
+        if p.adx_exhaustion == "close" and self._adx_exhausted(data, m):
+            return "adx_exhaustion"
+        return None
+
+    def _adx_exhausted(self, data: StrategyData, m: int) -> bool:
+        p = self.p
+        return adx_exhausted(data, self.ROLE, p.adx_period, p.adx_level, p.adx_peak_bars, m)
+
     def manage(
         self, position: PositionView, data: StrategyData, bar: int
     ) -> StopMove | CloseMove | None:
@@ -1306,6 +1413,8 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             and self._rsi_rejected(data, m, d)
         ):
             return CloseMove("rsi_bb_exhaustion")
+        if position.steps_filled >= 1 and not held and (why := self._momentum_exit(data, m, d)):
+            return CloseMove(why)
         if p.sma_flatten_exit and position.steps_filled >= 1 and not held:
             k = p.sma_slope_bars
             line, rng = data.sma(self.ROLE, p.sma_period), data.atr(self.ROLE)
@@ -1322,8 +1431,12 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
         steps = position.exit_steps
         has_runner = sum(s.fraction for s in steps) < 1.0 - 1e-9
         trail_from = min(p.trail_after_step, len(steps))
-        if steps and has_runner and position.steps_filled >= trail_from and len(swings):
+        if len(swings):
             f = data.frames[self.ROLE]
             level = float(f.low[swings[-1]] if d > 0 else f.high[swings[-1]])
-            moves.append(StopMove(level - d * level * p.trail_buffer_pct / 100.0, "runner_trail"))
+            trail = level - d * level * p.trail_buffer_pct / 100.0
+            if steps and has_runner and position.steps_filled >= trail_from:
+                moves.append(StopMove(trail, "runner_trail"))
+            elif p.adx_exhaustion == "tighten" and self._adx_exhausted(data, m):
+                moves.append(StopMove(trail, "adx_exhaustion_tighten"))  # strength is fading
         return max(moves, key=lambda mv: mv.stop * d, default=None)

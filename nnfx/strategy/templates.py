@@ -103,6 +103,7 @@ _TCP_BLOCKS: list[_Row] = [
     ("context", "overextension_guard", False, {}, BlockSource((34,), "99 SMA gravity filter")),
     ("context", "sma_slope_gate", False, {}, BlockSource((34,), "slope degradation governor")),
     ("context", "chase_guard", False, {}, BlockSource((64,), "no chasing after an outsized bar")),
+    ("context", "roc_ceiling", False, {}, BlockSource((55,), "4H ROC at its 200-bar ceiling")),
     # --- Setups: the Candle Setup and the Box Breakout lead
     ("setup", "candle_setup", True, {}, BlockSource((35, 36, 37))),
     ("setup", "box_breakout", True, {}, BlockSource((20, 21), "blueprint 01 (B)")),
@@ -145,6 +146,8 @@ _TCP_BLOCKS: list[_Row] = [
     ("confirmation", "osc_mf", False, {}, BlockSource((52,), "method 7: multiplier factor")),
     ("confirmation", "osc_divergence", False, {}, BlockSource((53,), "method 8: divergences")),
     ("confirmation", "rsi_cascade", False, {}, BlockSource((27, 46, 54), "RSI cascade")),
+    ("confirmation", "macd_cross", False, {}, BlockSource((54,), "MACD cross, not near zero")),
+    ("confirmation", "roc_box_breakout", False, {}, BlockSource((55,), "ROC leaves its box")),
     # --- Box Breakout confirmations
     ("confirmation", "touch_count", True, _BOX, BlockSource((21,))),
     ("confirmation", "breakout_body_close", True, {**_BOX, "hard": True}, BlockSource((21,))),
@@ -153,6 +156,7 @@ _TCP_BLOCKS: list[_Row] = [
     ("confirmation", "box_volume_dryup", True, _BOX, BlockSource((29,), "blueprint 01 (B)")),
     # --- Execution, Stop, Exit
     ("execution", "stop_market", True, {}, BlockSource((35, 41), "Trigger / stop-market (01)")),
+    ("execution", "adx_order_type", False, {}, BlockSource((56,), "stop order or body close")),
     ("stop", "structural_stop", True, {}, BlockSource((6,))),
     ("exit", "profit_chain", True, {}, BlockSource((19,), "blueprint 01 (B); 61-70 recycling")),
     ("exit", "fixed_r", False, {"r": 2.0}, BlockSource((), "no exit below 2R (01 B)")),

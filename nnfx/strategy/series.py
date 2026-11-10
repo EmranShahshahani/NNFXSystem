@@ -110,3 +110,45 @@ def prior_extremes(x: np.ndarray, window: int) -> tuple[np.ndarray, np.ndarray]:
         s.rolling(window, min_periods=mn).max().to_numpy(),
         s.rolling(window, min_periods=mn).min().to_numpy(),
     )
+
+
+def ema(x: np.ndarray, n: int) -> np.ndarray:
+    """Exponential moving average (span ``n``); NaN until ``n`` values exist."""
+    return pd.Series(x).ewm(span=n, adjust=False, min_periods=n).mean().to_numpy()
+
+
+def macd(
+    close: np.ndarray, fast: int, slow: int, signal: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """MACD (line, signal, histogram): EMA(fast) - EMA(slow), its EMA, and their difference."""
+    line = ema(close, fast) - ema(close, slow)
+    sig = pd.Series(line).ewm(span=signal, adjust=False, min_periods=signal).mean().to_numpy()
+    return line, sig, line - sig
+
+
+def dmi(
+    high: np.ndarray, low: np.ndarray, close: np.ndarray, n: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Wilder's directional movement: (+DI, -DI, ADX); NaN until the smoothing has ``n`` bars."""
+    prev_c = np.r_[np.nan, close[:-1]]
+    tr = np.nanmax(
+        np.column_stack([high - low, np.abs(high - prev_c), np.abs(low - prev_c)]), axis=1
+    )
+    tr[0] = np.nan
+    up = np.diff(high, prepend=np.nan)
+    down = -np.diff(low, prepend=np.nan)
+    with np.errstate(invalid="ignore"):
+        plus = np.where((up > down) & (up > 0), up, 0.0)
+        minus = np.where((down > up) & (down > 0), down, 0.0)
+    plus[0] = minus[0] = np.nan
+
+    def smooth(v: np.ndarray) -> pd.Series:
+        return pd.Series(v).ewm(alpha=1.0 / n, adjust=False, min_periods=n).mean()
+
+    s_tr = smooth(tr)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        pdi = 100.0 * smooth(plus) / s_tr
+        mdi = 100.0 * smooth(minus) / s_tr
+        dx = 100.0 * (pdi - mdi).abs() / (pdi + mdi)
+    adx = smooth(dx.to_numpy())
+    return pdi.to_numpy(), mdi.to_numpy(), adx.to_numpy()
