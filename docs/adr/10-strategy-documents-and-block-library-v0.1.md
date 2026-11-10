@@ -505,9 +505,13 @@ and honest trial counting.
     **UI.** A Stop or Exit Block decides alone, so switching one on switches
     the others of its kind off. Forms keep their open state across redraws.
     The JSON editor remains as an advanced view that is always the same
-    document. Known limits: the builder has no undo, it does not warn about
-    unsaved changes when the tab is left, and some Risk-section descriptions
-    are still in English.
+    document. Known limits: the builder has no undo and does not warn before
+    opening, importing or loading over unsaved edits; some Risk-section
+    descriptions are still in English; a parent name that equals a Template
+    slug is read as the Template; a strategy that fails to read is left out
+    of the list rather than hiding the others (saving a new version repairs
+    it); and each comparison logs two Strategy Trials, which count as tried
+    variants for that family.
 
 ## Consequences
 

@@ -201,6 +201,12 @@ def test_compare_runs_both_documents_on_the_same_data_and_lists_metrics(
         {"documents": [a, b], "datasets": [dataset(dirs)], "zero_costs": True},
     )
     assert code == 200 and res["ok"], res
+    # With the venue's costs both documents pay the same ones on the same bars.
+    code, paid = post(
+        base + "/api/strategy/compare", {"documents": [a, b], "datasets": [dataset(dirs)]}
+    )
+    assert code == 200 and paid["ok"]
+    assert paid["runs"][0]["metrics"]["expectancy_r"] < res["runs"][0]["metrics"]["expectancy_r"]
     r1, r2 = res["runs"]
     assert (r1["name"], r2["name"]) == ("plain", "wide stop")
     assert r1["fingerprint"] != r2["fingerprint"] and r1["trial_id"] != r2["trial_id"]
@@ -272,3 +278,17 @@ def test_the_endpoints_need_an_account_and_strategies_are_private(
         assert _call(sara, base + "/api/strategy/load", {"name": "secret"})[0] == 400
     finally:
         httpd.shutdown()
+
+
+def test_export_then_import_keeps_the_fingerprint(base: str):
+    code, ok = post(base + "/api/strategy/validate", {"document": clone("round trip")})
+    text = json.dumps(ok["document"], ensure_ascii=False, indent=2)  # what the export writes
+    code, back = post(base + "/api/strategy/import", {"text": text})
+    assert code == 200 and back["fingerprint"] == ok["fingerprint"]
+    assert (
+        post(
+            base + "/api/strategy/save",
+            {"document": {**ok["document"], "metadata": {"name": "  "}}},
+        )[1]
+        is not None
+    )

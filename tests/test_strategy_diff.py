@@ -114,3 +114,18 @@ def test_the_diff_is_deterministic_and_json_safe():
     a = diff_documents(TCP.document, variant(edit))
     assert a == diff_documents(TCP.document, variant(edit))
     json.dumps(a, allow_nan=False)
+
+
+def test_a_repeated_block_type_is_diffed_copy_by_copy():
+    def twin(raw):
+        first = next(b for b in raw["blocks"] if b["type"] == "rsi_momentum")
+        raw["blocks"].append({**first, "params": dict(first["params"]), "enabled": False})
+
+    base = variant(twin)
+
+    def edit(raw):
+        twin(raw)
+        raw["blocks"][-1]["params"]["weight"] = 3.0
+
+    (c,) = diff_documents(base, variant(edit))
+    assert (c["block"], c["path"], c["new"]) == ("rsi_momentum", "params.weight", 3.0)

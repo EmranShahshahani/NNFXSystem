@@ -78,17 +78,25 @@ def diff_documents(old: StrategyDocument, new: StrategyDocument) -> list[Change]
     return changes
 
 
-def key(b: dict[str, Any]) -> tuple[str, str]:
-    return (b["kind"], b["type"])
+def _keys(blocks: list[dict[str, Any]]) -> list[tuple[str, str, int]]:
+    """(kind, type, n): the n-th copy of a Block type is its own Block, so none is dropped."""
+    seen: dict[tuple[str, str], int] = {}
+    out = []
+    for b in blocks:
+        k = (b["kind"], b["type"])
+        out.append((*k, seen.get(k, 0)))
+        seen[k] = seen.get(k, 0) + 1
+    return out
 
 
 def _blocks(old: list[dict[str, Any]], new: list[dict[str, Any]]) -> list[Change]:
-    a, b = {key(x): x for x in old}, {key(x): x for x in new}
+    a = dict(zip(_keys(old), old, strict=True))
+    b = dict(zip(_keys(new), new, strict=True))
     out: list[Change] = []
-    for k in a.keys() - b.keys():
-        out.append(_block_op("removed", a[k], "حذف شد"))
-    for k in b.keys() - a.keys():
-        out.append(_block_op("added", b[k], "اضافه شد"))
+    for k in sorted(a.keys() - b.keys()):
+        out.append(_block_op("removed", a[k]))
+    for k in sorted(b.keys() - a.keys()):
+        out.append(_block_op("added", b[k]))
     for k in sorted(a.keys() & b.keys()):
         x, y = a[k], b[k]
         t = k[1]
@@ -109,16 +117,17 @@ def _blocks(old: list[dict[str, Any]], new: list[dict[str, Any]]) -> list[Change
             "block", f"بلوک {_title(t)}", {"params": x["params"]}, {"params": y["params"]}
         ):
             out.append({**c, "kind": k[0], "block": t})
-    common = [key(x) for x in old if key(x) in b]
-    if common != [key(x) for x in new if key(x) in a]:
+    common_old = [k for k in _keys(old) if k in b]
+    common_new = [k for k in _keys(new) if k in a]
+    if common_old != common_new:
         out.append(
             {
                 "op": "reordered",
                 "scope": "block",
                 "block": None,
                 "path": "blocks",
-                "old": [t for _, t in common],
-                "new": [key(x)[1] for x in new if key(x) in a],
+                "old": [k[1] for k in common_old],
+                "new": [k[1] for k in common_new],
                 "text": "بلوک‌ها جابه‌جا شدند",
             }
         )
@@ -126,7 +135,8 @@ def _blocks(old: list[dict[str, Any]], new: list[dict[str, Any]]) -> list[Change
     return out
 
 
-def _block_op(op: str, block: dict[str, Any], verb: str) -> Change:
+def _block_op(op: str, block: dict[str, Any]) -> Change:
+    verb = "اضافه شد" if op == "added" else "حذف شد"
     on = "روشن" if block["enabled"] else "خاموش"
     return {
         "op": op,

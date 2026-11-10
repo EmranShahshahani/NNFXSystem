@@ -108,3 +108,21 @@ def test_the_caps_protect_the_disk(tmp_path: Path):
         s.save("ali", doc("s0", risk_per_trade=0.001 + i * 1e-5))
     with pytest.raises(ValueError, match="نسخه"):
         s.save("ali", doc("s0", risk_per_trade=0.0099))
+
+
+def test_a_blank_name_and_a_damaged_file_do_not_break_the_store(tmp_path: Path):
+    s = StrategyStore(tmp_path)
+    raw = TCP.clone("   ")
+    d = validate_document(raw).document
+    assert d is not None
+    with pytest.raises(ValueError, match="خالی"):
+        s.save("ali", d)
+    s.save("ali", doc("good"))
+    s.save("ali", doc("bad"))
+    for f in tmp_path.rglob("v0001.json"):
+        if '"bad"' in f.read_text(encoding="utf-8"):
+            f.write_text("{broken", encoding="utf-8")
+    assert [r["name"] for r in s.list("ali")] == ["good"]  # the damaged one is skipped
+    assert s.save("ali", doc("bad")).version == 2  # and saving repairs its line
+    s.delete("ali", "bad")  # a stray temp file does not stop a delete
+    assert [r["name"] for r in s.list("ali")] == ["good"]

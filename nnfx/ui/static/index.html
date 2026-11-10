@@ -933,7 +933,7 @@ $("#st-import").addEventListener("change", guard(async () => {
   const f = $("#st-import").files[0];
   $("#st-import").value = "";
   if (!f) return;
-  if (f.size > 60000) { status("فایل بزرگ‌تر از ۶۰ کیلوبایت است.", true); return; }
+  if (f.size > 30000) { status("فایل بزرگ‌تر از ۳۰ کیلوبایت است.", true); return; }
   const r = await api("/api/strategy/import", { text: await f.text() });
   if (!r.ok) { $("#st-out").replaceChildren(stIssues(r.issues)); status("فایل وارد نشد؛ ایرادها را ببینید.", true); return; }
   stSet(r.document);

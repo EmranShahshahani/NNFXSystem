@@ -482,6 +482,8 @@ class App:
 
         if not isinstance(datasets, list) or not datasets:
             raise ValueError("دست‌کم یک دیتاست انتخاب کنید")
+        if len(datasets) > 20 or not all(isinstance(d, dict) for d in datasets):
+            raise ValueError("دیتاست‌ها نامعتبرند (حداکثر ۲۰ مورد)")
         for ds in datasets:
             if ds.get("timeframe", lwc) != lwc:
                 raise ValueError(

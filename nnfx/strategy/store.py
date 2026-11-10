@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import threading
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -75,6 +76,8 @@ class StrategyStore:
     # ---------------------------------------------------------------- write
     def save(self, owner: str, doc: StrategyDocument) -> Saved:
         name = doc.metadata.name.strip()
+        if not name:
+            raise ValueError("نام استراتژی نمی‌تواند خالی باشد")
         with self._lock:
             d = self._dir(owner, name)
             nums = self._numbers(d)
@@ -89,8 +92,14 @@ class StrategyStore:
                 )
             stamped = self._stamp(doc, name, latest + 1)
             if latest:
-                last = self._doc(d / f"v{latest:04d}.json")
-                if last.fingerprint() == self._stamp(doc, name, latest).fingerprint():
+                try:  # an unreadable latest version counts as "changed": saving repairs the line
+                    last = self._doc(d / f"v{latest:04d}.json")
+                except ValueError:
+                    last = None
+                if (
+                    last is not None
+                    and last.fingerprint() == self._stamp(doc, name, latest).fingerprint()
+                ):
                     return Saved(name, latest, last.fingerprint(), True)
             d.mkdir(parents=True, exist_ok=True)
             path = d / f"v{latest + 1:04d}.json"
@@ -108,7 +117,8 @@ class StrategyStore:
         raw = doc.model_dump(mode="json")
         raw["metadata"]["name"], raw["metadata"]["version"] = name, version
         out = validate_document(raw).document
-        assert out is not None  # a valid document stays valid with another number
+        if out is None:  # a valid document stays valid with another number; never reached
+            raise ValueError("سند پس از شماره‌گذاری نامعتبر شد")
         return out
 
     def delete(self, owner: str, name: str) -> None:
@@ -117,9 +127,7 @@ class StrategyStore:
             nums = self._numbers(d)
             if not nums:
                 raise KeyError(f"استراتژی «{name.strip()}» پیدا نشد")
-            for n in nums:
-                (d / f"v{n:04d}.json").unlink()
-            d.rmdir()
+            shutil.rmtree(d, ignore_errors=True)  # a stray .tmp from a crashed save goes too
 
     # ----------------------------------------------------------------- read
     def load(self, owner: str, name: str, version: int | None = None) -> StrategyDocument:
@@ -155,7 +163,10 @@ class StrategyStore:
             nums = self._numbers(d)
             if not nums:
                 continue
-            doc = self._doc(d / f"v{nums[-1]:04d}.json")
+            try:
+                doc = self._doc(d / f"v{nums[-1]:04d}.json")
+            except ValueError:
+                continue  # one unreadable strategy must not hide the rest
             rows.append(
                 {
                     "name": doc.metadata.name,
