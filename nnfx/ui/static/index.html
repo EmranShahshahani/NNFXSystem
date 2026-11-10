@@ -479,11 +479,12 @@ async function loadPaper() {
         : el("div", { class: "muted" }, "ابتدا در «استراتژی‌ساز» یک استراتژی ذخیره کنید."),
       msg,
       runs.runs.length ? el("div", { class: "tablewrap" }, el("table", {},
-        el("thead", {}, el("tr", {}, ["استراتژی", "نمادها", "وضعیت", "آخرین کندل", ""].map(h => el("th", {}, h)))),
+        el("thead", {}, el("tr", {}, ["استراتژی", "نمادها", "وضعیت", "آخرین کندل", "دفتر سفارش", ""].map(h => el("th", {}, h)))),
         el("tbody", {}, runs.runs.map(r => el("tr", {},
           el("td", {}, `${r.name} v${r.version}`), el("td", { dir: "ltr" }, r.symbols.join(", ")),
           el("td", {}, ({ running: "در حال اجرا", stopped: "متوقف", error: "خطا" })[r.status] + (r.error ? ` — ${r.error}` : "")),
           el("td", { dir: "ltr" }, r.last_cycle ? r.last_cycle.slice(0, 16).replace("T", " ") : "–"),
+          el("td", { class: r.book_gaps.length ? "neg" : "" }, r.book_gaps.length ? `${r.book_gaps.length} بازه بدون دفتر` : "–"),
           el("td", {}, r.status === "running" ? el("button", { onclick: act(() => api("/api/paper/stop", { id: r.id })) }, "توقف") : null,
             el("button", { onclick: async () => { try { const j = await api("/api/paper/journal?id=" + r.id); jbox.replaceChildren(stJournal(j.journal, j.stats, j.review)); } catch (e) { msg.className = "err"; msg.textContent = e.message; } } }, "ژورنال"))))))) : el("div", { class: "muted" }, "اجرای فعالی نیست."),
       jbox));

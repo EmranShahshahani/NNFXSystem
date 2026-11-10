@@ -53,10 +53,34 @@ def utc(t: pd.Timestamp | str) -> pd.Timestamp:
     return ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
 
 
-@dataclass(frozen=True)
 class _Timeline:
-    times: list[pd.Timestamp]
-    states: list[BookState | None]  # None: a one-sided or crossed book
+    """One symbol's wall tracker and the state after each snapshot, grown in time order."""
+
+    def __init__(self, params: WallParams) -> None:
+        self.tracker = WallTracker(params)
+        self.times: list[pd.Timestamp] = []
+        self.states: list[BookState | None] = []  # None: a one-sided or crossed book
+
+    def feed(self, snaps: list[OrderBookSnapshot]) -> None:
+        for s in snaps:
+            self.tracker.update(s)
+            self.times.append(s.time)
+            self.states.append(
+                BookState(
+                    s.time,
+                    s.exchange_time if s.exchange_time is not None else s.time,
+                    s.mid,
+                    tuple(self.tracker.walls()),
+                )
+                if s.two_sided
+                else None
+            )
+
+    def forget_before(self, cutoff: pd.Timestamp) -> None:
+        """Drop states older than ``cutoff``, keeping the latest one before it (it still answers)."""
+        i = bisect.bisect_left(self.times, cutoff) - 1
+        if i > 0:
+            del self.times[:i], self.states[:i]
 
 
 @dataclass(frozen=True)
@@ -76,24 +100,27 @@ class BookData:
         key = (symbol, params)
         if key not in self._timelines:
             assert self.source is not None
-            tracker = WallTracker(params)
-            times: list[pd.Timestamp] = []
-            states: list[BookState | None] = []
-            for s in self.source.snapshots(symbol, EPOCH, FAR):
-                tracker.update(s)
-                times.append(s.time)
-                states.append(
-                    BookState(
-                        s.time,
-                        s.exchange_time if s.exchange_time is not None else s.time,
-                        s.mid,
-                        tuple(tracker.walls()),
-                    )
-                    if s.two_sided
-                    else None
-                )
-            self._timelines[key] = _Timeline(times, states)
+            tl = _Timeline(params)
+            tl.feed(self.source.snapshots(symbol, EPOCH, FAR))
+            self._timelines[key] = tl
         return self._timelines[key]
+
+    def refresh(self, forget_before: pd.Timestamp | None = None) -> None:
+        """Take in what a growing source recorded since the last call (a paper run's cycle).
+
+        Wall trackers are fed only the new snapshots, so a cycle costs what is new. Nothing
+        changes for a source that does not grow. ``forget_before`` drops older states.
+        """
+        if self.source is None:
+            return
+        grow = getattr(self.source, "refresh", None)
+        if callable(grow):
+            grow()
+        for (symbol, _), tl in self._timelines.items():
+            after = tl.times[-1] + pd.Timedelta(1, "ns") if tl.times else EPOCH
+            tl.feed(self.source.snapshots(symbol, after, FAR))
+            if forget_before is not None:
+                tl.forget_before(forget_before)
 
     def at(
         self, symbol: str, time: pd.Timestamp | str, params: WallParams, max_age: pd.Timedelta

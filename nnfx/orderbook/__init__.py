@@ -4,6 +4,7 @@ from nnfx.orderbook.book import Depth, OrderBookError, OrderBookSnapshot, depth_
 from nnfx.orderbook.recorder import record
 from nnfx.orderbook.sources import (
     FixtureOrderBook,
+    LiveRecordedOrderBook,
     NobitexOrderBook,
     OrderBookSource,
     RecordedOrderBook,
@@ -15,6 +16,7 @@ from nnfx.orderbook.walls import Wall, WallEvent, WallParams, WallTracker
 __all__ = [
     "Depth",
     "FixtureOrderBook",
+    "LiveRecordedOrderBook",
     "NobitexOrderBook",
     "OrderBookError",
     "OrderBookSnapshot",

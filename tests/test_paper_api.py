@@ -159,3 +159,24 @@ def test_a_paper_run_has_its_own_journal_with_statistics_and_review_status(beta:
     code, err = _call(sara, beta.base + f"/api/paper/journal?id={rid}")
     assert code == 400 and "پیدا نشد" in err["error"]
     assert _call(_client(), beta.base + f"/api/paper/journal?id={rid}")[0] == 401
+
+
+def test_a_run_lists_its_book_gaps_and_the_server_reads_the_recordings(tmp_path: Path):
+    from nnfx.orderbook import OrderBookSnapshot
+    from nnfx.orderbook.sources import append_snapshot
+    from tests.test_strategy_orderbook import book_doc
+
+    rec = tmp_path / "rec"
+    append_snapshot(rec, OrderBookSnapshot.of(SYM, F.index[3], [[99, 1]], [[101, 1]], 100.0))
+    app = App(
+        ROOT,
+        paper=str(tmp_path / "paper"),
+        alerts=str(tmp_path / "alerts"),
+        orderbook=str(rec),
+        paper_bars=lambda sym, now: F.between(None, now),
+    )
+    app._manager().start("local", "x", 1, book_doc(), [SYM])
+    for t in F.index:
+        app.paper_tick(t + pd.Timedelta(minutes=1))
+    (run,) = app.paper_runs(type("U", (), {"username": "local"})())["runs"]  # type: ignore[arg-type]
+    assert run["book_gaps"] and run["status"] == "running"

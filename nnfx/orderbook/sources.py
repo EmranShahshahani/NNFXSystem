@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import bisect
 import json
+import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from itertools import pairwise
 from pathlib import Path
@@ -219,6 +220,77 @@ class RecordedOrderBook(_History):
                         self.skipped_lines += 1
             self._cache[symbol] = sorted(snaps, key=lambda s: s.time)
         return self._cache[symbol]
+
+
+BOOK_HISTORY = pd.Timedelta(days=2)  # how far back a live reader looks (walls need minutes)
+
+
+class LiveRecordedOrderBook(_History):
+    """The recorder's snapshots, read as they are written, for a long-running process.
+
+    ``RecordedOrderBook`` reads a symbol's files once. This one remembers how far into each
+    file it got and ``refresh()`` reads only what the recorder appended since, so a cycle's cost
+    follows what is new, not the recording's size. A line the recorder is still writing waits
+    for its newline. Days older than ``history`` before now are never read, and snapshots that
+    fall out of it are dropped (``history=None``: keep everything, for tests).
+    """
+
+    def __init__(
+        self,
+        root: Path | str,
+        *,
+        history: pd.Timedelta | None = BOOK_HISTORY,
+        clock: Callable[[], pd.Timestamp] = utc_now,
+        max_age: pd.Timedelta | None = DEFAULT_MAX_AGE,
+    ) -> None:
+        super().__init__(max_age)
+        self.root, self.history, self.clock = Path(root), history, clock
+        self.parsed_lines = 0  # lines parsed so far, good or bad (what a cycle's cost follows)
+        self.skipped_lines = 0
+        self._snaps: dict[str, list[OrderBookSnapshot]] = {}
+        self._offsets: dict[Path, int] = {}
+        self._lock = threading.Lock()
+
+    def _series(self, symbol: str) -> list[OrderBookSnapshot]:
+        if symbol not in self._snaps:
+            self._snaps[symbol] = []
+            self._read(symbol)
+        return self._snaps[symbol]
+
+    def refresh(self) -> None:
+        """Read what was recorded since the last call, for every symbol asked about."""
+        for symbol in list(self._snaps):
+            self._read(symbol)
+
+    def _read(self, symbol: str) -> None:
+        with self._lock:
+            cutoff = None if self.history is None else self.clock() - self.history
+            fresh: list[OrderBookSnapshot] = []
+            for f in sorted(_symbol_dir(self.root, symbol).glob("*.jsonl")):
+                if cutoff is not None and f.stem < cutoff.date().isoformat():
+                    continue
+                start = self._offsets.get(f, 0)
+                with f.open("rb") as fh:
+                    fh.seek(start)
+                    chunk = fh.read()
+                end = chunk.rfind(b"\n") + 1  # only whole lines
+                self._offsets[f] = start + end
+                for ln in chunk[:end].decode("utf-8", "replace").splitlines():
+                    self.parsed_lines += 1
+                    try:
+                        fresh.append(OrderBookSnapshot.from_json(json.loads(ln)))
+                    except (ValueError, KeyError, TypeError):
+                        self.skipped_lines += 1
+            snaps = self._snaps[symbol]
+            changed = bool(fresh)
+            if fresh:
+                snaps.extend(fresh)
+                snaps.sort(key=lambda x: x.time)
+            if cutoff is not None and snaps and snaps[0].time < cutoff:
+                snaps[:] = [x for x in snaps if x.time >= cutoff]
+                changed = True
+            if changed:
+                self._times.pop(symbol, None)  # the time index is rebuilt on next use
 
 
 def append_snapshot(root: Path | str, snapshot: OrderBookSnapshot) -> Path:

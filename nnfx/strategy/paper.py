@@ -16,7 +16,7 @@ import json
 import threading
 import uuid
 from collections.abc import Callable, Mapping
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -33,11 +33,12 @@ from nnfx.harness.conversion import Conversion
 from nnfx.harness.live import LiveHarness
 from nnfx.instruments import InstrumentRegistry, InstrumentSpec
 from nnfx.journal.journal import Journal
+from nnfx.orderbook.sources import BOOK_HISTORY
 from nnfx.strategy.analytics import journal_report, journal_rows
 from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument, validate_document
 from nnfx.strategy.engine import DocumentEngine, compile_document
-from nnfx.strategy.run import document_config
+from nnfx.strategy.run import book_gaps, document_config
 
 BarSource = Callable[[str, pd.Timestamp], BarFrame]
 MAX_RUNS = 3  # running paper runs per user
@@ -70,6 +71,8 @@ class PaperRunInfo:
     error: str = ""
     last_cycle: str = ""  # the latest bar processed
     alerted_through: str = ""  # the latest cycle whose alerts were handed over
+    # Stretches of the recent window with no fresh order-book snapshot (order-book Blocks only).
+    book_gaps: list[dict[str, str]] = field(default_factory=list)
 
     def public(self) -> dict[str, Any]:
         d = asdict(self)
@@ -253,7 +256,13 @@ class PaperManager:
             return  # no closed bar yet
         inst = {s: self.instruments[s] for s in info.symbols}
         cfg = document_config(doc, self.config)
+        if self.book is not None:
+            self.book.refresh(now - BOOK_HISTORY)  # what the recorder wrote since the last cycle
         compiled = compile_document(doc, frames, inst, cfg.session, None, self.book)
+        gaps = []
+        if compiled.book_blocks:
+            first = max(min(f.index[0] for f in frames.values()), now - BOOK_HISTORY)
+            gaps = book_gaps(compiled, frames, self.book or BookData(), first, None)
         d = self.run_dir(info.owner, info.id)
         costs = self.costs.with_toggles(cfg.costs) if self.costs else CostModel.zero()
         broker = PaperBroker(
@@ -276,9 +285,11 @@ class PaperManager:
             engine=DocumentEngine(compiled),
         )
         report = harness.run_cycle()
-        self._announce(info, now, report.halted)
+        self._announce(info, now, report.halted, gaps)
 
-    def _announce(self, info: PaperRunInfo, now: pd.Timestamp, halted: str | None) -> None:
+    def _announce(
+        self, info: PaperRunInfo, now: pd.Timestamp, halted: str | None, gaps: list[dict[str, str]]
+    ) -> None:
         """Hand the new cycles' alerts over, then remember how far we got."""
         cycles = list(Journal(self.run_dir(info.owner, info.id) / "journal.jsonl").records("cycle"))
         symbols = {
@@ -292,6 +303,6 @@ class PaperManager:
             cur = self._get(info.owner, info.id)
             if cur.status == "running":
                 last = cycles[-1]["time"] if cycles else cur.last_cycle
-                self._save(replace(cur, last_cycle=last, alerted_through=last))
+                self._save(replace(cur, last_cycle=last, alerted_through=last, book_gaps=gaps))
         if halted:
             self._fail(info, now, halted)

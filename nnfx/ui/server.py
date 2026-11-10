@@ -34,7 +34,9 @@ from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
+from nnfx.orderbook import LiveRecordedOrderBook
 from nnfx.strategy.analytics import journal_report
+from nnfx.strategy.book import BookData
 from nnfx.strategy.paper import LiveBars, PaperError, PaperManager, paper_symbols
 from nnfx.strategy.store import StrategyStore
 from nnfx.ui.auth import Auth, AuthError, User
@@ -599,6 +601,11 @@ class App:
                     self.paper_bars or LiveBars(),
                     self.notifier,
                     costs=CostModel.from_venue(self.venue_path),
+                    book=(
+                        None
+                        if self.orderbook_root is None
+                        else BookData(LiveRecordedOrderBook(self.orderbook_root))
+                    ),
                 )
             return self._paper
 

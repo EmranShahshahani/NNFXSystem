@@ -888,9 +888,7 @@ when a fresh process runs each bar, and also during a Bale outage.
 * **Failures never touch trading.** The feed write is wrapped; Bale delivery runs in a worker
   thread with 3 attempts and doubling delays, and a final failure goes to the user's
   `failures.jsonl`. `submit` returns at once even while a Bale call hangs (tested).
-* **Limits.** Order-book Blocks in a paper run still read no book (the recorder's snapshots are
-  not wired into the live process), so they behave as their plain counterparts and the run's
-  checklists carry `book_missing`. The window is the last 3000 bars (about 31 days), so very long
+* **Limits.** Order-book Blocks in a paper run read the recorded books when the server has a recordings directory (§28); without one they behave as their plain counterparts and the run's checklists carry `book_missing`. The window is the last 3000 bars (about 31 days), so very long
   lookbacks see less than a full backtest would. A bar source that stays one bar behind is simply
   retried each round. Paper results are not research trials. A run whose bar source fails stays alive for 3
   rounds, then errors (terminal: start a new run); reconciliation and gate failures error at once.
@@ -945,6 +943,23 @@ directory (`App.orderbook_root`); reading it into a run's decisions, and keeping
 across cycles (`BookData` caches a symbol's whole timeline on first read), is ticket 25. Without the
 option nothing changes. Limit: the recorder must be running for books to exist; an existing
 deployment has to restart it with the new symbol list (the volume keeps older recordings).
+
+*Reading the books (ticket 25).* A paper run's order-book Blocks read the recordings as of each
+cycle. `LiveRecordedOrderBook` remembers its byte offset in each day file and, on `refresh()`,
+parses only the lines appended since (a line the recorder is still writing waits for its
+newline); days older than two days before now are never read and older snapshots are dropped.
+`BookData.refresh()` feeds each wall tracker only the new snapshots, so a cycle's cost follows
+what was recorded since the last cycle, not the recording's size, and `forget_before` bounds the
+timeline's memory (the latest state before the cutoff is kept, so it still answers). The state at
+a candidate's time depends only on snapshots up to then, so a paper run decides exactly as the
+order-book backtest over the same recording (tested, including a restart on every bar and books
+recorded while the run goes). A run whose document has order-book Blocks stores `book_gaps`: the
+stretches of the last two days with no snapshot fresher than the Blocks' `max_age`, shown in the
+paper tab; `book_missing` is on a candidate only where no fresh two-sided snapshot existed.
+Limits: walls older than the two-day window are forgotten at the start (a freshly restarted
+server rebuilds from the last two days only); a wall tracker built after the first cycle for new
+parameters starts from the snapshots then held.
+
 
 ## Consequences
 

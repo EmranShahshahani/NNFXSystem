@@ -4,12 +4,16 @@
 
 **Blocked by:** 24 (Order-book snapshots for paper-run symbols)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] Parity: a Paper Run over recorded bars and recorded snapshots decides exactly as the order-book backtest over the same data, cycle for cycle, and a restart on every bar changes nothing
-- [ ] Snapshots recorded while the server runs are seen by later cycles (the book is not frozen at the first read)
-- [ ] `book_missing` appears on a candidate only when no fresh two-sided snapshot existed; no-book stretches are reported per run and shown in the paper tab
-- [ ] A cycle's cost does not grow with the recording's whole history (tested on a long recording)
-- [ ] ADR 10 §26 limit on paper runs without a book is replaced by the new behaviour
+- [x] Parity: a Paper Run over recorded bars and recorded snapshots decides exactly as the order-book backtest over the same data, cycle for cycle, and a restart on every bar changes nothing
+- [x] Snapshots recorded while the server runs are seen by later cycles (the book is not frozen at the first read)
+- [x] `book_missing` appears on a candidate only when no fresh two-sided snapshot existed; no-book stretches are reported per run and shown in the paper tab
+- [x] A cycle's cost does not grow with the recording's whole history (tested on a long recording)
+- [x] ADR 10 §26 limit on paper runs without a book is replaced by the new behaviour
 
 Spec: `.scratch/tcp-strategy-builder/spec.md` (stories 108; order-book Blocks, ticket 21)
+
+## Resolution
+
+`LiveRecordedOrderBook` (incremental reads by byte offset, history window), `BookData.refresh` / `forget_before`, `PaperManager` refreshing the book each cycle and storing `book_gaps` per run, `App` wiring from `orderbook_root`, "دفتر سفارش" column in the paper tab, ADR 10 §26 limit replaced and §28 extended. Notes: only the last two days of recordings are read; walls older than that are forgotten after a restart.
