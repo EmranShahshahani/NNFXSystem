@@ -59,8 +59,8 @@ class DominanceRegime(MarketFilterBlock[DominanceParams]):
     ===========  ===================================  ===========================================
     Regime       Condition                            Directive
     ===========  ===================================  ===========================================
-    BTC-led      BTC up and BTC.D up                  BTC longs only; no altcoin trades
-    Altseason    BTC up or ranging and BTC.D down     altcoin longs (BTC too if asked); no shorts
+    BTC-led      BTC up and BTC.D up                  BTC longs only; no altcoin longs
+    Altseason    BTC up or ranging and BTC.D down     altcoin longs (BTC too if asked)
     Alt flush    BTC down and BTC.D up                no BTC short; altcoin shorts, no longs
     ===========  ===================================  ===========================================
 
@@ -89,12 +89,11 @@ class DominanceRegime(MarketFilterBlock[DominanceParams]):
         flush = known & (btc < 0) & (dom > 0)
         long_ok, short_ok = np.ones(n, bool), np.ones(n, bool)
         if is_btc:
-            short_ok &= ~(led | season | flush)  # BTC is never shorted in the table
+            short_ok &= ~(led | flush)  # "BTC longs only"; "do not short Bitcoin"
             if not p.altseason_trades_btc:
                 long_ok &= ~season
         else:
-            long_ok &= ~(led | flush)
-            short_ok &= ~(led | season)
+            long_ok &= ~(led | flush)  # no altcoin longs while BTC leads or alts are flushed
         regime = np.select([led, season, flush], list(REGIME_CODES.values()), 0).astype("int8")
         flags = {"regime": regime, "btc_trend": btc, "dominance_trend": dom}
         tags = {name: (regime == code, regime == code) for name, code in REGIME_CODES.items()}

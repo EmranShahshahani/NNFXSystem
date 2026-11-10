@@ -79,19 +79,19 @@ def test_market_filter_is_a_registered_kind_with_its_own_contract():
 
 @pytest.mark.parametrize(
     ("symbol", "long_ok", "short_ok"),
-    [(BTCUSDT, True, False), (ALT, False, False)],
+    [(BTCUSDT, True, False), (ALT, False, True)],
 )
-def test_btc_led_regime_allows_only_bitcoin_longs(symbol, long_ok, short_ok):
+def test_btc_led_regime_sends_the_longs_to_bitcoin(symbol, long_ok, short_ok):
     out = regime(symbol, btc=1, dom=1)
     assert (verdict(out), verdict(out, "short")) == (long_ok, short_ok)
-    assert out.tags_for(LAST, 1) == {"btc_led"} or out.tags_for(LAST, -1) == {"btc_led"}
+    assert out.tags_for(LAST, 1) == {"btc_led"} and out.tags_for(LAST, -1) == {"btc_led"}
 
 
 @pytest.mark.parametrize("btc", [1, 0])
 def test_altseason_sends_the_longs_to_altcoins(btc):
     alt, bitcoin = regime(ALT, btc=btc, dom=-1), regime(BTCUSDT, btc=btc, dom=-1)
-    assert (verdict(alt), verdict(alt, "short")) == (True, False)
-    assert (verdict(bitcoin), verdict(bitcoin, "short")) == (False, False)
+    assert (verdict(alt), verdict(alt, "short")) == (True, True)  # the table says nothing of shorts
+    assert (verdict(bitcoin), verdict(bitcoin, "short")) == (False, True)
     assert alt.tags_for(LAST, 1) == {"altseason"}
 
 
@@ -252,3 +252,9 @@ def test_pair_state_is_causal_by_construction():
     b, ok_b = pair_state(part, ALT, BTCUSDT, "lwc", 2, 3)
     assert np.array_equal(a[:60], b) and np.array_equal(ok_a[:60], ok_b)
     assert pd.Series(ok_a).all()
+
+
+def test_an_asset_against_itself_is_no_ratio():
+    eth = wave(1, start=50.0)
+    out = sieve("ETH/USDT", eth, [100.0] * N, SieveParams(role="lwc", second="alt_eth"))
+    assert out.available is not None and not out.available.any()

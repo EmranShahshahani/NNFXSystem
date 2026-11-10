@@ -804,13 +804,14 @@ starting late, ending early or a hole all read as unknown. Trend is the Dow stat
 
 | Block | Rule |
 |---|---|
-| `dominance_regime` | BTC trend x BTC.D trend. **BTC-led** (BTC up, BTC.D up): BTC longs only, no altcoin trade. **Altseason** (BTC up or ranging, BTC.D down): altcoin longs, no shorts, and no BTC long unless `altseason_trades_btc`. **Alt flush** (BTC down, BTC.D up): BTC is never shorted; altcoins may be shorted, not bought. Candidates carry the regime as a tag |
+| `dominance_regime` | BTC trend x BTC.D trend. **BTC-led** (BTC up, BTC.D up): BTC longs only (no BTC short), no altcoin long. **Altseason** (BTC up or ranging, BTC.D down): altcoin longs; no BTC long unless `altseason_trades_btc`. **Alt flush** (BTC down, BTC.D up): BTC is never shorted; altcoins may be shorted, not bought. Candidates carry the regime as a tag |
 | `relative_strength` | a long needs the ALT/BTC trend up, a short the mirror; `second` adds ALT/ETH or ETH/BTC (the Ultimate Long Sieve); a ranging ratio admits neither; BTC itself is outside it |
 
 **Decisions and limits.** Combinations outside the blueprint's table (BTC.D ranging, both
-falling) restrict nothing. The table says "BTC longs only" and "avoid altcoin longs", and the
-blocks refuse the shorts in the bullish regimes too, since the matrix allocates margin to longs;
-a clone that wants shorts there leaves the filter off. ALT/BTC "breaking out of a consolidation on
+falling) restrict nothing. The block refuses only what the table
+names: altcoin longs in BTC-led and Alt flush, BTC shorts in BTC-led and Alt flush, BTC longs in
+Altseason (unless asked); the table is silent on altcoin shorts in the bullish regimes, so they
+pass. An asset against itself (ALT/ETH on ETH) is no ratio and reads as unknown. ALT/BTC "breaking out of a consolidation on
 expanding volume" is read as the ratio's Dow trend turning up, which a breakout of the swing high
 does; the volume leg is left to the volume Blocks on the ALT/USDT chart. The Strategy Builder UI
 does not yet upload market series, so a UI run with a Market Filter on is honestly incomplete.

@@ -136,6 +136,8 @@ def pair_state(
     key = ("pair_state", top, bottom, role, pivot_bars, max_stale_bars)
 
     def make() -> tuple[np.ndarray, np.ndarray]:
+        if base_asset(top) == base_asset(bottom):  # an asset against itself is no ratio
+            return trend_on_base(data, None, role, pivot_bars, max_stale_bars)
         cross = f"{base_asset(top)}/{base_asset(bottom)}"
         direct = data.market.get(cross)
         frame = role_frame(data, cross, role) if direct is not None else None
