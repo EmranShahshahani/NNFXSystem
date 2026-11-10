@@ -18,7 +18,9 @@ blueprint says.
 from __future__ import annotations
 
 import copy
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any
 
 from nnfx.strategy.document import StrategyDocument, validate_document
@@ -102,7 +104,7 @@ _TCP_BLOCKS: list[_Row] = [
     ("context", "sma_slope_gate", False, {}, BlockSource((34,), "slope degradation governor")),
     # --- Setups: the Candle Setup and the Box Breakout lead
     ("setup", "candle_setup", True, {}, BlockSource((35, 36, 37))),
-    ("setup", "box_breakout", True, {}, BlockSource((21,), "blueprint 01 (B)")),
+    ("setup", "box_breakout", True, {}, BlockSource((20, 21), "blueprint 01 (B)")),
     ("setup", "box_extremes", False, {}, BlockSource((64,), "two-way trading box")),
     # --- Candle Setup confirmations (the Second Wave is "ideally": a score, not a refusal)
     ("confirmation", "second_wave", True, {**_CANDLE, "hard": False}, BlockSource((35,))),
@@ -120,7 +122,7 @@ _TCP_BLOCKS: list[_Row] = [
     # --- Execution, Stop, Exit
     ("execution", "stop_market", True, {}, BlockSource((35, 41), "Trigger / stop-market (01)")),
     ("stop", "structural_stop", True, {}, BlockSource((6,))),
-    ("exit", "profit_chain", True, {}, BlockSource((19, 20), "blueprint 01 (B); 61-70 recycling")),
+    ("exit", "profit_chain", True, {}, BlockSource((19,), "blueprint 01 (B); 61-70 recycling")),
     ("exit", "fixed_r", False, {"r": 2.0}, BlockSource((), "no exit below 2R (01 B)")),
 ]
 
@@ -163,18 +165,18 @@ def _build() -> dict[str, Template]:
     return {tcp.slug: tcp}
 
 
-TEMPLATES: dict[str, Template] = _build()
+TEMPLATES: Mapping[str, Template] = MappingProxyType(_build())  # read-only, like each Template
 
 
 def get_template(slug: str) -> Template:
     try:
         return TEMPLATES[slug]
     except KeyError:
-        raise KeyError(f"unknown Template «{slug}»; known: {', '.join(TEMPLATES)}") from None
+        raise KeyError(f"قالب «{slug}» شناخته نشده است؛ قالب‌ها: {', '.join(TEMPLATES)}") from None
 
 
-def list_templates() -> list[dict[str, Any]]:
-    return [t.listing() for t in TEMPLATES.values()]
+def list_templates(*, full: bool = False) -> list[dict[str, Any]]:
+    return [t.listing(full=full) for t in TEMPLATES.values()]
 
 
 __all__ = [

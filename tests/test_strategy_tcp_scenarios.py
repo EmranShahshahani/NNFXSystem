@@ -173,6 +173,14 @@ def test_a_clean_candle_setup_fills_ladders_out_and_trails():
     units = [x.units for x in trades]
     total = sum(units)
     assert [round(u / total, 2) for u in units] == [0.35, 0.40, 0.15, 0.10]  # the Profit Chain
+    # Positions are managed on 4H closes: every stop move is stamped on a 4H boundary.
+    stamps = [
+        pd.Timestamp(ev["time"])
+        for r in journal.records("cycle")
+        for ev in r["evaluations"]
+        if ev["values"].get("event") == "stop_move"
+    ]
+    assert stamps and all(ts.hour % 4 == 0 and ts.minute == 0 for ts in stamps)
     moves = stop_moves(journal)
     assert moves[0] == "breakeven_after_pivot" and "runner_trail" in moves
 
@@ -283,3 +291,15 @@ def test_a_losing_streak_cuts_risk_after_three_and_halts_after_five():
     )
     assert pd.Timestamp(trades[5].entry_time) >= fifth + pd.Timedelta(hours=48)
     assert not any("daily_loss_limit" in r for rs in refusals(out) for r in rs)
+
+
+def test_the_daily_loss_limit_halts_trading_for_the_day():
+    t = warmup()
+    for _ in range(3):  # three stop-outs inside one day, 0.75% each
+        setup_bar(t)
+        fill_bar(t)
+        t.bar(1.0, 1.0, 0.985, 0.988)
+        t.leg(12, 0.001)
+    out, _ = run(t)
+    assert len(out.result.trades) == 2  # -1.5% is reached: the third setup is refused
+    assert any("daily_loss_limit" in r for rs in refusals(out) for r in rs)

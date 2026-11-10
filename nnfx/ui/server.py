@@ -231,19 +231,20 @@ class App:
         return block_catalogue()
 
     def strategy_templates(self) -> list[dict[str, Any]]:
-        from nnfx.strategy import TEMPLATES
+        from nnfx.strategy import list_templates
 
-        return [t.listing(full=True) for t in TEMPLATES.values()]
+        return list_templates(full=True)
 
     def strategy_clone(self, req: Mapping[str, Any]) -> dict[str, Any]:
-        from nnfx.strategy import TEMPLATES
+        from nnfx.strategy import get_template
 
-        t = TEMPLATES.get(str(req.get("template")))
-        if t is None:
-            raise ValueError(f"unknown Template «{req.get('template')}»")
+        try:
+            t = get_template(str(req.get("template")))
+        except KeyError:
+            raise ValueError(f"قالب «{req.get('template')}» شناخته نشده است") from None
         name = req.get("name")
         if name is not None and (not isinstance(name, str) or not name.strip()):
-            raise ValueError("the name must be non-empty text")
+            raise ValueError("نام باید متن غیرخالی باشد")
         return {"ok": True, "document": t.clone(name.strip() if name else None)}
 
     def strategy_validate(self, req: Mapping[str, Any]) -> dict[str, Any]:

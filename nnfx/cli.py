@@ -274,7 +274,7 @@ def cmd_strategy_clone(args: argparse.Namespace) -> int:
         return 1
     out = Path(args.out)
     if out.exists() and not args.force:
-        print(f"{out} exists; pass --force to overwrite it")
+        print(f"{out} وجود دارد؛ برای بازنویسی --force بدهید (exists)")
         return 1
     out.write_text(
         json.dumps(res.document.model_dump(mode="json"), indent=2, ensure_ascii=False) + "\n",
