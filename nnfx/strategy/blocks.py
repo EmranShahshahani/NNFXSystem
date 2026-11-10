@@ -32,7 +32,7 @@ from typing import Any, ClassVar, Literal
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from nnfx.config import SessionConfig
 from nnfx.data.bars import BarFrame, ns
@@ -448,9 +448,25 @@ class ConfirmationParams(BlockParams):
 
     weight: float = Field(1.0, ge=0, description="وزن در امتیاز هم‌گرایی")
     hard: bool = Field(False, description="رد شدن این بررسی، ستاپ را کامل رد می‌کند")
+    only_setups: list[str] = Field(
+        default_factory=list,
+        description="فقط برای ستاپ‌های این نوع‌ها بررسی شود (خالی: برای همهٔ ستاپ‌ها)",
+    )
+
+    @field_validator("only_setups")
+    @classmethod
+    def _known_setups(cls, v: list[str]) -> list[str]:
+        bad = [t for t in v if t not in REGISTRY or REGISTRY[t].kind != BlockKind.SETUP]
+        if bad:
+            raise ValueError(f"نوع ستاپ شناخته نشده است: {', '.join(bad)}")
+        return v
 
 
 class ConfirmationBlock[P: ConfirmationParams](Block[P]):
+    def applies_to(self, setup: str) -> bool:
+        """Whether this check is part of the checklist of a candidate from ``setup``."""
+        return not self.p.only_setups or setup in self.p.only_setups
+
     def check(self, candidate: SetupCandidate, data: StrategyData) -> CheckResult:
         raise NotImplementedError
 

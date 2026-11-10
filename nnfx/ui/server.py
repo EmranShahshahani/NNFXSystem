@@ -230,6 +230,22 @@ class App:
 
         return block_catalogue()
 
+    def strategy_templates(self) -> list[dict[str, Any]]:
+        from nnfx.strategy import TEMPLATES
+
+        return [t.listing(full=True) for t in TEMPLATES.values()]
+
+    def strategy_clone(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        from nnfx.strategy import TEMPLATES
+
+        t = TEMPLATES.get(str(req.get("template")))
+        if t is None:
+            raise ValueError(f"unknown Template «{req.get('template')}»")
+        name = req.get("name")
+        if name is not None and (not isinstance(name, str) or not name.strip()):
+            raise ValueError("the name must be non-empty text")
+        return {"ok": True, "document": t.clone(name.strip() if name else None)}
+
     def strategy_validate(self, req: Mapping[str, Any]) -> dict[str, Any]:
         from nnfx.strategy import validate_document
 
@@ -498,6 +514,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 "/api/live": app.live,
                 "/api/rules": app.rules,
                 "/api/strategy/blocks": app.strategy_blocks,
+                "/api/strategy/templates": app.strategy_templates,
             }
             if path in ("/", "/index.html"):
                 self._send(200, _index_html(), "text/html; charset=utf-8")
@@ -538,6 +555,8 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 return
             if path == "/api/backtest":
                 self._dispatch(app.backtest_limited, body)
+            elif path == "/api/strategy/clone":
+                self._dispatch(app.strategy_clone, body)
             elif path == "/api/strategy/validate":
                 self._dispatch(app.strategy_validate, body)
             elif path == "/api/strategy/backtest":

@@ -426,6 +426,48 @@ and honest trial counting.
     feed `level_location`, the key-level location check, and are there for
     Blocks that need a level book.
 
+16. **Templates (ticket 12).** A Template is a validated, frozen
+    `StrategyDocument` plus the source of each Block: the blueprint video
+    numbers and a note, for every Block and for the Risk section
+    (`strategy/templates.py`). Nothing edits one in place; `clone` returns a
+    plain dict whose metadata names the Template and its version, which the
+    user changes and validates like any document. Listed and cloned through the
+    CLI (`nnfx strategy templates|clone`), the API (`/api/strategy/templates`,
+    `/api/strategy/clone`) and the Strategy tab.
+
+    **TCP Azizpour.** HWC `D1` (weekly is a one-line change), MWC `H4`, LWC
+    `M15`, management `H4`. On: `wave_cycles`, `three_sma_alignment`,
+    `choppy_regime`, `sma_baseline_filter`, the Candle Setup and the Box
+    Breakout, the candle confirmations (`second_wave` as a score, not a
+    refusal, since the blueprint says "ideally"; `rsi_momentum`;
+    `volume_continuation`), the box confirmations (touch count, body close,
+    1.5x range, consecutive closes, volume dry-up), the stop-market trigger,
+    the structural stop, the Profit Chain 35/40/15/10, tiered risk and the
+    governors. Off but present: `box_extremes`, `dow_trend`,
+    `overextension_guard`, `sma_slope_gate`, `volume_expansion`,
+    `sma_crossover`, `level_location`, `fixed_r`. Where the blueprint gives two
+    values the Template takes the series-summary one: 15% at 10R (20% is `f3`),
+    tiers 0.25-1.0% (the 0.5% base is `risk.sizing = "fixed"`). A test pins that
+    every registered Block is in the Template, so each later Block ticket adds
+    its Block here.
+
+    **Scoped Confirmations.** Two setups share one document, so every
+    Confirmation has `only_setups` (empty: all). A check scoped to other
+    setups is left out of a candidate's checklist, not shown as not
+    applicable. The Template scopes the candle checks to `candle_setup` and
+    the box checks to `box_breakout`.
+
+    **Research.** A Template's backtest is a Strategy Trial in
+    `strategy_trials.jsonl`, a hypothesis family apart from NNFX's. No
+    pre-registration file changes (a test hashes them), and its results are
+    exploration until the family has its own pre-registration (spec).
+
+    **Known limits.** The Template has no market universe (the user picks
+    datasets). The weekly HWC and the order-book Blocks are not in it yet. A
+    one-touch box needs the cloner to lower `box_breakout.min_touches`; as
+    shipped, the Template needs three touches before the touch-count rule can
+    even refuse a first touch.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

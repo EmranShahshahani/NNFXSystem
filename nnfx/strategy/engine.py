@@ -288,6 +288,8 @@ class DocumentEngine:
             for name, out in comp.contexts
         ]
         for name, block in self.compiled.confirmations:
+            if not block.applies_to(cand.setup):
+                continue  # scoped to other setups: not part of this candidate's checklist
             res = block.check(cand, comp.data)
             items.append(
                 ChecklistItem(

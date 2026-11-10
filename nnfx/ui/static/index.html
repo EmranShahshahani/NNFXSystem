@@ -141,6 +141,7 @@ details.cand summary { cursor: pointer; }
       <div>
         <div class="panel"><h2>سند استراتژی</h2>
           <div class="note">سند را به صورت JSON بنویسید یا <button class="linkbtn" id="st-sample">نمونه</button> را بزنید. بلوک‌ها و پارامترهایشان در فهرست پایین آمده‌اند.</div>
+          <div id="st-templates" class="muted">در حال بارگذاری قالب‌ها…</div>
           <textarea id="st-doc" dir="ltr" spellcheck="false" style="min-height:280px;font-family:var(--mono);font-size:12px"></textarea>
           <button id="st-validate">اعتبارسنجی</button>
         </div>
@@ -537,7 +538,34 @@ function stIssues(issues) {
     el("table", {}, el("tr", {}, el("th", {}, "مسیر"), el("th", {}, "توضیح")),
       issues.map(i => el("tr", {}, el("td", { dir: "ltr" }, el("bdi", {}, i.path || "—")), el("td", {}, i.message)))));
 }
+function stTemplates(list) {
+  const box = $("#st-templates");
+  if (!list.length) { box.replaceChildren(); return; }
+  const sel = el("select", { id: "st-template", "aria-label": "قالب" }, list.map(t => el("option", { value: t.slug }, `${t.name} (نسخهٔ ${t.version})`)));
+  const detail = el("div", { class: "note", id: "st-template-detail" });
+  const show = () => {
+    const t = list.find(x => x.slug === sel.value);
+    const vids = s => (s.videos.length ? s.videos.map(v => "ویدیو " + v).join("، ") : "") + (s.note ? (s.videos.length ? " · " : "") + s.note : "");
+    detail.replaceChildren(el("div", {}, t.description, " ", el("b", {}, "فقط‌خواندنی"), " · اثر انگشت: ", el("code", { dir: "ltr" }, t.fingerprint)),
+      el("details", {}, el("summary", {}, `بلوک‌ها و منبع هر کدام (${t.blocks.filter(b => b.enabled).length} از ${t.blocks.length} فعال)`),
+        el("div", { class: "tablewrap", dir: "ltr" }, el("table", {}, t.blocks.map(b => el("tr", { class: b.enabled ? "" : "muted" },
+          el("td", {}, b.enabled ? "✓" : "—"), el("td", {}, b.kind), el("td", {}, b.type), el("td", { dir: "rtl" }, vids(b.sources))))))));
+  };
+  sel.addEventListener("change", show);
+  const clone = el("button", { id: "st-clone" }, "کپی در سند من");
+  clone.addEventListener("click", async () => {
+    $("#st-error").textContent = "";
+    try {
+      const r = await api("/api/strategy/clone", { template: sel.value });
+      $("#st-doc").value = JSON.stringify(r.document, null, 2);
+    } catch (e) { $("#st-error").textContent = e.message; }
+  });
+  box.className = "";
+  box.replaceChildren(el("label", {}, "قالب: ", sel), " ", clone, detail);
+  show();
+}
 async function loadStrategy() {
+  api("/api/strategy/templates").then(stTemplates).catch(() => $("#st-templates").replaceChildren());
   if (!$("#st-doc").value) $("#st-doc").value = JSON.stringify(SAMPLE_DOC, null, 2);
   const ds = (await api("/api/datasets")).filter(d => d.timeframe !== "D1");
   $("#st-datasets").replaceChildren(ds.length ? el("div", {}, ds.map(d => el("label", { style: "display:block" },

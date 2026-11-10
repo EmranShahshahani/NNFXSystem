@@ -8,15 +8,20 @@ from nnfx.strategy.document import (
     load_document,
     validate_document,
 )
+from nnfx.strategy.templates import TEMPLATES, Template, get_template, list_templates
 
 __all__ = [
     "REGISTRY",
+    "TEMPLATES",
     "BlockKind",
     "StrategyData",
     "StrategyDocument",
+    "Template",
     "ValidationIssue",
     "ValidationResult",
     "block_catalogue",
+    "get_template",
+    "list_templates",
     "load_document",
     "validate_document",
 ]

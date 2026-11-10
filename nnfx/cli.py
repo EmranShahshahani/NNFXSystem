@@ -241,6 +241,49 @@ def cmd_strategy_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_strategy_templates(args: argparse.Namespace) -> int:
+    from nnfx.strategy import TEMPLATES
+
+    for t in TEMPLATES.values():
+        on = sum(b.enabled for b in t.document.blocks)
+        print(
+            f"{t.slug}  {t.name} v{t.version}  fingerprint {t.document.fingerprint()}  "
+            f"read-only  {on}/{len(t.document.blocks)} blocks enabled"
+        )
+        if args.verbose:
+            for b, s in zip(t.document.blocks, t.sources, strict=True):
+                refs = ", ".join(f"video {v}" for v in s.videos) or "-"
+                note = f"; {s.note}" if s.note else ""
+                print(f"  [{'x' if b.enabled else ' '}] {b.kind:<12} {b.type:<22} {refs}{note}")
+    return 0
+
+
+def cmd_strategy_clone(args: argparse.Namespace) -> int:
+    import json
+
+    from nnfx.strategy import get_template, validate_document
+
+    try:
+        raw = get_template(args.template).clone(args.name)
+    except KeyError as exc:
+        print(exc.args[0])
+        return 1
+    res = validate_document(raw)
+    if res.document is None:  # cannot happen for a shipped Template; never write a broken file
+        print(res.render())
+        return 1
+    out = Path(args.out)
+    if out.exists() and not args.force:
+        print(f"{out} exists; pass --force to overwrite it")
+        return 1
+    out.write_text(
+        json.dumps(res.document.model_dump(mode="json"), indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"cloned {args.template} -> {out}  fingerprint {res.document.fingerprint()}")
+    return 0
+
+
 def cmd_strategy_backtest(args: argparse.Namespace) -> int:
     from nnfx.research.trials import ResearchState
     from nnfx.strategy import load_document
@@ -701,6 +744,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     p = stsub.add_parser("validate", help="check a Strategy Document (JSON or YAML)")
     p.add_argument("document")
     p.set_defaults(fn=cmd_strategy_validate)
+    p = stsub.add_parser("templates", help="list the read-only Templates")
+    p.add_argument("-v", "--verbose", action="store_true", help="show each Block and its videos")
+    p.set_defaults(fn=cmd_strategy_templates)
+    p = stsub.add_parser("clone", help="copy a Template into your own editable document")
+    p.add_argument("template")
+    p.add_argument("out", help="where to write the JSON document")
+    p.add_argument("--name", default=None)
+    p.add_argument("--force", action="store_true")
+    p.set_defaults(fn=cmd_strategy_clone)
     p = stsub.add_parser("backtest", help="backtest a Strategy Document and log its Trial")
     p.add_argument("document")
     p.add_argument("--csv", action="append", required=True, metavar="SYMBOL=PATH")

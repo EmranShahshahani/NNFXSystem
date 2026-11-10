@@ -22,7 +22,7 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Strategy Engine**: the one engine that interprets any Strategy Document (`DocumentEngine`), on the shared harness.
 - **Block**: one configurable rule from the Block Library, of one Block Kind. Every number in a Block is a parameter with a default.
 - **Block Kind**: Context, Setup, Confirmation, Execution, Stop, Exit, Risk, Market Filter.
-- **Template**: a read-only Strategy Document users clone and customise. "TCP Azizpour" is the first.
+- **Template**: a read-only Strategy Document users clone and customise. "TCP Azizpour" is the first. Each Block in it records the blueprint video(s) it comes from.
 - **Setup Candidate**: what a Setup Block emits when its pattern completes: direction, trigger price, invalidation price, proposed stop, tags.
 - **Confluence Score**: the summed weight of a Setup Candidate's passing Confirmation checks (each weighs 1 by default, so usually their count); it selects the Risk Tier. Not-applicable checks never count.
 - **Decision Path**: a candidate's way through context → confirmations → risk → stop → order, with the first refusal and the stages it skipped.
