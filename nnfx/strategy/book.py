@@ -116,6 +116,7 @@ class BookData:
         lo, hi = utc(start), utc(end)
         if self.source is None:
             return [(lo, hi)]
-        times = [s.time for s in self.source.snapshots(symbol, lo, hi)]
-        edges = [lo, *times, hi]
+        # A snapshot just before ``start`` still covers its first stretch.
+        seen = self.source.snapshots(symbol, lo - max_gap, hi)
+        edges = [lo, *(max(lo, s.time) for s in seen), hi]
         return [(a, b) for a, b in pairwise(edges) if b - a > max_gap]

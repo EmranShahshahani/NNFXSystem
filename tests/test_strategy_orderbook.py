@@ -323,3 +323,13 @@ def test_a_document_without_order_book_blocks_has_no_gaps_and_no_book_key():
     out, journal = run(ROWS)
     assert out.book_gaps == [] and "book_missing" not in candidate_of(journal)["values"]
     assert np.isfinite(out.result.initial_equity)
+
+
+def test_a_snapshot_just_before_the_run_starts_leaves_no_false_gap():
+    book_data = BookData(FixtureOrderBook([book(-30), book(40)]))
+    start = T
+    gaps = book_data.gaps(SYM, start, T + pd.Timedelta(seconds=60), pd.Timedelta(seconds=120))
+    assert gaps == []
+    late = BookData(FixtureOrderBook([book(500)]))
+    stretch = late.gaps(SYM, start, T + pd.Timedelta(seconds=60), pd.Timedelta(seconds=30))
+    assert stretch == [(T, T + pd.Timedelta(seconds=60))]

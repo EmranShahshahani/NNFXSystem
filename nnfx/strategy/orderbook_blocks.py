@@ -98,6 +98,11 @@ def opposing_side(direction: int) -> str:
     return "ask" if direction > 0 else "bid"
 
 
+def own_side(direction: int) -> str:
+    """Whose walls protect a trade: bids under a long, asks over a short."""
+    return opposing_side(-direction)
+
+
 class BookBlock[P: BookParams](Block[P]):
     """A Block that reads the order book at its candidate's time."""
 
@@ -232,7 +237,7 @@ class WallShieldedStop(BookBlock[WallStopParams], StopBlock[WallStopParams]):
         state = self.book_state(candidate, data)
         if state is None:
             return base
-        side = "bid" if d > 0 else "ask"
+        side = own_side(d)
         gap = candidate.trigger * p.min_gap_pct / 100.0
         between = [
             w
