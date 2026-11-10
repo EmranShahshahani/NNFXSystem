@@ -34,7 +34,7 @@ from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
-from nnfx.strategy.analytics import review_status, statistics
+from nnfx.strategy.analytics import journal_report
 from nnfx.strategy.paper import LiveBars, PaperError, PaperManager
 from nnfx.strategy.store import StrategyStore
 from nnfx.ui.auth import Auth, AuthError, User
@@ -556,9 +556,7 @@ class App:
                 "spot_transfers": [asdict(t) for t in run.spot_transfers],
                 "spot_balance": run.spot_balance(),
                 # The blueprint's journal fields per position, statistics, review prompts.
-                "journal": [row.record() for row in run.journal],
-                "stats": statistics(run.journal),
-                "review": review_status(len(run.journal), 0, run.journal),
+                **journal_report(run.journal, forward=0),  # a backtest has no forward trades
                 # A Market Filter lacked its series at some candidate (checked n/a): see ADR 10 §24.
                 "incomplete": run.incomplete,
                 "incomplete_blocks": run.incomplete_blocks,

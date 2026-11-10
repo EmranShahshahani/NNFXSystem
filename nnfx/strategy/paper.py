@@ -33,7 +33,7 @@ from nnfx.harness.conversion import Conversion
 from nnfx.harness.live import LiveHarness
 from nnfx.instruments import InstrumentSpec
 from nnfx.journal.journal import Journal
-from nnfx.strategy.analytics import journal_rows, review_status, statistics
+from nnfx.strategy.analytics import journal_report, journal_rows
 from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument, validate_document
 from nnfx.strategy.engine import DocumentEngine, compile_document
@@ -205,12 +205,9 @@ class PaperManager:
             frames: dict[str, BarFrame] | None = {s: self.bars(s, at) for s in info.symbols}
         except OSError:
             frames = None
-        rows = journal_rows(trades, cycles, frames, source="paper")
-        return {
-            "rows": [r.record() for r in rows],
-            "stats": statistics(rows),
-            "review": review_status(len(rows), len(rows), rows),
-        }
+        lwc = TIMEFRAMES[str(info.document["timeframes"]["lwc"])]
+        rows = journal_rows(trades, cycles, frames, source="paper", bar=lwc)
+        return journal_report(rows, forward=len(rows))  # every paper trade is a forward trade
 
     # ------------------------------------------------------------------ cycle
     def tick(self, now: pd.Timestamp) -> None:

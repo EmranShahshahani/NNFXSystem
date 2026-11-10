@@ -64,6 +64,27 @@ def test_excursion_is_left_out_when_no_bars_are_at_hand():
     assert r.mae_r is None and r.source == "paper"
 
 
+def test_the_session_is_by_the_entry_bars_open_even_without_bars():
+    import pandas as pd
+
+    rows = [*RISE, SETUP, FILL, *TO_TARGET]
+    out, journal = run(rows)
+    cycles = list(journal.records("cycle"))
+    # the fill's label is 03:00; a 15m bar opened 02:45 (asia); judged by the label alone it
+    # is still asia here, so shift the label across the 08:00 boundary to see the difference.
+    t = out.result.trades[0]
+    import dataclasses
+
+    shifted = dataclasses.replace(t, entry_time="2024-03-01T08:00:00+00:00")
+    (late,) = journal_rows([shifted], cycles, None, source="paper")
+    (right,) = journal_rows([shifted], cycles, None, source="paper", bar=pd.Timedelta(minutes=15))
+    assert late.session == "london" and right.session == "london"
+    on_edge = dataclasses.replace(t, entry_time="2024-03-01T07:00:00+00:00")
+    (a,) = journal_rows([on_edge], cycles, None, source="paper")
+    (b,) = journal_rows([on_edge], cycles, None, source="paper", bar=pd.Timedelta(minutes=15))
+    assert a.session == "london" and b.session == "asia"  # the bar opened 06:45
+
+
 def row(**kw) -> JournalRow:
     base = dict(
         position_id="p",

@@ -485,7 +485,7 @@ async function loadPaper() {
           el("td", {}, ({ running: "در حال اجرا", stopped: "متوقف", error: "خطا" })[r.status] + (r.error ? ` — ${r.error}` : "")),
           el("td", { dir: "ltr" }, r.last_cycle ? r.last_cycle.slice(0, 16).replace("T", " ") : "–"),
           el("td", {}, r.status === "running" ? el("button", { onclick: act(() => api("/api/paper/stop", { id: r.id })) }, "توقف") : null,
-            el("button", { onclick: async () => { try { const j = await api("/api/paper/journal?id=" + r.id); jbox.replaceChildren(stJournal(j.rows, j.stats, j.review)); } catch (e) { msg.className = "err"; msg.textContent = e.message; } } }, "ژورنال"))))))) : el("div", { class: "muted" }, "اجرای فعالی نیست."),
+            el("button", { onclick: async () => { try { const j = await api("/api/paper/journal?id=" + r.id); jbox.replaceChildren(stJournal(j.journal, j.stats, j.review)); } catch (e) { msg.className = "err"; msg.textContent = e.message; } } }, "ژورنال"))))))) : el("div", { class: "muted" }, "اجرای فعالی نیست."),
       jbox));
     const inSite = el("input", { type: "checkbox", checked: set.in_site });
     const bale = el("input", { type: "checkbox", checked: set.bale, disabled: !set.bale_available });

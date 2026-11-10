@@ -86,7 +86,9 @@ def test_backtest_returns_the_journal_statistics_and_review_status(
     )
     assert code == 200
     (row,) = res["journal"]
-    assert row["setup"] == "candle_setup" and row["outcome"] == "win" and row["source"] == "backtest"
+    assert (
+        row["setup"] == "candle_setup" and row["outcome"] == "win" and row["source"] == "backtest"
+    )
     assert row["realised_r"] == pytest.approx(2.0) and row["targets"]
     assert res["stats"]["setup"][0]["count"] == 1
     assert res["stats"]["setup"][0]["expectancy_r"] == pytest.approx(2.0)

@@ -1,6 +1,6 @@
 """The trade journal and its statistics (Strategy Builder ticket 23, ADR 10 §27).
 
-One row per closed position, carrying the blueprint's fields (video 71-80: timestamp, session,
+One row per closed position, carrying the blueprint's fields (timestamp, session,
 asset, direction, setup type, risk tier, size, leverage, stop, targets, outcome, realised R,
 MAE, slippage, fees). Backtest and paper trades share this one shape: rows are built from the
 broker's trades, the journaled cycles (which hold the candidate and its order) and, when at
@@ -116,8 +116,13 @@ def journal_rows(
     frames: Mapping[str, BarFrame] | None,
     *,
     source: str,
+    bar: pd.Timedelta | None = None,
 ) -> list[JournalRow]:
-    """One row per position, oldest entry first."""
+    """One row per position, oldest entry first.
+
+    ``bar`` is the LWC bar length; the session is judged by the entry bar's open, so without
+    it (and without frames to read it from) the session would be a bar late.
+    """
     by_key, key_of = _candidates(cycles)
     legs: dict[str, list[Trade]] = {}
     for t in trades:
@@ -128,9 +133,9 @@ def journal_rows(
         first = min(ts, key=lambda t: t.entry_time)
         values, intent = by_key.get(key_of.get(pid, ""), ({}, {}))
         frame = None if frames is None else frames.get(first.symbol)
-        lwc = frame.timeframe if frame is not None else None
+        length = bar if bar is not None else (TIMEFRAMES[frame.timeframe] if frame else None)
         entry = pd.Timestamp(first.entry_time)
-        opened = entry - TIMEFRAMES[lwc] if lwc in TIMEFRAMES else entry
+        opened = entry - length if length is not None else entry
         net = sum(t.net_pnl for t in ts)
         risk = sum(t.risk_cash for t in ts)
         r = net / risk if risk > 0 else 0.0
@@ -222,4 +227,13 @@ def review_status(trades: int, forward: int, rows: Sequence[JournalRow] = ()) ->
         "current_losing_streak": cur,
         "longest_losing_streak": longest,
         "streak_is_normal": cur <= NORMAL_LOSING_STREAK,
+    }
+
+
+def journal_report(rows: Sequence[JournalRow], forward: int) -> dict[str, Any]:
+    """Rows, statistics and review status as the API returns them."""
+    return {
+        "journal": [r.record() for r in rows],
+        "stats": statistics(rows),
+        "review": review_status(len(rows), forward, rows),
     }

@@ -152,7 +152,7 @@ def test_a_paper_run_has_its_own_journal_with_statistics_and_review_status(beta:
     play(beta)
     code, res = _call(ali, beta.base + f"/api/paper/journal?id={rid}")
     assert code == 200
-    (row,) = res["rows"]
+    (row,) = res["journal"]
     assert row["source"] == "paper" and row["setup"] == "candle_setup" and row["asset"] == SYM
     assert res["stats"]["setup"][0]["count"] == 1
     assert res["review"]["forward_trades"] == 1 and res["review"]["rules_locked"] is True
