@@ -73,4 +73,4 @@ specs, tickets, tests and code. Source for Trade City Pro (TCP) terms:
 - **Depth to move**: the size a market order must take to push price x% from the best level.
 - **Paper Run**: a user's Strategy Document running on live closed bars through the live harness and a PaperBroker; decisions equal a backtest's over the same bars (and, for order-book Blocks, over the recorded books of the last two days).
 - **Journal Row**: one closed position with the blueprint's fields (session, setup, risk tier, size, leverage, stop, targets, outcome, realised R, MAE, slippage, fees); backtest and paper trades share it, and the statistics group rows by setup, session, weekday, asset and risk tier.
-- **Alert**: a message derived from a journaled cycle (Setup Candidate appeared; Trigger placed, filled, cancelled or expired; run halted), delivered to the user's in-site feed and, if switched on, Bale.
+- **Alert**: a message derived from a journaled cycle (Setup Candidate appeared; Trigger placed, filled, cancelled or expired; run halted) or from the state of a run's order book (stale once per outage, back again), delivered to the user's in-site feed and, if switched on, Bale.

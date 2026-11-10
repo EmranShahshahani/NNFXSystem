@@ -973,7 +973,11 @@ like any alert). The run is never stopped: its order-book Blocks act as their pl
 and candidates carry `book_missing` (§25), as in a backtest with a gap. A run that starts while the
 recorder is down gets `book_stale` at its first cycle. Without a recordings directory nothing is
 watched, and a document with no order-book Blocks never raises it. Delivery goes through the
-usual notifier, so a Bale failure changes no decision.
+usual notifier, so a Bale failure changes no decision. Limits: staleness is judged once per bar, so
+an outage is announced up to one bar late; alerts are handed over before the run's state is saved
+(at least once), so a crash in between followed by a restart on a later bar while the books are
+still stale repeats the `book_stale` alert (a replay on the same bar is deduplicated by id); a run
+that errors in an outage gets no `book_back`.
 
 
 ## Consequences

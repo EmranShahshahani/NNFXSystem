@@ -37,7 +37,7 @@ from nnfx.orderbook.sources import BOOK_HISTORY
 from nnfx.strategy.analytics import journal_report, journal_rows
 from nnfx.strategy.book import BookData
 from nnfx.strategy.document import StrategyDocument, validate_document
-from nnfx.strategy.engine import DocumentEngine, compile_document
+from nnfx.strategy.engine import CompiledDocument, DocumentEngine, compile_document
 from nnfx.strategy.run import book_gaps, document_config, stale_books
 
 BarSource = Callable[[str, pd.Timestamp], BarFrame]
@@ -271,21 +271,10 @@ class PaperManager:
             self.book.refresh(now, BOOK_HISTORY)  # what the recorder wrote since the last cycle
         compiled = compile_document(doc, frames, inst, cfg.session, None, self.book)
         watch = BookWatch()
-        if compiled.book_blocks and self.book is not None:
+        if compiled.book_blocks:
             first = max(min(f.index[0] for f in frames.values()), now - BOOK_HISTORY)
-            gaps = book_gaps(compiled, frames, self.book, first, None)
-            stale = stale_books(compiled, frames, self.book)
-            before = set(info.book_stale)
-            alerts = [
-                book_alert(info.id, t.isoformat(), s, True)
-                for s, t in stale.items()
-                if s not in before
-            ] + [
-                book_alert(info.id, frames[s].index[-1].isoformat(), s, False)
-                for s in sorted(before - set(stale))
-                if s in frames
-            ]
-            watch = BookWatch(gaps, sorted(stale), alerts)
+            gaps = book_gaps(compiled, frames, self.book or BookData(), first, None)
+            watch = self._watch_book(info, compiled, frames, gaps)
         d = self.run_dir(info.owner, info.id)
         costs = self.costs.with_toggles(cfg.costs) if self.costs else CostModel.zero()
         broker = PaperBroker(
@@ -309,6 +298,31 @@ class PaperManager:
         )
         report = harness.run_cycle()
         self._announce(info, now, report.halted, watch)
+
+    def _watch_book(
+        self,
+        info: PaperRunInfo,
+        compiled: CompiledDocument,
+        frames: Mapping[str, BarFrame],
+        gaps: list[dict[str, str]],
+    ) -> BookWatch:
+        """Who is stale now and the alerts for each change since the last cycle.
+
+        Only with a recordings directory: without one nothing is watched, the run just trades
+        plainly and its gaps say so.
+        """
+        if self.book is None:
+            return BookWatch(gaps)
+        stale = stale_books(compiled, frames, self.book)
+        before = set(info.book_stale)
+        alerts = [
+            book_alert(info.id, t.isoformat(), s, True) for s, t in stale.items() if s not in before
+        ] + [
+            book_alert(info.id, frames[s].index[-1].isoformat(), s, False)
+            for s in sorted(before - set(stale))
+            if s in frames
+        ]
+        return BookWatch(gaps, sorted(stale), alerts)
 
     def _announce(
         self, info: PaperRunInfo, now: pd.Timestamp, halted: str | None, watch: BookWatch
