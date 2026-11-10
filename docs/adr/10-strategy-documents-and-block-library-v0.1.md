@@ -468,6 +468,47 @@ and honest trial counting.
     shipped, the Template needs three touches before the touch-count rule can
     even refuse a first touch.
 
+17. **The builder, versions, diff and comparison (ticket 13).** The builder
+    draws every form from a JSON schema, so a new Block shows up in the
+    palette and gets a form with no UI code: `/api/strategy/blocks` serves each
+    Block's parameter schema, `/api/strategy/schema` serves the Risk and
+    Checklist sections and the timeframe roles. A test pins that every
+    registered Block's schema is flat (boolean, integer, number, string, enum,
+    list) so the generic renderer can draw it.
+
+    **Storage.** `strategy/store.py` keeps one file per saved version,
+    `<owner>/<name>/v0001.json`; owner and name are hashed into directory
+    names, so no user text becomes a path. The version number is the store's,
+    never the client's. A save identical to the latest version adds none.
+    Caps: 100 strategies per user and 200 versions per strategy. Strategies are
+    private to their user (the account name; `local` without accounts).
+
+    **Diff.** `strategy/diff.py` compares two resolved documents: Blocks by
+    (kind, type) as added, removed, switched on or off, a changed parameter,
+    or reordered; the timeframe roles, universe, Risk and Checklist field by
+    field. The name, version, parent and description are not compared. The
+    default base is the document's parent: a Template, or one of the user's
+    own strategies when the document is a duplicate. The base can also be the
+    last saved version, another saved strategy, a Template or any document.
+
+    **Import and export.** Export downloads the validated, resolved document as
+    a JSON file. Import (`/api/strategy/import`) reads text, never trusting it:
+    empty files, broken JSON, non-objects and invalid documents come back as
+    Persian issues, every problem at once, and nothing is saved until the user
+    saves.
+
+    **Comparison.** `/api/strategy/compare` runs two documents on the same
+    bars with the same costs and returns their metrics side by side plus the
+    diff. The two documents must share the LWC. Both runs are Strategy Trials
+    (stage `strategy/compare`), so a comparison is exploration, not research.
+
+    **UI.** A Stop or Exit Block decides alone, so switching one on switches
+    the others of its kind off. Forms keep their open state across redraws.
+    The JSON editor remains as an advanced view that is always the same
+    document. Known limits: the builder has no undo, it does not warn about
+    unsaved changes when the tab is left, and some Risk-section descriptions
+    are still in English.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

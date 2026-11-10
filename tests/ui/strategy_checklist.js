@@ -13,6 +13,7 @@ const { chromium, devices } = require("playwright");
   await page.goto(url);
   await page.click("text=استراتژی‌ساز");
   await page.waitForSelector(".st-ds");
+  await page.click("#st-json summary");
   await page.fill("#st-doc", docJson);
   await page.check(".st-ds");
   await page.check("#st-zero");

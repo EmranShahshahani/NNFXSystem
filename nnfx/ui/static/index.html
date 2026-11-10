@@ -84,6 +84,35 @@ details.cand summary { cursor: pointer; }
 .chip.st-na, .chip.st-skipped { opacity: .6; }
 .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 4px 0 0; }
 .legend i { display: inline-block; width: 10px; height: 3px; vertical-align: middle; margin-inline-end: 5px; }
+.st-grid { grid-template-columns: minmax(0, 460px) minmax(0, 1fr); }
+@media (max-width: 900px) { .st-grid { grid-template-columns: minmax(0, 1fr); } }
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+label.col { flex-direction: column; align-items: stretch; gap: 2px; }
+label.col input[type=text], label.col select { max-width: none; width: 100%; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; font: inherit; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.btns button, button.sm { background: var(--soft); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.btns button.primary-lite { background: var(--accent); color: #fff; border-color: var(--accent); }
+.filebtn { cursor: pointer; margin: 0; }
+details.blk { border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; padding: 4px 10px; }
+details.blk.off > summary { opacity: .55; }
+details.blk > summary { cursor: pointer; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 4px 0; }
+details.blk .kind { font-size: 11px; color: var(--muted); }
+.badge { font-size: 11px; padding: 0 6px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); }
+.pf { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, 150px) auto; gap: 4px 8px; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.pf .nm { overflow-wrap: anywhere; font-size: 13px; }
+.pf .nm small { display: block; color: var(--muted); font-size: 11px; }
+.pf.chg { border-inline-start: 3px solid var(--accent); padding-inline-start: 6px; }
+.pf input[type=text], .pf input[type=number], .pf select { width: 100%; max-width: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: inherit; direction: ltr; }
+.pf .rs { visibility: hidden; }
+.pf.chg .rs { visibility: visible; }
+fieldset.grp { border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 4px 8px; min-width: 0; }
+fieldset.grp legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.pal { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+.pal button[disabled] { opacity: .45; cursor: default; }
+.cmp td.best { font-weight: 700; color: var(--up); }
+.chg-list { list-style: none; padding: 0; margin: 0; }
+.chg-list li { padding: 4px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.chg-list .op { display: inline-block; min-width: 4.5em; font-size: 11px; color: var(--muted); }
 .hidden { display: none; }
 </style>
 </head>
@@ -137,13 +166,39 @@ details.cand summary { cursor: pointer; }
     </div>
   </section>
   <section id="tab-strategy" class="hidden">
-    <div class="grid">
+    <div class="grid st-grid">
       <div>
-        <div class="panel"><h2>سند استراتژی</h2>
-          <div class="note">سند را به صورت JSON بنویسید یا <button class="linkbtn" id="st-sample">نمونه</button> را بزنید. بلوک‌ها و پارامترهایشان در فهرست پایین آمده‌اند.</div>
+        <div class="panel"><h2>استراتژی‌های من</h2>
+          <div class="row2">
+            <label class="col">نام <input type="text" id="st-name" autocomplete="off"></label>
+            <label class="col">باز کردن <select id="st-saved" aria-label="استراتژی‌های ذخیره‌شده"></select></label>
+            <label class="col">نسخه <select id="st-versions" aria-label="نسخه‌ها"></select></label>
+          </div>
+          <div class="btns">
+            <button id="st-validate">اعتبارسنجی</button>
+            <button id="st-save" class="primary-lite">ذخیره (نسخهٔ تازه)</button>
+            <button id="st-dup">نسخهٔ جدا (کپی)</button>
+            <button id="st-del">حذف</button>
+            <button id="st-export">خروجی فایل</button>
+            <label class="linkbtn filebtn">وارد کردن فایل<input type="file" id="st-import" accept=".json,application/json" class="hidden"></label>
+          </div>
+          <div id="st-status" class="note" role="status"></div>
           <div id="st-templates" class="muted">در حال بارگذاری قالب‌ها…</div>
-          <textarea id="st-doc" dir="ltr" spellcheck="false" style="min-height:280px;font-family:var(--mono);font-size:12px"></textarea>
-          <button id="st-validate">اعتبارسنجی</button>
+        </div>
+        <div class="panel"><h2>نقش تایم‌فریم‌ها</h2><div id="st-roles"></div></div>
+        <div class="panel"><h2>بلوک‌های سند</h2>
+          <div class="note">هر بلوک را روشن/خاموش کنید یا پارامترهایش را عوض کنید. پارامتر تغییرکرده با «بازنشانی» به پیش‌فرض برمی‌گردد.</div>
+          <div id="st-doc-blocks"></div>
+        </div>
+        <div class="panel"><h2>افزودن بلوک</h2><div id="st-blocks" class="muted">در حال بارگذاری…</div></div>
+        <div class="panel"><h2>ریسک</h2><div id="st-risk"></div></div>
+        <div class="panel"><h2>چک‌لیست پیش از معامله</h2><div id="st-checklist"></div></div>
+        <div class="panel"><h2>مقایسه و تفاوت</h2>
+          <label class="col">تفاوت با <select id="st-diff-base"></select></label>
+          <button id="st-diff">نمایش تفاوت</button>
+          <label class="col">مقایسهٔ بک‌تست با <select id="st-cmp-with"></select></label>
+          <button id="st-compare">مقایسهٔ دو استراتژی روی دادهٔ یکسان</button>
+          <div class="note">مقایسه هر دو سند را روی همین دادهٔ انتخاب‌شده (پایین) اجرا می‌کند.</div>
         </div>
         <div class="panel"><h2>داده</h2><div id="st-datasets" class="muted">در حال بارگذاری…</div>
           <label><input type="checkbox" id="st-zero"> بدون هزینهٔ معامله</label>
@@ -151,7 +206,10 @@ details.cand summary { cursor: pointer; }
           <button class="primary" id="st-run">بک‌تست سند</button>
           <div id="st-error" class="err"></div>
         </div>
-        <div class="panel"><h2>بلوک‌ها</h2><div id="st-blocks" class="muted">در حال بارگذاری…</div></div>
+        <div class="panel"><details id="st-json"><summary>ویرایش JSON سند (پیشرفته)</summary>
+          <div class="note">سند را به صورت JSON بنویسید یا <button class="linkbtn" id="st-sample">نمونه</button> را بزنید. فرم‌های بالا و این متن همیشه یکی‌اند.</div>
+          <textarea id="st-doc" dir="ltr" spellcheck="false" style="min-height:280px;font-family:var(--mono);font-size:12px"></textarea>
+        </details></div>
       </div>
       <div id="st-out"><div class="panel muted">سند را اعتبارسنجی یا بک‌تست کنید.</div></div>
     </div>
@@ -529,14 +587,274 @@ function stCandidates(cands, total) {
           el("td", { class: i.outcome === "pass" ? "pos" : i.outcome === "fail" ? "neg" : "muted" }, OUTCOME_FA[i.outcome]),
           el("td", {}, fmt(i.weight, 1)), el("td", {}, i.hard ? "بله" : "—"), el("td", {}, i.reason))))))));
 }
-function stDoc() {
+// ---- the builder: forms drawn from the parameter schemas, so a new Block needs no UI code
+const ST = { doc: null, cat: {}, catList: [], schema: null, templates: [], saved: [], compare: null };
+const KIND_ORDER = ["context", "setup", "confirmation", "execution", "stop", "exit"];
+const SINGLE_KINDS = ["stop", "exit"];
+const OP_FA = { added: "اضافه", removed: "حذف", changed: "تغییر", reordered: "ترتیب" };
+const METRICS = [
+  ["n_entries", "تعداد ورود", 0, 0], ["expectancy_r", "میانگین R", 2, 1], ["win_rate", "نرخ برد", "pct", 1],
+  ["profit_factor", "ضریب سود", 2, 1], ["sharpe", "شارپ", 2, 1], ["sortino", "سورتینو", 2, 1],
+  ["max_drawdown", "بیشترین افت", "pct", -1], ["mar", "MAR", 2, 1], ["total_return", "بازده کل", "pct", 1],
+  ["longest_losing_streak", "بیشترین باخت پیاپی", 0, -1], ["time_in_market", "زمان در بازار", "pct", 0],
+];
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const copy = v => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
+const status = (msg, bad) => { const n = $("#st-status"); n.textContent = msg || ""; n.className = "note" + (bad ? " neg" : ""); };
+
+function stDoc() {  // the document as the JSON box holds it
   try { return JSON.parse($("#st-doc").value); }
   catch (e) { throw new Error("JSON نامعتبر است: " + e.message); }
 }
+function stCommit(fromName) {  // the forms changed the document: keep the JSON box (and name) in step
+  $("#st-doc").value = JSON.stringify(ST.doc, null, 2);
+  if (!fromName) $("#st-name").value = ST.doc.metadata?.name ?? "";
+}
+function stSet(doc) { ST.doc = doc; stCommit(); stRender(); }
+
+// ---- JSON-schema helpers (pydantic output: $ref, allOf, anyOf with null)
+function stNorm(sch, root) {
+  let s = sch || {};
+  const outer = { ...s };
+  if (s.$ref) { delete outer.$ref; s = { ...root.$defs[s.$ref.split("/").pop()], ...outer }; }
+  if (s.allOf && s.allOf.length === 1) { const { allOf, ...rest } = s; s = { ...stNorm(allOf[0], root), ...rest }; }
+  let nullable = false;
+  if (s.anyOf) {
+    const real = s.anyOf.filter(x => x.type !== "null");
+    nullable = real.length < s.anyOf.length;
+    const { anyOf, ...rest } = s;
+    s = { ...stNorm(real[0] || {}, root), ...rest };
+  }
+  return [s, nullable];
+}
+function stDefault(p, q) {
+  if (p.default !== undefined) return copy(p.default);
+  if (q.default !== undefined) return copy(q.default);
+  return q.type === "array" ? [] : undefined;
+}
+function stForm(sch, root, obj, onChange) {
+  const [s] = stNorm(sch, root);
+  const props = Object.entries(s.properties || {});
+  if (!props.length) return el("div", { class: "muted" }, "این بلوک پارامتری ندارد.");
+  return el("div", {}, props.map(([k, p]) => stRow(k, p, root, obj, onChange)));
+}
+function stRow(key, p, root, obj, onChange) {
+  const [q, nullable] = stNorm(p, root);
+  const def = stDefault(p, q);
+  if (q.type === "object" && q.properties) {
+    obj[key] ??= copy(def) ?? {};
+    return el("fieldset", { class: "grp" }, el("legend", {}, el("bdi", { dir: "ltr" }, key)), q.description ? el("div", { class: "note" }, q.description) : null,
+      stForm(q, root, obj[key], onChange));
+  }
+  const row = el("div", { class: "pf" });
+  const get = () => (key in obj ? obj[key] : def);
+  let ctl;
+  const items = q.items || {};
+  const isNum = q.type === "integer" || q.type === "number";
+  if (q.type === "boolean") ctl = el("input", { type: "checkbox" });
+  else if (q.enum) ctl = el("select", {}, q.enum.map(v => el("option", { value: v }, v)));
+  else if (isNum) ctl = el("input", { type: "number", step: q.type === "integer" ? "1" : "any", placeholder: nullable ? "بدون محدودیت" : null });
+  else ctl = el("input", { type: "text", autocomplete: "off", placeholder: q.type === "array" ? "با ویرگول جدا کنید" : null });
+  ctl.setAttribute("aria-label", key);
+  const show = () => {
+    const v = get();
+    if (q.type === "boolean") ctl.checked = !!v;
+    else if (q.type === "array") ctl.value = (v || []).join(", ");
+    else ctl.value = v == null ? "" : String(v);
+    row.classList.toggle("chg", !same(v, def));
+  };
+  const read = () => {
+    if (q.type === "boolean") return ctl.checked;
+    const raw = ctl.value.trim();
+    if (q.type === "array") {
+      const parts = raw ? raw.split(/[,،\s]+/).filter(Boolean) : [];
+      if (items.type === "number" || items.type === "integer") { const nums = parts.map(Number); return nums.some(Number.isNaN) ? undefined : nums; }
+      return parts;
+    }
+    if (isNum) {
+      if (raw === "") return nullable ? null : undefined;
+      const n = Number(raw);
+      return Number.isNaN(n) || (q.type === "integer" && !Number.isInteger(n)) ? undefined : n;
+    }
+    return raw;
+  };
+  ctl.addEventListener("change", () => {
+    const v = read();
+    if (v !== undefined) { obj[key] = v; onChange(); }
+    show();
+  });
+  const reset = el("button", { class: "sm rs", type: "button", title: "برگرداندن به پیش‌فرض" }, "بازنشانی");
+  reset.addEventListener("click", () => { if (def === undefined) delete obj[key]; else obj[key] = copy(def); onChange(); show(); });
+  row.append(el("div", { class: "nm" }, el("bdi", { dir: "ltr" }, key), q.description || p.description ? el("small", {}, q.description || p.description) : null), ctl, reset);
+  show();
+  return row;
+}
+
+// ---- the document's Blocks, grouped by kind; each is a form drawn from its schema
+function stBlocks() {
+  const box = $("#st-doc-blocks");
+  const open = new Set([...box.querySelectorAll("details.blk[open]")].map(d => d.dataset.type));  // survive a redraw
+  const blocks = ST.doc.blocks || [];
+  const groups = KIND_ORDER.map(kind => {
+    const mine = blocks.map((b, i) => [b, i]).filter(([b]) => b.kind === kind);
+    if (!mine.length) return null;
+    const fa = ST.catList.find(c => c.kind === kind)?.kind_fa || kind;
+    return el("div", {}, el("h3", { class: "muted", style: "font-size:13px;margin:12px 0 4px" }, fa), mine.map(([b, i]) => stBlock(b, i)));
+  });
+  box.replaceChildren(...groups.filter(Boolean));
+  box.querySelectorAll("details.blk").forEach(d => { d.open = open.has(d.dataset.type); });
+  if (!blocks.length) box.replaceChildren(el("div", { class: "muted" }, "هنوز بلوکی نیست؛ از «افزودن بلوک» یکی بردارید."));
+}
+function stBlock(b, i) {
+  const c = ST.cat[b.type];
+  b.params ??= {};
+  const on = el("input", { type: "checkbox", "aria-label": "فعال", checked: b.enabled !== false });
+  const badge = el("span", { class: "badge hidden" }, "تغییرکرده");
+  const det = el("details", { class: "blk" + (b.enabled === false ? " off" : ""), "data-type": b.type });
+  const props = c ? stNorm(c.params, c.params)[0].properties || {} : {};
+  const refreshBadge = () => badge.classList.toggle("hidden", !Object.entries(b.params).some(([k, v]) => k in props && !same(v, stDefault(props[k], stNorm(props[k], c.params)[0]))));
+  const move = (d) => {
+    const j = ST.doc.blocks.findIndex((x, n) => (d < 0 ? n < i : n > i) && x.kind === b.kind);
+    if (j < 0) return;
+    const bl = ST.doc.blocks; [bl[i], bl[j]] = [bl[j], bl[i]]; stCommit(); stBlocks();
+  };
+  const btn = (label, title, fn) => { const x = el("button", { class: "sm", type: "button", title }, label); x.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); fn(); }); return x; };
+  on.addEventListener("click", e => e.stopPropagation());
+  on.addEventListener("change", () => {
+    b.enabled = on.checked;
+    // A Stop or Exit decides alone: switching one on switches the others of its kind off.
+    det.classList.toggle("off", !on.checked);
+    if (on.checked && SINGLE_KINDS.includes(b.kind)) { ST.doc.blocks.forEach(x => { if (x !== b && x.kind === b.kind) x.enabled = false; }); stCommit(); stBlocks(); return; }
+    stCommit();
+  });
+  det.append(el("summary", {}, on, el("b", {}, c?.title_fa || b.type), el("span", { class: "kind", dir: "ltr" }, b.type), badge,
+    el("span", { style: "margin-inline-start:auto;display:flex;gap:4px" },
+      btn("▲", "بالاتر", () => move(-1)), btn("▼", "پایین‌تر", () => move(1)), btn("حذف", "حذف بلوک از سند", () => { ST.doc.blocks.splice(i, 1); stCommit(); stBlocks(); stPalette(); }))));
+  if (c) {
+    det.append(stForm(c.params, c.params, b.params, () => { stCommit(); refreshBadge(); }));
+    if (c.sources?.length) det.append(el("div", { class: "note" }, "منبع: ", c.sources.join("، ")));
+  } else det.append(el("div", { class: "err" }, `بلوک «${b.type}» در کتابخانه نیست.`));
+  refreshBadge();
+  return det;
+}
+function stPalette() {
+  const have = new Set((ST.doc.blocks || []).map(b => b.type));
+  const groups = KIND_ORDER.map(kind => {
+    const list = ST.catList.filter(c => c.kind === kind);
+    if (!list.length) return null;
+    return el("div", {}, el("div", { class: "muted" }, list[0].kind_fa), el("div", { class: "pal" }, list.map(c => {
+      const x = el("button", { class: "sm", type: "button", disabled: have.has(c.type), title: c.type }, have.has(c.type) ? "✓ " + c.title_fa : "+ " + c.title_fa);
+      x.addEventListener("click", () => {
+        const blocks = ST.doc.blocks ??= [];
+        const busy = SINGLE_KINDS.includes(c.kind) && blocks.some(b => b.kind === c.kind && b.enabled !== false);
+        blocks.push({ kind: c.kind, type: c.type, enabled: !busy, params: {} });
+        stCommit(); stBlocks(); stPalette();
+        status(busy ? `«${c.title_fa}» خاموش اضافه شد؛ هر سند فقط یک بلوک فعال از این نوع دارد.` : `«${c.title_fa}» اضافه شد.`);
+      });
+      return x;
+    })));
+  });
+  $("#st-blocks").replaceChildren(...groups.filter(Boolean));
+}
+function stRoles() {
+  const tf = ST.doc.timeframes ??= {};
+  const roles = ST.schema?.timeframes || { all: [], base: [], roles: [] };
+  const FA = { hwc: "HWC (جهت کلی)", mwc: "MWC (میانی)", lwc: "LWC (اجرا)", management: "مدیریت پوزیشن" };
+  $("#st-roles").replaceChildren(el("div", { class: "row2" }, roles.roles.map(r => {
+    const opts = (r === "lwc" ? roles.base : roles.all).map(t => el("option", { value: t }, t));
+    if (r === "management") opts.unshift(el("option", { value: "" }, "(همان MWC)"));
+    const sel = el("select", { "aria-label": r }, opts);
+    sel.value = tf[r] ?? (r === "management" ? "" : { hwc: "D1", mwc: "H4", lwc: "M15" }[r]);
+    sel.addEventListener("change", () => { if (sel.value === "") delete tf[r]; else tf[r] = sel.value; stCommit(); });
+    return el("label", { class: "col" }, FA[r], sel);
+  })));
+}
+function stRender() {
+  if (!ST.doc || typeof ST.doc !== "object") return;
+  ST.doc.metadata ??= { name: "", version: 1 };
+  $("#st-name").value = ST.doc.metadata.name ?? "";
+  stRoles(); stBlocks(); stPalette();
+  if (ST.schema) {
+    ST.doc.risk ??= {}; ST.doc.checklist ??= {};
+    $("#st-risk").replaceChildren(stForm(ST.schema.risk, ST.schema.risk, ST.doc.risk, () => stCommit()));
+    $("#st-checklist").replaceChildren(stForm(ST.schema.checklist, ST.schema.checklist, ST.doc.checklist, () => stCommit()));
+  }
+}
+
+// ---- saved strategies, versions, import/export
+async function stRefreshSaved(select) {
+  ST.saved = await api("/api/strategy/documents");
+  $("#st-saved").replaceChildren(el("option", { value: "" }, ST.saved.length ? "— انتخاب کنید —" : "(هنوز چیزی ذخیره نشده)"),
+    ...ST.saved.map(r => el("option", { value: r.name }, `${r.name} · نسخهٔ ${r.version}`)));
+  $("#st-saved").value = select ?? "";
+  const cmp = [...ST.templates.map(t => ["t:" + t.slug, "قالب: " + t.name]), ...ST.saved.map(r => ["s:" + r.name, "من: " + r.name])];
+  $("#st-cmp-with").replaceChildren(...cmp.map(([v, l]) => el("option", { value: v }, l)));
+  $("#st-diff-base").replaceChildren(el("option", { value: "parent" }, "والدش (قالب یا استراتژی‌ای که از آن آمده)"),
+    el("option", { value: "saved" }, "آخرین نسخهٔ ذخیره‌شدهٔ همین استراتژی"),
+    ...cmp.map(([v, l]) => el("option", { value: v }, l)));
+}
+async function stVersions(name) {
+  const box = $("#st-versions");
+  if (!name) { box.replaceChildren(); return; }
+  const r = await api("/api/strategy/load", { name });
+  box.replaceChildren(...r.versions.slice().reverse().map(v => el("option", { value: v.version }, `نسخهٔ ${v.version} · ${(v.saved || "").slice(0, 16).replace("T", " ")} · ${v.fingerprint.slice(0, 6)}`)));
+  box.value = String(r.document.metadata.version);
+}
+async function stOpen(name, version) {
+  const r = await api("/api/strategy/load", version ? { name, version: Number(version) } : { name });
+  stSet(r.document);
+  await stVersions(name);
+  $("#st-versions").value = String(r.document.metadata.version);
+  status(`«${name}» نسخهٔ ${r.document.metadata.version} باز شد.`);
+}
+async function stSave(doc) {
+  const r = await api("/api/strategy/save", { document: doc ?? stDoc() });
+  if (!r.ok) { $("#st-out").replaceChildren(stIssues(r.issues)); status("ذخیره نشد؛ ایرادهای سند را ببینید.", true); return null; }
+  if (doc) stSet(r.document);  // a duplicate: show the new strategy
+  else { ST.doc.metadata = r.document.metadata; stCommit(); }  // keep the open forms as they are
+  await stRefreshSaved(r.name); await stVersions(r.name);
+  status(r.unchanged ? `تغییری نبود؛ همان نسخهٔ ${r.version} است.` : `ذخیره شد: «${r.name}» نسخهٔ ${r.version}.`);
+  return r;
+}
+function stDownload(doc) {
+  const slug = String(doc.metadata.name).replace(/[^A-Za-z0-9_.-]+/g, "_").replace(/^_+|_+$/g, "") || "strategy";
+  const a = el("a", { href: URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" })), download: `${slug}-v${doc.metadata.version}.json` });
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function stChanges(r, title) {
+  const base = r.base ? (r.base.template ? `قالب ${r.base.template}` : r.base.name ? `«${r.base.name}» نسخهٔ ${r.base.version}` : "سند دیگر") : "";
+  return el("div", { class: "panel", id: "st-diff-out" }, el("h2", {}, title + (base ? " " + base : "")),
+    r.changes.length ? el("ul", { class: "chg-list" }, r.changes.map(c => el("li", {}, el("span", { class: "op" }, OP_FA[c.op] || c.op), " ", c.text)))
+      : el("div", { class: "muted" }, "هیچ تفاوتی نیست."));
+}
+async function stOtherDoc(choice) {
+  if (choice.startsWith("t:")) return copy(ST.templates.find(t => t.slug === choice.slice(2)).document);
+  return (await api("/api/strategy/load", { name: choice.slice(2) })).document;
+}
+function stCompareTable(r) {
+  const [a, b] = r.runs;
+  const fmtv = (v, how) => v == null ? "∞/–" : how === "pct" ? pct(v, 1) : fmt(v, how);
+  const rows = METRICS.map(([k, label, how, better]) => {
+    const x = a.metrics[k], y = b.metrics[k];
+    const win = better && x != null && y != null && x !== y ? ((x > y) === (better > 0) ? 0 : 1) : -1;
+    return el("tr", {}, el("td", {}, label), el("td", { class: "num" + (win === 0 ? " best" : "") }, fmtv(x, how)), el("td", { class: "num" + (win === 1 ? " best" : "") }, fmtv(y, how)));
+  });
+  return el("div", {},
+    el("div", { class: "panel cmp", id: "st-cmp-out" }, el("h2", {}, "مقایسهٔ دو استراتژی روی دادهٔ یکسان"),
+      el("div", { class: "note" }, "داده: ", el("bdi", { dir: "ltr" }, r.datasets.join("، ")), " · هر دو با یک هزینه و یک بازه اجرا شده‌اند."),
+      el("div", { class: "tablewrap", dir: "ltr" }, el("table", {},
+        el("tr", {}, el("th", {}, "معیار"), el("th", {}, "الف: " + a.name), el("th", {}, "ب: " + b.name)),
+        rows,
+        el("tr", {}, el("td", {}, "معاملات"), el("td", { class: "num" }, a.trades), el("td", { class: "num" }, b.trades)),
+        el("tr", {}, el("td", {}, "ستاپ‌های بررسی‌شده"), el("td", { class: "num" }, a.candidates), el("td", { class: "num" }, b.candidates)),
+        el("tr", {}, el("td", {}, "اثر انگشت"), el("td", { class: "num" }, el("code", {}, a.fingerprint)), el("td", { class: "num" }, el("code", {}, b.fingerprint))))),
+      el("div", { class: "note" }, "سبز: مقدار بهتر. نتیجهٔ هر دو، به‌عنوان آزمون استراتژی، در دفتر ثبت شد و پژوهش پیش‌ثبت‌شده نیست.")),
+    stChanges(r, "تفاوت الف و ب"));
+}
 function stIssues(issues) {
   return el("div", { class: "panel" }, el("h2", {}, "ایرادهای سند"),
-    el("table", {}, el("tr", {}, el("th", {}, "مسیر"), el("th", {}, "توضیح")),
-      issues.map(i => el("tr", {}, el("td", { dir: "ltr" }, el("bdi", {}, i.path || "—")), el("td", {}, i.message)))));
+    el("div", { class: "tablewrap" }, el("table", {}, el("tr", {}, el("th", {}, "مسیر"), el("th", {}, "توضیح")),
+      issues.map(i => el("tr", {}, el("td", { dir: "ltr" }, el("bdi", {}, i.path || "—")), el("td", { style: "white-space:normal" }, i.message))))));
 }
 function stTemplates(list) {
   const box = $("#st-templates");
@@ -557,7 +875,7 @@ function stTemplates(list) {
     $("#st-error").textContent = "";
     try {
       const r = await api("/api/strategy/clone", { template: sel.value });
-      $("#st-doc").value = JSON.stringify(r.document, null, 2);
+      stSet(r.document);
     } catch (e) { $("#st-error").textContent = e.message; }
   });
   box.className = "";
@@ -565,19 +883,82 @@ function stTemplates(list) {
   show();
 }
 async function loadStrategy() {
-  api("/api/strategy/templates").then(stTemplates).catch(() => $("#st-templates").replaceChildren());
-  if (!$("#st-doc").value) $("#st-doc").value = JSON.stringify(SAMPLE_DOC, null, 2);
+  try { ST.templates = await api("/api/strategy/templates"); stTemplates(ST.templates); }
+  catch { $("#st-templates").replaceChildren(); }
+  const [cat, schema] = await Promise.all([api("/api/strategy/blocks"), api("/api/strategy/schema")]);
+  ST.catList = cat; ST.cat = Object.fromEntries(cat.map(c => [c.type, c])); ST.schema = schema;
+  await stRefreshSaved();
+  let doc;
+  try { doc = $("#st-doc").value ? stDoc() : copy(SAMPLE_DOC); } catch { doc = copy(SAMPLE_DOC); }
+  stSet(doc);
   const ds = (await api("/api/datasets")).filter(d => d.timeframe !== "D1");
   $("#st-datasets").replaceChildren(ds.length ? el("div", {}, ds.map(d => el("label", { style: "display:block" },
     el("input", { type: "checkbox", class: "st-ds", value: JSON.stringify(d) }), " ", el("bdi", {}, d.symbol), " ", el("span", { class: "muted" }, d.timeframe))))
     : el("div", { class: "muted" }, "دادهٔ درون‌روزی نیست. با «nnfx fetch --timeframe M15» کندل ۱۵ دقیقه‌ای بگیرید."));
-  const blocks = await api("/api/strategy/blocks");
-  $("#st-blocks").replaceChildren(el("table", {}, el("tr", {}, el("th", {}, "نوع"), el("th", {}, "بلوک و پارامترهای پیش‌فرض")),
-    blocks.map(b => el("tr", {}, el("td", {}, b.kind_fa), el("td", {}, b.title_fa, el("div", { class: "muted", dir: "ltr" }, b.type),
-      el("div", { dir: "ltr", style: "font-family:var(--mono);font-size:11px;overflow-wrap:anywhere" },
-        Object.entries(b.params.properties || {}).map(([k, v]) => el("div", { title: v.description || "" }, `${k} = ${JSON.stringify(v.default)}`))))))));
 }
-$("#st-sample").addEventListener("click", () => { $("#st-doc").value = JSON.stringify(SAMPLE_DOC, null, 2); });
+$("#st-sample").addEventListener("click", () => stSet(copy(SAMPLE_DOC)));
+
+// ---- the buttons
+const guard = fn => async (...a) => { try { await fn(...a); } catch (e) { status(e.message, true); } };
+$("#st-name").addEventListener("input", () => { if (ST.doc) { (ST.doc.metadata ??= {}).name = $("#st-name").value; stCommit(true); } });
+$("#st-doc").addEventListener("change", () => {
+  try { ST.doc = stDoc(); $("#st-error").textContent = ""; stRender(); } catch (e) { $("#st-error").textContent = e.message; }
+});
+$("#st-saved").addEventListener("change", guard(async () => { if ($("#st-saved").value) await stOpen($("#st-saved").value); }));
+$("#st-versions").addEventListener("change", guard(async () => stOpen($("#st-saved").value || ST.doc.metadata.name, $("#st-versions").value)));
+$("#st-save").addEventListener("click", guard(async () => { await stSave(); }));
+$("#st-dup").addEventListener("click", guard(async () => {
+  const doc = copy(stDoc()), cur = doc.metadata.name, row = ST.saved.find(r => r.name === cur);
+  const taken = new Set(ST.saved.map(r => r.name));
+  let name = `${cur} (کپی)`;
+  for (let n = 2; taken.has(name); n++) name = `${cur} (کپی ${n})`;
+  doc.metadata = { ...doc.metadata, name, version: 1, ...(row ? { parent: cur, parent_version: row.version } : {}) };
+  await stSave(doc);
+}));
+$("#st-del").addEventListener("click", guard(async () => {
+  const name = $("#st-name").value.trim();
+  if (!ST.saved.some(r => r.name === name)) { status("استراتژی‌ای با این نام ذخیره نشده است.", true); return; }
+  if (!confirm(`«${name}» با همهٔ نسخه‌هایش حذف شود؟`)) return;
+  await api("/api/strategy/delete", { name });
+  await stRefreshSaved(); await stVersions("");
+  status(`«${name}» حذف شد. سند در ویرایشگر مانده است.`);
+}));
+$("#st-export").addEventListener("click", guard(async () => {
+  const r = await api("/api/strategy/validate", { document: stDoc() });
+  if (!r.ok) { $("#st-out").replaceChildren(stIssues(r.issues)); status("خروجی فقط از سند معتبر ممکن است.", true); return; }
+  stDownload(r.document);
+  status("فایل ساخته شد.");
+}));
+$("#st-import").addEventListener("change", guard(async () => {
+  const f = $("#st-import").files[0];
+  $("#st-import").value = "";
+  if (!f) return;
+  if (f.size > 60000) { status("فایل بزرگ‌تر از ۶۰ کیلوبایت است.", true); return; }
+  const r = await api("/api/strategy/import", { text: await f.text() });
+  if (!r.ok) { $("#st-out").replaceChildren(stIssues(r.issues)); status("فایل وارد نشد؛ ایرادها را ببینید.", true); return; }
+  stSet(r.document);
+  status(`«${r.document.metadata.name}» وارد شد (هنوز ذخیره نشده؛ «ذخیره» را بزنید).`);
+}));
+$("#st-diff").addEventListener("click", guard(async () => {
+  const pick = $("#st-diff-base").value, doc = stDoc();
+  const base = pick === "parent" ? undefined : pick === "saved" ? { name: doc.metadata.name }
+    : pick.startsWith("t:") ? { template: pick.slice(2) } : { name: pick.slice(2) };
+  const r = await api("/api/strategy/diff", { document: doc, ...(base ? { base } : {}) });
+  $("#st-out").replaceChildren(r.ok ? stChanges(r, "تفاوت با") : stIssues(r.issues));
+  status("");
+}));
+$("#st-compare").addEventListener("click", guard(async () => {
+  const datasets = [...document.querySelectorAll(".st-ds:checked")].map(c => JSON.parse(c.value));
+  const choice = $("#st-cmp-with").value;
+  if (!choice) { status("یک استراتژی برای مقایسه انتخاب کنید.", true); return; }
+  $("#st-compare").disabled = true;
+  try {
+    const r = await api("/api/strategy/compare", { documents: [stDoc(), await stOtherDoc(choice)], datasets, zero_costs: $("#st-zero").checked });
+    if (!r.ok) { $("#st-out").replaceChildren(stIssues(r.issues)); status(`سند ${r.which === 1 ? "الف" : "ب"} ایراد دارد.`, true); return; }
+    $("#st-out").replaceChildren(stCompareTable(r));
+    status("");
+  } finally { $("#st-compare").disabled = false; }
+}));
 $("#st-validate").addEventListener("click", async () => {
   $("#st-error").textContent = "";
   try {

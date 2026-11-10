@@ -31,6 +31,7 @@ from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
+from nnfx.strategy.store import StrategyStore
 from nnfx.ui.auth import Auth, AuthError, User
 
 COOKIE = "nnfx_session"
@@ -60,6 +61,21 @@ def _clean_dict(o: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _name_version(req: Mapping[str, Any]) -> tuple[str, int | None]:
+    name, version = req.get("name"), req.get("version")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("نام استراتژی را بنویسید")
+    if version is not None and (not isinstance(version, int) or isinstance(version, bool)):
+        raise ValueError("شمارهٔ نسخه باید عدد صحیح باشد")
+    return name, version
+
+
+def _template_slugs() -> list[str]:
+    from nnfx.strategy import TEMPLATES
+
+    return list(TEMPLATES)
+
+
 MAX_CANDIDATES = 500  # candidates returned per backtest (about 1 KB each)
 
 
@@ -76,6 +92,7 @@ class App:
         live_state: str = "runs/live",
         reports: str = "reports/daily",
         rules: str = "research/tcp_rules.yaml",
+        strategies: str = "runs/strategies",
         auth: Auth | None = None,
         secure_cookies: bool = False,
         max_concurrent_backtests: int = 2,
@@ -94,6 +111,7 @@ class App:
         self.research = self.root / research
         self.live_state = self.root / live_state
         self.reports = self.root / reports
+        self.strategies = StrategyStore(self.root / strategies)
 
     # ------------------------------------------------------------- endpoints
     def datasets(self) -> list[dict[str, str]]:
@@ -230,6 +248,203 @@ class App:
 
         return block_catalogue()
 
+    def strategy_schema(self) -> dict[str, Any]:
+        """The shapes of the document's non-Block sections, for the builder's forms."""
+        from nnfx.data.bars import TIMEFRAMES
+        from nnfx.strategy.document import ChecklistSection, RiskSection
+
+        return {
+            "risk": RiskSection.model_json_schema(),
+            "checklist": ChecklistSection.model_json_schema(),
+            "timeframes": {
+                "all": list(TIMEFRAMES),
+                "base": list(BASE_TIMEFRAMES),
+                "roles": ["hwc", "mwc", "lwc", "management"],
+            },
+        }
+
+    def strategy_documents(self, user: User) -> list[dict[str, Any]]:
+        return self.strategies.list(user.username)
+
+    def strategy_save(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        from nnfx.strategy import validate_document
+
+        res = validate_document(req.get("document"))
+        if res.document is None:
+            return {"ok": False, "issues": [asdict(i) for i in res.issues]}
+        saved = self.strategies.save(user.username, res.document)
+        doc = self.strategies.load(user.username, saved.name, saved.version)
+        return {"ok": True, **saved.record(), "document": doc.model_dump(mode="json")}
+
+    def strategy_load(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        name, version = _name_version(req)
+        doc = self.strategies.load(user.username, name, version)
+        return {
+            "ok": True,
+            "document": doc.model_dump(mode="json"),
+            "versions": self.strategies.versions(user.username, name),
+        }
+
+    def strategy_delete(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        name, _ = _name_version(req)
+        self.strategies.delete(user.username, name)
+        return {"ok": True}
+
+    def _diff_base(
+        self, user: User, doc: Any, base: Any
+    ) -> tuple[Any, dict[str, Any]] | dict[str, Any]:
+        """The document to diff against, and how it was found; or the issues of a bad base."""
+        from nnfx.strategy import get_template, validate_document
+
+        if base is None:
+            slug = doc.metadata.parent
+            if slug is None:
+                raise ValueError(
+                    "این سند والد ندارد؛ یک قالب یا نسخهٔ ذخیره‌شده را برای مقایسه انتخاب کنید"
+                )
+            base = (
+                {"template": slug}
+                if slug in _template_slugs()
+                else {"name": slug, "version": doc.metadata.parent_version}
+            )
+        if not isinstance(base, Mapping):
+            raise ValueError("مبنای مقایسه باید یک شیء باشد")
+        if "document" in base:
+            res = validate_document(base["document"])
+            if res.document is None:
+                return {"ok": False, "which": "base", "issues": [asdict(i) for i in res.issues]}
+            return res.document, {"document": res.document.metadata.name}
+        if "template" in base:
+            try:
+                t = get_template(str(base["template"]))
+            except KeyError:
+                raise ValueError(f"قالب «{base['template']}» شناخته نشده است") from None
+            return t.document, {"template": t.slug, "version": t.version}
+        name, version = _name_version(base)
+        loaded = self.strategies.load(user.username, name, version)
+        return loaded, {"name": name, "version": loaded.metadata.version}
+
+    def strategy_diff(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        from nnfx.strategy import validate_document
+        from nnfx.strategy.diff import diff_documents
+
+        res = validate_document(req.get("document"))
+        if res.document is None:
+            return {"ok": False, "which": "document", "issues": [asdict(i) for i in res.issues]}
+        found = self._diff_base(user, res.document, req.get("base"))
+        if isinstance(found, dict):
+            return found
+        base_doc, how = found
+        return _clean_dict(
+            {"ok": True, "base": how, "changes": diff_documents(base_doc, res.document)}
+        )
+
+    def strategy_import(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        from nnfx.strategy import validate_document
+
+        text = req.get("text")
+        if not isinstance(text, str):
+            raise ValueError("متن فایل باید به‌صورت رشته ارسال شود")
+
+        def refuse(code: str, message: str) -> dict[str, Any]:
+            return {"ok": False, "issues": [{"path": "", "code": code, "message": message}]}
+
+        if not text.strip():
+            return refuse("empty_file", "فایل خالی است.")
+        try:
+            raw = json.loads(text)
+        except json.JSONDecodeError as e:
+            return refuse(
+                "bad_json", f"فایل JSON معتبر نیست (خط {e.lineno}، ستون {e.colno}): {e.msg}"
+            )
+        if not isinstance(raw, dict):
+            return refuse("bad_value", "فایل باید یک شیء JSON باشد (نه فهرست یا عدد).")
+        res = validate_document(raw)
+        if res.document is None:
+            return {"ok": False, "issues": [asdict(i) for i in res.issues]}
+        return {
+            "ok": True,
+            "fingerprint": res.document.fingerprint(),
+            "document": res.document.model_dump(mode="json"),
+        }
+
+    def strategy_compare_limited(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        return self.limited(self.strategy_compare, req)
+
+    def strategy_compare(self, req: Mapping[str, Any]) -> dict[str, Any]:
+        """Two documents on the same bars, their metrics side by side."""
+        from nnfx.journal.journal import Journal
+        from nnfx.research.trials import ResearchState
+        from nnfx.strategy import validate_document
+        from nnfx.strategy.diff import diff_documents
+        from nnfx.strategy.run import backtest_document
+
+        raws = req.get("documents")
+        if not isinstance(raws, list) or len(raws) != 2:
+            raise ValueError("برای مقایسه دقیقاً دو سند لازم است")
+        docs = []
+        for i, raw in enumerate(raws, 1):
+            res = validate_document(raw)
+            if res.document is None:
+                return {"ok": False, "which": i, "issues": [asdict(x) for x in res.issues]}
+            docs.append(res.document)
+        a, b = docs
+        if a.timeframes.lwc != b.timeframes.lwc:
+            raise ValueError(
+                f"تایم‌فریم اجرا (LWC) دو سند یکی نیست ({a.timeframes.lwc} و {b.timeframes.lwc}) "
+                "و روی داده‌های یکسان اجرا نمی‌شوند"
+            )
+        frames, inst = self._strategy_frames(a.timeframes.lwc, req.get("datasets"))
+        costs = None if req.get("zero_costs") else CostModel.from_venue(self.venue_path)
+        research = ResearchState(self.research)
+        runs = []
+        for doc in docs:
+            run = backtest_document(
+                doc,
+                frames,
+                inst,
+                costs=costs,
+                journal=Journal(),
+                research=research,
+                stage="strategy/compare",
+            )
+            m = run.metrics()
+            runs.append(
+                {
+                    "name": doc.metadata.name,
+                    "fingerprint": run.fingerprint,
+                    "trial_id": run.trial_id,
+                    "trades": len(run.result.trades),
+                    "candidates": len(run.candidates),
+                    "summary": m.summary(),
+                    "metrics": {
+                        k: getattr(m, k)
+                        for k in (
+                            "n_entries",
+                            "expectancy_r",
+                            "win_rate",
+                            "profit_factor",
+                            "sharpe",
+                            "sortino",
+                            "max_drawdown",
+                            "mar",
+                            "total_return",
+                            "longest_losing_streak",
+                            "time_in_market",
+                            "provisional",
+                        )
+                    },
+                }
+            )
+        return _clean_dict(
+            {
+                "ok": True,
+                "datasets": list(frames),
+                "runs": runs,
+                "changes": diff_documents(a, b),
+            }
+        )
+
     def strategy_templates(self) -> list[dict[str, Any]]:
         from nnfx.strategy import list_templates
 
@@ -259,29 +474,36 @@ class App:
             "document": res.document.model_dump(mode="json"),
         }
 
+    def _strategy_frames(
+        self, lwc: str, datasets: Any
+    ) -> tuple[dict[str, BarFrame], dict[str, Any]]:
+        """The bars of the picked datasets, all on the document's LWC."""
+        from nnfx.strategy.run import load_frames
+
+        if not isinstance(datasets, list) or not datasets:
+            raise ValueError("دست‌کم یک دیتاست انتخاب کنید")
+        for ds in datasets:
+            if ds.get("timeframe", lwc) != lwc:
+                raise ValueError(
+                    f"{ds['symbol']}: دیتاست {ds.get('timeframe')} است ولی LWC سند {lwc} است"
+                )
+        return load_frames(
+            [(ds["symbol"], self._safe_path(ds["path"])) for ds in datasets],
+            InstrumentRegistry.load(self.instruments_path),
+            lwc,
+        )
+
     def strategy_backtest(self, req: Mapping[str, Any]) -> dict[str, Any]:
         from nnfx.journal.journal import Journal
         from nnfx.research.trials import ResearchState
         from nnfx.strategy import validate_document
-        from nnfx.strategy.run import backtest_document, load_frames
+        from nnfx.strategy.run import backtest_document
 
         res = validate_document(req.get("document"))
         doc = res.document
         if doc is None:
             return {"ok": False, "issues": [asdict(i) for i in res.issues]}
-        for ds in req.get("datasets") or []:
-            if ds.get("timeframe", doc.timeframes.lwc) != doc.timeframes.lwc:
-                raise ValueError(
-                    f"{ds['symbol']}: dataset is {ds.get('timeframe')} but the document's LWC is "
-                    f"{doc.timeframes.lwc}"
-                )
-        frames, inst = load_frames(
-            [(ds["symbol"], self._safe_path(ds["path"])) for ds in req.get("datasets") or []],
-            InstrumentRegistry.load(self.instruments_path),
-            doc.timeframes.lwc,
-        )
-        if not frames:
-            raise ValueError("pick at least one dataset")
+        frames, inst = self._strategy_frames(doc.timeframes.lwc, req.get("datasets"))
         costs = None if req.get("zero_costs") else CostModel.from_venue(self.venue_path)
         journal = Journal()
         run = backtest_document(
@@ -516,6 +738,7 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 "/api/rules": app.rules,
                 "/api/strategy/blocks": app.strategy_blocks,
                 "/api/strategy/templates": app.strategy_templates,
+                "/api/strategy/schema": app.strategy_schema,
             }
             if path in ("/", "/index.html"):
                 self._send(200, _index_html(), "text/html; charset=utf-8")
@@ -528,6 +751,8 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                         "auth": app.auth is not None,
                     },
                 )
+            elif path == "/api/strategy/documents" and user is not None:
+                self._dispatch(app.strategy_documents, user)
             elif path == "/api/admin/feedback":
                 self._dispatch(app.admin_feedback, user)
             elif path == "/api/admin/invites":
@@ -562,6 +787,18 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 self._dispatch(app.strategy_validate, body)
             elif path == "/api/strategy/backtest":
                 self._dispatch(app.strategy_backtest_limited, body)
+            elif path == "/api/strategy/compare":
+                self._dispatch(app.strategy_compare_limited, body)
+            elif path == "/api/strategy/import":
+                self._dispatch(app.strategy_import, body)
+            elif path in (
+                "/api/strategy/save",
+                "/api/strategy/load",
+                "/api/strategy/delete",
+                "/api/strategy/diff",
+            ):
+                fn = getattr(app, "strategy_" + path.rsplit("/", 1)[1])
+                self._dispatch(fn, user, body)
             elif path == "/api/feedback":
                 self._dispatch(app.add_feedback, user, body)
             elif path == "/api/admin/invites":
