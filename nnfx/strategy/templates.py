@@ -104,6 +104,7 @@ _TCP_BLOCKS: list[_Row] = [
     ("context", "sma_slope_gate", False, {}, BlockSource((34,), "slope degradation governor")),
     ("context", "chase_guard", False, {}, BlockSource((64,), "no chasing after an outsized bar")),
     ("context", "roc_ceiling", False, {}, BlockSource((55,), "4H ROC at its 200-bar ceiling")),
+    ("context", "trend_health", False, {}, BlockSource((22, 23, 27, 67), "trend health flags")),
     # --- Setups: the Candle Setup and the Box Breakout lead
     ("setup", "candle_setup", True, {}, BlockSource((35, 36, 37))),
     ("setup", "box_breakout", True, {}, BlockSource((20, 21), "blueprint 01 (B)")),
@@ -148,6 +149,12 @@ _TCP_BLOCKS: list[_Row] = [
     ("confirmation", "rsi_cascade", False, {}, BlockSource((27, 46, 54), "RSI cascade")),
     ("confirmation", "macd_cross", False, {}, BlockSource((54,), "MACD cross, not near zero")),
     ("confirmation", "roc_box_breakout", False, {}, BlockSource((55,), "ROC leaves its box")),
+    # --- Volume rules (ticket 17): relative to the baseline, off by default
+    ("confirmation", "volume_matrix", False, {}, BlockSource((29,), "four-state volume matrix")),
+    ("confirmation", "effort_result", False, {}, BlockSource((33,), "absorption and vacuum")),
+    ("confirmation", "volume_climax", False, {}, BlockSource((30, 31), "no buying the climax")),
+    ("confirmation", "low_volume_dip", False, {}, BlockSource((30, 31), "low-volume reversal")),
+    ("confirmation", "volume_node", False, {}, BlockSource((32,), "200-bar volume profile")),
     # --- Box Breakout confirmations
     ("confirmation", "touch_count", True, _BOX, BlockSource((21,))),
     ("confirmation", "breakout_body_close", True, {**_BOX, "hard": True}, BlockSource((21,))),

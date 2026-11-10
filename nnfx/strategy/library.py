@@ -36,6 +36,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
     register,
 )
+from nnfx.strategy.health import HealthParams, weakness
 from nnfx.strategy.levels import BoxTrack
 from nnfx.strategy.momentum import (
     adx_exhausted,
@@ -45,6 +46,7 @@ from nnfx.strategy.momentum import (
 )
 from nnfx.strategy.series import bollinger, falling, rising, rsi, sma
 from nnfx.strategy.structure import wave_bias
+from nnfx.strategy.volume import climax_at
 
 
 # ---------------------------------------------------------------- context
@@ -1156,7 +1158,7 @@ class FixedR(ExitBlock[FixedRParams]):
         return ExitPlan(steps=(ExitStep(r=self.p.r, fraction=1.0),))
 
 
-class ProfitChainParams(BlockParams):
+class ProfitChainParams(HealthParams):
     r1: float = Field(2.0, ge=MIN_FULL_CLOSE_R, description="پلهٔ اول: R (هرگز زیر ۲R)")
     f1: float = Field(0.35, gt=0, le=1, description="پلهٔ اول: سهم از حجم اولیه")
     r2: float = Field(5.0, gt=0, description="پلهٔ دوم: R")
@@ -1219,6 +1221,18 @@ class ProfitChainParams(BlockParams):
     adx_period: int = Field(14, ge=2, description="دورهٔ ADX")
     adx_level: float = Field(45.0, gt=0, lt=100, description="سطح فرسودگی ADX (۴۵ تا ۵۰)")
     adx_peak_bars: int = Field(3, ge=1, description="ADX در این تعداد کندل اخیر به سطح رسیده باشد")
+    climax_exit: bool = Field(
+        False,
+        description="سود را بگیر وقتی کندل اوج‌گیری حجم (کلایمکس) هم‌جهت معامله دیده شد (پس از پلهٔ اول)",
+    )
+    climax_lookback: int = Field(20, ge=2, description="کلایمکس: کندل‌های خط پایهٔ حجم و دامنه")
+    climax_factor: float = Field(3.0, gt=1, description="کلایمکس: حجم دست‌کم این ضریبِ خط پایه")
+    climax_range: float = Field(1.8, gt=1, description="کلایمکس: دامنه دست‌کم این ضریبِ میانگین")
+    health_exit: Literal["off", "tighten", "close", "both"] = Field(
+        "off",
+        description="ضعف روند: خاموش، حد ضرر تنگ‌تر، گرفتن سود، یا هر دو (آستانه‌ها: معیارهای سلامت روند)",
+    )
+    health_min_signals: int = Field(2, ge=1, description="ضعف روند: دست‌کم این‌قدر معیار هشدار دهند")
     trail_after_step: int = Field(
         3, ge=1, le=3, description="تریل حد ضرر پس از پر شدن این تعداد پله (۳: فقط رانر)"
     )
@@ -1280,6 +1294,11 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
       ``rsi_reject_bars`` management bars and is back inside it, what remains is
       closed (video 50). ``hold_while_rsi_role`` is the cascade's hold side: while
       that role's RSI is still beyond 70 (30) the profit-taking closes wait.
+    - **Climax and trend health** (optional, ``climax_exit``, ``health_exit``; ticket 17).
+      A climax in the trade's direction on the management timeframe closes what
+      remains after the first step. ``health_exit`` reads the trend-health metrics
+      (``health.HealthParams``): ``tighten`` trails the stop behind the last swing,
+      ``close`` takes the profit after the first step, ``both`` does both.
     - **Counter-trend mode.** No Runner: everything closes at 2R, or at the
       first structural boundary (the nearest confirmed swing beyond the
       trigger), never below 2R and at most ``counter_trend_max_r``
@@ -1387,6 +1406,28 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             return "roc_ceiling"
         if p.adx_exhaustion in ("close", "both") and self._adx_exhausted(data, m):
             return "adx_exhaustion"
+        if p.climax_exit and climax_at(
+            data, role, m, d, lookback=p.climax_lookback, factor=p.climax_factor,
+            range_factor=p.climax_range,
+        ):  # fmt: skip
+            return "climax"
+        if p.health_exit in ("close", "both") and self._unhealthy(data, m, d):
+            return "trend_health"
+        return None
+
+    def _unhealthy(self, data: StrategyData, m: int, d: int) -> bool:
+        """The trade's trend shows ``health_min_signals`` or more weaknesses at management bar ``m``."""
+        p = self.p
+        signals = weakness(data, self.ROLE, p).signals(m, d, p.metrics)
+        return len(signals) >= p.health_min_signals
+
+    def _tighten_reason(self, data: StrategyData, m: int, d: int) -> str | None:
+        """Why the stop should come in behind the latest swing, if it should."""
+        p = self.p
+        if p.adx_exhaustion in ("tighten", "both") and self._adx_exhausted(data, m):
+            return "adx_exhaustion_tighten"  # strength is fading
+        if p.health_exit in ("tighten", "both") and self._unhealthy(data, m, d):
+            return "trend_health_tighten"
         return None
 
     def _adx_exhausted(self, data: StrategyData, m: int) -> bool:
@@ -1437,6 +1478,6 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
             trail = level - d * level * p.trail_buffer_pct / 100.0
             if steps and has_runner and position.steps_filled >= trail_from:
                 moves.append(StopMove(trail, "runner_trail"))
-            elif p.adx_exhaustion in ("tighten", "both") and self._adx_exhausted(data, m):
-                moves.append(StopMove(trail, "adx_exhaustion_tighten"))  # strength is fading
+            elif why := self._tighten_reason(data, m, d):
+                moves.append(StopMove(trail, why))
         return max(moves, key=lambda mv: mv.stop * d, default=None)

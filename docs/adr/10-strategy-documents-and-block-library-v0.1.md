@@ -630,6 +630,51 @@ for a Box Breakout candidate is the broken edge; the resting-order cancellation 
 to it. MF scaling of MACD and SMA periods is not built (only RSI scales); the Template keeps all of
 this off.
 
+## 21. Volume and trend health (ticket 17)
+
+Videos 22, 23, 27, 29-33 and 67. Volume rules live in `strategy/volume.py`, trend health in
+`strategy/health.py`. Nothing is an absolute constant: volume is judged against the mean of the
+`lookback` bars before it, a body against the ATR, a range against the mean range before it, so
+the rules read the same on any venue, symbol and price level. A venue without volume gives `na`.
+A candidate stands on the latest closed bar of the Block's `role` (volume Blocks default to the
+LWC, the profile to the MWC).
+
+| Block | Kind | Rule |
+|---|---|---|
+| `volume_matrix` | Confirmation | price (close vs `bars` ago, beyond `move_atr` ATR) and volume (mean of the last `bars` vs the `bars` before, beyond `margin`): price up on rising volume and price down on falling volume (selling exhausted) pass longs; price up on falling volume and price down on rising volume pass shorts; the other side fails. Flat price or volume, and Box Breakout candidates (quiet volume is compression, video 29): `na` |
+| `effort_result` | Confirmation | absorption (volume >= `heavy` x baseline, body <= `small_body_atr` ATR) or vacuum (body >= `big_body_atr` ATR, volume <= `light` x baseline) within `fresh_bars` fails; `anomaly` picks which |
+| `volume_climax` | Confirmation | a buying climax (volume >= 3x baseline, range >= 1.8x the mean range, closing up) within `fresh_bars` fails longs; a selling climax fails shorts |
+| `low_volume_dip` | Confirmation | one of the `bars` bars before the candidate had volume at a `lookback`-bar low and <= `low` (0.6) x baseline. Meant for reversal setups (`only_setups`); the dip is never an entry itself |
+| `volume_node` | Confirmation | the volume profile of the last `window` (200) closed bars over `bins` price bins (each bar's volume spread equally over the bins its range touches); a bin >= `node_factor` x the mean bin is a heavy node, and a node whose centre lies within `clear_atr` ATR beyond the trigger fails the candidate |
+| `trend_health` | Context | counts the weaknesses of the selected `metrics` per role bar; with `min_signals` or more the trend's own direction is closed (a weak uptrend disables longs, a weak downtrend shorts), the other side is untouched. Flags `health_up` / `health_down` carry the counts |
+| `climax_exit` | Profit Chain | a climax in the trade's direction on the management timeframe closes what remains (after step 1) |
+| `health_exit` | Profit Chain | the trade's trend shows `health_min_signals` weaknesses: `tighten` trails the stop behind the last management swing at once, `close` takes the profit (after step 1), `both` does both. Thresholds are the shared `HealthParams` fields |
+
+Trend-health metrics (all per role bar, causal; swings only once confirmed, same-kind swings
+collapsed to the more extreme so legs alternate):
+
+* `amplitude`: the last `amp_legs` (3) impulse legs (swing to swing) strictly shrink and the last is
+  at most `amp_shrink` (0.7) x the first (10, 6, 2).
+* `duration`: the pullback after the last impulse took at least `dur_correction` (1.0) x its
+  bars, or the last impulse took at least `dur_slowdown` (2.0) x the one before.
+* `body`: price advancing while the mean body-to-range share over `body_bars` is under
+  `body_floor` (0.3) and below the share before.
+* `close_placement`: price advancing while each of the last `close_bars` closes sits lower in
+  its candle than the one before, the last under `close_limit` (0.5).
+* `color`: price advancing while opposite-coloured candles are at least `color_max_opposite`
+  (0.5) of the last `color_window` (20) bars.
+* `channel`: a close beyond the least-squares channel of the previous `channel_window` (50)
+  closes, projected one bar, with bands `channel_width` (2) standard deviations out and the
+  channel sloping with the trend.
+
+**Decisions and limits.** The blueprint gives few numbers; those above are my defaults, all
+parameters. The channel is a regression channel, not a drawn trendline channel (ticket 19 adds
+trendlines; this metric can then read them). The "curvature" metric (video 23 C) and candle
+uniformity (video 22) are not built; the ticket does not list them. `volume_matrix` reads
+bullish divergence (falling price, falling volume) as favouring longs, as the blueprint's table
+does. `health_exit` and `climax_exit` live in the Profit Chain with the shared `HealthParams`
+fields, so the Profit Chain's form is long. All new rows are off in the Template.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

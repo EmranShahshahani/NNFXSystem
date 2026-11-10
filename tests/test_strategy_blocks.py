@@ -219,6 +219,11 @@ def exit_variants() -> list[ExitBlock]:
     out.append(ProfitChain(ProfitChainParams(roc_ceiling_exit=True, roc_period=4, roc_window=30)))
     out.append(ProfitChain(ProfitChainParams(adx_exhaustion="close", adx_level=20.0)))
     out.append(ProfitChain(ProfitChainParams(adx_exhaustion="tighten", adx_level=20.0)))
+    out.append(
+        ProfitChain(ProfitChainParams(climax_exit=True, climax_factor=1.5, climax_range=1.2))
+    )
+    out.append(ProfitChain(ProfitChainParams(health_exit="close", health_min_signals=1)))
+    out.append(ProfitChain(ProfitChainParams(health_exit="tighten", health_min_signals=1)))
     return out
 
 
