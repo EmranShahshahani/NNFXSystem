@@ -204,13 +204,14 @@ class SessionRegime(ContextBlock[SessionRegimeParams]):
         n = len(data)
         at = ns(data.base.index)
         hours = label_hours(data)
-        london_known, london = session_trends(data, 7.0, 16.0, p.trend_efficiency)
-        ny_known, ny = session_trends(data, 12.0, 21.0, p.trend_efficiency)
+        (l_start, l_end), (n_start, n_end) = SESSION_HOURS["london"], SESSION_HOURS["new_york"]
+        london_known, london = session_trends(data, l_start, l_end, p.trend_efficiency)
+        ny_known, ny = session_trends(data, n_start, n_end, p.trend_efficiency)
         # One value per UTC day, known at New York's close: both trended the same way.
-        london_by_day = dict(zip(london_known - 16 * HOUR.value, london, strict=True))
+        london_by_day = dict(zip(london_known - round(l_end * HOUR.value), london, strict=True))
         agree = [
             (t, ln) for t, d in zip(ny_known, ny, strict=True)
-            if d != 0 and (ln := int(london_by_day.get(t - 21 * HOUR.value, 0))) == d
+            if d != 0 and (ln := int(london_by_day.get(t - round(n_end * HOUR.value), 0))) == d
         ]  # fmt: skip
         cont_known = np.array([t for t, _ in agree], dtype="int64")
         cont_dir = np.array([d for _, d in agree], dtype="int8")
@@ -219,7 +220,7 @@ class SessionRegime(ContextBlock[SessionRegimeParams]):
         until = (when // DAY_NS + 1) * DAY_NS + round(p.bias_until * HOUR.value)
         bias = np.where((when >= 0) & (at < until), bias, 0).astype("int8")
         # London judged over [07:00, us_open_from): did it fail to trend that day?
-        us_known, us_dir = session_trends(data, 7.0, p.us_open_from, p.trend_efficiency)
+        us_known, us_dir = session_trends(data, l_start, p.us_open_from, p.trend_efficiency)
         by_day = pd.Series(us_dir, index=us_known - int(p.us_open_from * HOUR.value))
         today = at // DAY_NS * DAY_NS
         no_trend = by_day.reindex(today).eq(0).to_numpy()

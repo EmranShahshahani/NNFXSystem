@@ -45,7 +45,6 @@ from nnfx.strategy.blocks import (
 )
 
 Period = Literal["H4", "W1"]
-LEVELS = ("p", "r1", "r2", "r3", "r4", "s1", "s2", "s3", "s4")
 
 
 def floor_pivots(frame: BarFrame) -> dict[str, np.ndarray]:
