@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import re
 import threading
 import traceback
 from collections.abc import Callable, Mapping
@@ -20,17 +22,19 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import numpy as np
 import pandas as pd
 
+from nnfx.alerts import AlertSettings, AlertStore, BaleSender, Notifier, default_post
 from nnfx.brokers.costs import CostModel
 from nnfx.config import SystemConfig, load_system_config
 from nnfx.data.bars import BASE_TIMEFRAMES, BarFrame
 from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
+from nnfx.strategy.paper import LiveBars, PaperError, PaperManager
 from nnfx.strategy.store import StrategyStore
 from nnfx.ui.auth import Auth, AuthError, User
 
@@ -97,6 +101,11 @@ class App:
         secure_cookies: bool = False,
         max_concurrent_backtests: int = 2,
         trust_proxy: bool = False,
+        paper: str = "runs/paper",
+        alerts: str = "runs/alerts",
+        paper_bars: Callable[[str, pd.Timestamp], BarFrame] | None = None,
+        bale_token: str | None = None,
+        bale_post: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> None:
         self.auth = auth
         self.trust_proxy = trust_proxy
@@ -112,6 +121,15 @@ class App:
         self.live_state = self.root / live_state
         self.reports = self.root / reports
         self.strategies = StrategyStore(self.root / strategies)
+        self.paper_root = self.root / paper
+        self.paper_bars = paper_bars
+        token = bale_token if bale_token is not None else os.environ.get("NNFX_BALE_TOKEN", "")
+        self.notifier = Notifier(
+            AlertStore(self.root / alerts),
+            BaleSender(token, post=bale_post or default_post) if token else None,
+        )
+        self._paper: PaperManager | None = None
+        self._paper_lock = threading.Lock()
 
     # ------------------------------------------------------------- endpoints
     def datasets(self) -> list[dict[str, str]]:
@@ -563,6 +581,82 @@ class App:
             }
         )
 
+    # ------------------------------------------------------- paper runs, alerts
+    def _manager(self) -> PaperManager:
+        with self._paper_lock:
+            if self._paper is None:
+                reg = InstrumentRegistry.load(self.instruments_path)
+                specs = {
+                    s: reg.spec(s, "crypto_spot")
+                    for s in reg.basket("nobitex")
+                    if s.endswith("/USDT")  # the account is in USDT: no IRT conversion path
+                }
+                self._paper = PaperManager(
+                    self.paper_root,
+                    specs,
+                    self.paper_bars or LiveBars(),
+                    self.notifier,
+                    costs=CostModel.from_venue(self.venue_path),
+                )
+            return self._paper
+
+    def paper_tick(self, now: pd.Timestamp) -> None:
+        """One cycle of every running paper run (the server's timer calls this)."""
+        self._manager().tick(now)
+
+    def paper_runs(self, user: User) -> dict[str, Any]:
+        return {"runs": [r.public() for r in self._manager().runs(user.username)]}
+
+    def paper_start(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        name, version = _name_version(req)
+        doc = self.strategies.load(user.username, name, version)  # KeyError: not found
+        saved = self.strategies.versions(user.username, name)
+        symbols = req.get("symbols")
+        if symbols is None:
+            symbols = list(doc.universe)
+        if not isinstance(symbols, list) or not all(isinstance(s, str) for s in symbols):
+            raise ValueError("نمادها نامعتبرند")
+        try:
+            info = self._manager().start(
+                user.username,
+                name,
+                version or int(saved[-1]["version"]),
+                doc.model_dump(mode="json"),
+                symbols,
+            )
+        except PaperError as e:
+            raise ValueError(str(e)) from None
+        return {"ok": True, "run": info.public()}
+
+    def paper_stop(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        try:
+            self._manager().stop(user.username, str(req.get("id", "")))
+        except PaperError as e:
+            raise ValueError(str(e)) from None
+        return {"ok": True}
+
+    def alerts_feed(self, user: User, after: int = 0) -> dict[str, Any]:
+        return {"alerts": self.notifier.store.feed(user.username, after)}
+
+    def alert_settings(self, user: User) -> dict[str, Any]:
+        s = self.notifier.store.settings(user.username)
+        return {**asdict(s), "bale_available": self.notifier.bale is not None}
+
+    def alert_settings_save(self, user: User, req: Mapping[str, Any]) -> dict[str, Any]:
+        cur = self.notifier.store.settings(user.username)
+        chat = str(req.get("bale_chat", cur.bale_chat)).strip()
+        if chat and not re.fullmatch(r"-?\d{1,20}", chat):
+            raise ValueError("شناسهٔ چت بله باید عدد باشد")
+        new = AlertSettings(
+            bool(req.get("in_site", cur.in_site)), bool(req.get("bale", cur.bale)), chat
+        )
+        if new.bale and not chat:
+            raise ValueError("برای دریافت در بله شناسهٔ چت را وارد کنید")
+        if new.bale and self.notifier.bale is None:
+            raise ValueError("ربات بله روی این سرور تنظیم نشده است")
+        self.notifier.store.set_settings(user.username, new)
+        return {"ok": True, **asdict(new), "bale_available": self.notifier.bale is not None}
+
     # ------------------------------------------------------------ beta accounts
     def _accounts(self) -> Auth:
         if self.auth is None:
@@ -758,6 +852,17 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
                 )
             elif path == "/api/strategy/documents" and user is not None:
                 self._dispatch(app.strategy_documents, user)
+            elif path == "/api/paper/runs" and user is not None:
+                self._dispatch(app.paper_runs, user)
+            elif path == "/api/alerts" and user is not None:
+                q = parse_qs(urlparse(self.path).query)
+                try:
+                    after = int(q.get("after", ["0"])[0])
+                except ValueError:
+                    after = 0
+                self._dispatch(app.alerts_feed, user, after)
+            elif path == "/api/alerts/settings" and user is not None:
+                self._dispatch(app.alert_settings, user)
             elif path == "/api/admin/feedback":
                 self._dispatch(app.admin_feedback, user)
             elif path == "/api/admin/invites":
@@ -804,6 +909,12 @@ def make_handler(app: App) -> type[BaseHTTPRequestHandler]:
             ):
                 fn = getattr(app, "strategy_" + path.rsplit("/", 1)[1])
                 self._dispatch(fn, user, body)
+            elif path == "/api/paper/start":
+                self._dispatch(app.paper_start, user, body)
+            elif path == "/api/paper/stop":
+                self._dispatch(app.paper_stop, user, body)
+            elif path == "/api/alerts/settings":
+                self._dispatch(app.alert_settings_save, user, body)
             elif path == "/api/feedback":
                 self._dispatch(app.add_feedback, user, body)
             elif path == "/api/admin/invites":

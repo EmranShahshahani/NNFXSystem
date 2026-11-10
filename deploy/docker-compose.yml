@@ -10,6 +10,10 @@ services:
     volumes:
       - beta-db:/app/runs/beta
       - market-data:/app/data/cache
+      - paper-data:/app/runs/paper
+      - alerts-data:/app/runs/alerts
+    environment:
+      NNFX_BALE_TOKEN: ${NNFX_BALE_TOKEN:-}
     expose: ["8765"]
 
   refresh:
@@ -48,4 +52,6 @@ volumes:
   beta-db:
   market-data:
   orderbook-data:
+  paper-data:
+  alerts-data:
   caddy-data:

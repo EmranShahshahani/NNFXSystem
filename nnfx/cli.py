@@ -8,6 +8,7 @@ import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -498,6 +499,23 @@ def cmd_verdict(args: argparse.Namespace) -> int:
     return 0 if v.passed else 1
 
 
+def _paper_timer(app: Any, every: float) -> None:
+    """Cycle the paper runs in a daemon thread; a failed round is logged, never fatal."""
+    import logging
+    import threading
+    import time
+
+    def loop() -> None:
+        while True:
+            try:
+                app.paper_tick(pd.Timestamp.now(tz="UTC"))
+            except Exception:
+                logging.getLogger("nnfx.paper").exception("paper round failed")
+            time.sleep(every)
+
+    threading.Thread(target=loop, daemon=True, name="paper").start()
+
+
 def cmd_ui(args: argparse.Namespace) -> int:
     from nnfx.ui.auth import Auth
     from nnfx.ui.server import App, serve
@@ -512,6 +530,8 @@ def cmd_ui(args: argparse.Namespace) -> int:
         trust_proxy=args.trust_proxy,
     )
     httpd = serve(app, args.host, args.port)
+    if args.paper_interval > 0:
+        _paper_timer(app, args.paper_interval)
     print(f"NNFX workbench on http://{args.host}:{httpd.server_address[1]}  (Ctrl+C to stop)")
     with contextlib.suppress(KeyboardInterrupt):
         httpd.serve_forever()
@@ -685,6 +705,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     p.add_argument("--secure-cookies", action="store_true", help="set when served over HTTPS")
     p.add_argument("--trust-proxy", action="store_true", help="read client IP from X-Forwarded-For")
+    p.add_argument(
+        "--paper-interval",
+        type=float,
+        default=60.0,
+        help="seconds between paper-run rounds (0 turns paper runs off)",
+    )
     p.set_defaults(fn=cmd_ui)
 
     b = sub.add_parser("beta", help="beta accounts: invites, admin, users, feedback")

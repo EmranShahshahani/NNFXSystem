@@ -861,6 +861,43 @@ never veto another's; with no venue volume it aborts nothing. A UI run cannot up
 yet, so it is honestly incomplete. Price-scale invariance is not claimed: walls are absolute
 prices in the exchange's units.
 
+### 26. Paper mode and alerts (ticket 22)
+
+A paper run is the live harness (ticket 27) with the document engine, not a second runner. Each
+cycle fetches the closed 15m bars (`LiveBars`: Nobitex through the UDF feed, the window once and
+then only the tail), compiles the document over them (§ Consequences: recompile per bar), and
+`LiveHarness.run_cycle` applies the new bars to a persistent `PaperBroker` and journals each step.
+Everything lives on disk under `runs/paper/<owner>/<run>/` (`run.json`, `journal.jsonl`,
+`broker.json`), so a restarted server resumes every running run. Tests: decisions equal the
+backtest's cycle for cycle over the same bars (the `COMPARED` fields of the parity harness), also
+when a fresh process runs each bar, and also during a Bale outage.
+
+* **Per user.** Runs belong to their owner (stop is refused for another's run), at most 3 run at
+  once and 5 symbols each; symbols are the Nobitex `/USDT` ones (the account is USDT). A run
+  starts from a saved strategy version; its document is copied into the run, so later edits do not
+  change it. A failing bar source or a failed reconciliation puts only that run in `error` with
+  the reason and raises a `halt` alert.
+* **Alerts** (`nnfx/alerts.py`) are derived from journaled cycles: a Setup Candidate appears
+  (placed or refused, with reasons), a Trigger is placed, filled, cancelled, or expires. Ids are a
+  hash of run and cycle content, so replaying a cycle (a crash between journal and bookkeeping)
+  adds nothing to the feed. Closes by stop or target are not alerted (not asked for).
+* **Channels** are switchable per user: the in-site feed (default on) and Bale (default off; needs
+  the server's `NNFX_BALE_TOKEN` and the user's numeric chat id; Telegram comes later via an
+  external relay). Bale is the bot API's `sendMessage`, taken from its Telegram-compatible docs,
+  not exercised against the live service here: the HTTP client is injected and tested offline.
+* **Failures never touch trading.** The feed write is wrapped; Bale delivery runs in a worker
+  thread with 3 attempts and doubling delays, and a final failure goes to the user's
+  `failures.jsonl`. `submit` returns at once even while a Bale call hangs (tested).
+* **Limits.** Order-book Blocks in a paper run still read no book (the recorder's snapshots are
+  not wired into the live process), so they behave as their plain counterparts and the run's
+  checklists carry `book_missing`. The window is the last 3000 bars (about 31 days), so very long
+  lookbacks see less than a full backtest would. A bar source that stays one bar behind is simply
+  retried each round. Paper results are not research trials. A run whose bar source fails stays alive for 3
+  rounds, then errors (terminal: start a new run); reconciliation and gate failures error at once.
+  Queued Bale messages are lost if the process dies (the feed is not); a replayed cycle adds
+  nothing anywhere (a `seen` set per user). The Bale chat id is not verified to belong to the
+  user, so a handshake (`/start` with a code) is needed before wide use.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,
