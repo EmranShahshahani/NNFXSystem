@@ -35,7 +35,7 @@ from nnfx.data.feeds import read_bars_csv
 from nnfx.data.session import resample_to_daily
 from nnfx.instruments import InstrumentRegistry
 from nnfx.strategy.analytics import journal_report
-from nnfx.strategy.paper import LiveBars, PaperError, PaperManager
+from nnfx.strategy.paper import LiveBars, PaperError, PaperManager, paper_symbols
 from nnfx.strategy.store import StrategyStore
 from nnfx.ui.auth import Auth, AuthError, User
 
@@ -107,6 +107,7 @@ class App:
         paper_bars: Callable[[str, pd.Timestamp], BarFrame] | None = None,
         bale_token: str | None = None,
         bale_post: Callable[[str, dict[str, Any]], None] | None = None,
+        orderbook: str | None = None,
     ) -> None:
         self.auth = auth
         self.trust_proxy = trust_proxy
@@ -124,6 +125,8 @@ class App:
         self.strategies = StrategyStore(self.root / strategies)
         self.paper_root = self.root / paper
         self.paper_bars = paper_bars
+        # Where the order-book recorder writes; None: no recordings (paper runs see no book).
+        self.orderbook_root = None if orderbook is None else self.root / orderbook
         token = bale_token if bale_token is not None else os.environ.get("NNFX_BALE_TOKEN", "")
         self.notifier = Notifier(
             AlertStore(self.root / alerts),
@@ -589,11 +592,7 @@ class App:
         with self._paper_lock:
             if self._paper is None:
                 reg = InstrumentRegistry.load(self.instruments_path)
-                specs = {
-                    s: reg.spec(s, "crypto_spot")
-                    for s in reg.basket("nobitex")
-                    if s.endswith("/USDT")  # the account is in USDT: no IRT conversion path
-                }
+                specs = {s: reg.spec(s, "crypto_spot") for s in paper_symbols(reg)}
                 self._paper = PaperManager(
                     self.paper_root,
                     specs,

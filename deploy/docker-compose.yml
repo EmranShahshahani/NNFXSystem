@@ -12,8 +12,10 @@ services:
       - market-data:/app/data/cache
       - paper-data:/app/runs/paper
       - alerts-data:/app/runs/alerts
+      - orderbook-data:/app/data/orderbook:ro  # the recorder's books, read-only
     environment:
       NNFX_BALE_TOKEN: ${NNFX_BALE_TOKEN:-}
+      NNFX_ORDERBOOK: /app/data/orderbook
     expose: ["8765"]
 
   refresh:
@@ -30,7 +32,7 @@ services:
     image: nnfx-beta
     restart: unless-stopped
     environment:
-      NNFX_ORDERBOOK_SYMBOLS: ${NNFX_ORDERBOOK_SYMBOLS:-BTC/IRT USDT/IRT ETH/IRT}
+      NNFX_ORDERBOOK_SYMBOLS: ${NNFX_ORDERBOOK_SYMBOLS:-BTC/IRT USDT/IRT ETH/IRT BTC/USDT ETH/USDT}
       NNFX_ORDERBOOK_INTERVAL: ${NNFX_ORDERBOOK_INTERVAL:-10}
     volumes:
       - orderbook-data:/app/data/orderbook

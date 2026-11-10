@@ -31,7 +31,7 @@ from nnfx.data.bars import TIMEFRAMES, BarFrame
 from nnfx.data.feeds import BarFeed
 from nnfx.harness.conversion import Conversion
 from nnfx.harness.live import LiveHarness
-from nnfx.instruments import InstrumentSpec
+from nnfx.instruments import InstrumentRegistry, InstrumentSpec
 from nnfx.journal.journal import Journal
 from nnfx.strategy.analytics import journal_report, journal_rows
 from nnfx.strategy.book import BookData
@@ -43,6 +43,14 @@ BarSource = Callable[[str, pd.Timestamp], BarFrame]
 MAX_RUNS = 3  # running paper runs per user
 MAX_SYMBOLS = 5
 TRANSIENT_ROUNDS = 3  # consecutive rounds with the bar source unreachable before a run errors
+
+
+def paper_symbols(reg: InstrumentRegistry) -> list[str]:
+    """The symbols a Paper Run may trade: Nobitex ``/USDT`` pairs (the account is in USDT).
+
+    The order-book recorder must record exactly these (same names), so their books exist.
+    """
+    return [s for s in reg.basket("nobitex") if s.endswith("/USDT")]
 
 
 class PaperError(ValueError):

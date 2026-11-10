@@ -932,6 +932,20 @@ Limits: the journal is per position, not per leg (partial closes are summed); a 
 come from the broker's persisted state, so a run started before this ticket has them but no
 journaled `targets`; the leverage is the document's, not an exchange fact.
 
+### 28. Recorded order books reach the paper-run server (ticket 24)
+
+Paper Runs trade only Nobitex `/USDT` pairs (`paper_symbols`), while the deployment's recorder
+defaulted to `/IRT` pairs, so no recorded book matched a paper symbol. The recorder's defaults
+(deployment compose file and `.env.example`) now also record `BTC/USDT` and `ETH/USDT`; recorder
+and reader name a symbol's directory by the same function, so a paper symbol finds its books by
+construction, and a test checks that every paper symbol is in the deployment's recorded list.
+The server takes the recorder's directory (`nnfx ui --orderbook DIR`, else `NNFX_ORDERBOOK`) and the
+deployment mounts the recorder's volume into it read-only. This ticket only gives the server the
+directory (`App.orderbook_root`); reading it into a run's decisions, and keeping the book fresh
+across cycles (`BookData` caches a symbol's whole timeline on first read), is ticket 25. Without the
+option nothing changes. Limit: the recorder must be running for books to exist; an existing
+deployment has to restart it with the new symbol list (the volume keeps older recordings).
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

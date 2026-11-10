@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -528,6 +529,7 @@ def cmd_ui(args: argparse.Namespace) -> int:
         auth=auth,
         secure_cookies=args.secure_cookies,
         trust_proxy=args.trust_proxy,
+        orderbook=args.orderbook or os.environ.get("NNFX_ORDERBOOK") or None,
     )
     httpd = serve(app, args.host, args.port)
     if args.paper_interval > 0:
@@ -705,6 +707,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     p.add_argument("--secure-cookies", action="store_true", help="set when served over HTTPS")
     p.add_argument("--trust-proxy", action="store_true", help="read client IP from X-Forwarded-For")
+    p.add_argument(
+        "--orderbook",
+        metavar="DIR",
+        help="recorded order-book snapshots for paper runs (the recorder's --root); "
+        "default: $NNFX_ORDERBOOK",
+    )
     p.add_argument(
         "--paper-interval",
         type=float,

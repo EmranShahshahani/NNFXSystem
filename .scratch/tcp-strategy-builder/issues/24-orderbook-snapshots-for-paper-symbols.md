@@ -4,11 +4,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] The deployment defaults and the example environment record the paper-run `/USDT` symbols, and recorded files are named by exactly the symbol a Paper Run uses (tested)
-- [ ] The server accepts a recorded-books directory (flag and environment variable) and the deployment mounts the recorder's volume into the server read-only
-- [ ] Without the option nothing changes: a Paper Run still has no book
-- [ ] The deployment guide (Persian) explains the symbols and the shared directory
+- [x] The deployment defaults and the example environment record the paper-run `/USDT` symbols, and recorded files are named by exactly the symbol a Paper Run uses (tested)
+- [x] The server accepts a recorded-books directory (flag and environment variable) and the deployment mounts the recorder's volume into the server read-only
+- [x] Without the option nothing changes: a Paper Run still has no book
+- [x] The deployment guide (Persian) explains the symbols and the shared directory
 
 Spec: `.scratch/tcp-strategy-builder/spec.md` (stories 108, 109; ticket 22 limits)
+
+## Resolution
+
+`paper_symbols` (the one list of paper-run symbols, used by the server and the tests), deployment recorder defaults and `.env.example` now include `BTC/USDT` and `ETH/USDT`, `nnfx ui --orderbook DIR` / `NNFX_ORDERBOOK` into `App.orderbook_root`, the recorder volume mounted read-only into the app, Persian guide, ADR 10 §28. Notes: the directory is only handed to the server here (reading it into decisions is ticket 25); an existing deployment must restart the recorder to pick up the new symbols.
