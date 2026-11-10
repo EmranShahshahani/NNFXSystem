@@ -112,6 +112,10 @@ _TCP_BLOCKS: list[_Row] = [
     ("setup", "candle_setup", True, {}, BlockSource((35, 36, 37))),
     ("setup", "box_breakout", True, {}, BlockSource((20, 21), "blueprint 01 (B)")),
     ("setup", "box_extremes", False, {}, BlockSource((64,), "two-way trading box")),
+    # --- Trendlines and Fibonacci (ticket 19), off by default
+    ("setup", "trendline_bounce", False, {}, BlockSource((25,), "third-touch trendline")),
+    ("setup", "trendline_break", False, {}, BlockSource((25,), "close through a trendline")),
+    ("setup", "fib_reclaim", False, {}, BlockSource((81,), "0.382 sweep and reclaim")),
     # --- The other setups, present but disabled (ticket 14): a clone switches on what it trades
     ("setup", "engulfing", False, {}, BlockSource((38,), "engulfing without gaps (04)")),
     ("setup", "giant_indecision", False, {}, BlockSource((26,), "giant indecision reversal (03)")),
@@ -164,6 +168,7 @@ _TCP_BLOCKS: list[_Row] = [
     # --- Bollinger runway and floor pivots (ticket 18)
     ("confirmation", "bb_runway", False, {}, BlockSource((14,), "double band momentum runway")),
     ("confirmation", "pivot_breach", False, {}, BlockSource((57,), "beyond R1/S1 on 4H or weekly")),
+    ("confirmation", "fib_confluence", False, {}, BlockSource((80,), "fib with two other factors")),
     # --- Box Breakout confirmations
     ("confirmation", "touch_count", True, _BOX, BlockSource((21,))),
     ("confirmation", "breakout_body_close", True, {**_BOX, "hard": True}, BlockSource((21,))),

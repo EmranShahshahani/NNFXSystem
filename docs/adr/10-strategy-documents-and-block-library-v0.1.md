@@ -725,6 +725,56 @@ close, London is judged to the last whole bar (13:00). "Aggressive profit-taking
 tightening in `both` and a close in `r3`; the choice is a parameter. Not built: the weekly pivot
 as a *level* for trend filters, and session-based alerts (ticket 22).
 
+## 23. Trendlines and Fibonacci (ticket 19)
+
+Videos 25 and 76-81. Trendlines in `strategy/trendlines.py`, Fibonacci in
+`strategy/fibonacci.py`. All new rows are off in the Template.
+
+| Block | Kind | Rule |
+|---|---|---|
+| `trendline_bounce` | Setup | a bar reaches an active line (within `tol_atr` ATR) and closes on the trend's side: a long on a rising support line, a short on a falling resistance line |
+| `trendline_break` | Setup | a close more than `tol_atr` ATR through an active line: a short through support, a long through resistance; a wick that recovers is a sweep |
+| `fib_reclaim` | Setup | in an up-leg a bar wicks under the 0.382 retracement and closes back on or above it: a long (mirrored for a down-leg); with `min_confluence` (default 2) the level needs that many other factors, so a lone Fibonacci line makes no candidate |
+| `fib_confluence` | Confirmation | a retracement level (0.382, 0.5, 0.618 by default) lies in the setup's range and has at least `min_confluence` other factors on it; `na` until a leg exists |
+
+Profit Chain addition, after the first step only: `fib_target` (`1.0`, `1.272`, `1.618`, `2.0`)
+closes what remains when the management bar reaches that extension of the leg projected from the
+validated retracement low `C` (`fib_ext_<ratio>`).
+
+**Trendline rules.** A line is *active* once `min_touches` (3) distinct swings sit on it, and
+not before the third is confirmed. It is anchored from the *second* swing of the window: the
+first swing is the impulse and is never an anchor. Only the last `window` (200) bars take part
+and a line expires `window` bars after its anchor. A close beyond a line kills it, and a rebuild
+rejects any candidate already broken. Support lines rise through swing lows, resistance lines
+fall through swing highs (a falling support line is no uptrend line). Swings are wick extremes
+and are used `pivot_bars` bars after their own bar.
+
+**Slope bounds are scale-free.** The source limits angles to 20-60 degrees, which only means
+something on a fixed-scale chart. `degrees_to_atr_per_bar` converts them for a reference chart
+(`window` bars across, 20 ATR of price up, width twice the height):
+`tan(angle) = slope * window / (20 * 2)`, so 20 degrees is 0.073 and 60 degrees is 0.346 ATR
+per bar (45 degrees is 0.2). The slope is measured against the ATR at the line's last touch.
+The two bounds are parameters (`min_slope`, `max_slope`); anything flatter is a box edge,
+anything steeper a blow-off.
+
+**Fibonacci anchors are structural and causal.** A leg runs from the lowest confirmed swing low
+since the previous swing high (mirrored for down-legs) to the confirmed swing that ended it; it
+exists only from that swing's confirmation (the objective reaction: `pivot_bars` bars with no
+new extreme) and only if it is at least `min_impulse_atr` ATR long. One leg lives until a close
+beyond its start; a higher high confirmed in its direction moves its end and forgets `C`. All
+ratios are measured on `ln(price)`, so they are the same proportions at any price and price scale.
+Extensions project the leg from `C`: `C * (B/A)^ratio` for an up-leg.
+
+**Confluence.** The other factors are a horizontal level (the ticket 11 `LevelBook`), the SMA 25
+and the SMA 99, each counted separately, within `tol_atr` ATR of the Fibonacci price. The
+order-book wall named in the blueprint joins when ticket 21 lands.
+
+**Decisions and limits.** Of the blueprint's three "objective reactions" (a counter-trend
+candle, a lower high on a lower timeframe, a break of the 7 SMA), the confirmed swing is the one
+built. The "Fib 1.618 without momentum" exhaustion exit is not built (`fib_target` closes at the
+level unconditionally). The macro Weekly/Daily Fibonacci floors are available by choosing the
+role; they do not gate lower-timeframe triggers, because nothing reads them as a trigger.
+
 ## Consequences
 
 * New strategies are new documents and, at most, new Blocks. The engine,

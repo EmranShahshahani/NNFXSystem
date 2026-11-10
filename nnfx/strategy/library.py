@@ -37,6 +37,7 @@ from nnfx.strategy.blocks import (
     StrategyData,
     register,
 )
+from nnfx.strategy.fibonacci import extension, fib_track
 from nnfx.strategy.health import HealthParams, weakness
 from nnfx.strategy.levels import BoxTrack
 from nnfx.strategy.momentum import (
@@ -1248,6 +1249,13 @@ class ProfitChainParams(HealthParams):
         description="هدف پیوت: خاموش، بستن در R3/S3، بستن در R4/S4، یا تنگ‌کردن حد ضرر در R3 و بستن در R4",
     )
     pivot_period: Period = Field("W1", description="دورهٔ پیوت‌های هدف: H4 یا W1")
+    fib_target: Literal["off", "1.0", "1.272", "1.618", "2.0"] = Field(
+        "off",
+        description="هدف اکستنشن فیبوناچی: خاموش یا بستن در ۱٫۰ / ۱٫۲۷۲ / ۱٫۶۱۸ / ۲٫۰ از نقطهٔ C (پس از پلهٔ اول)",
+    )
+    fib_role: Role = Field("mwc", description="تایم‌فریمی که موج فیبوناچی روی آن رسم می‌شود")
+    fib_pivot_bars: int = Field(2, ge=1, description="فیبوناچی: پیوت، تعداد کندل‌های دو طرف")
+    fib_min_impulse_atr: float = Field(3.0, gt=0, description="فیبوناچی: کمترین طول موج (ATR)")
     trail_after_step: int = Field(
         3, ge=1, le=3, description="تریل حد ضرر پس از پر شدن این تعداد پله (۳: فقط رانر)"
     )
@@ -1461,6 +1469,27 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
         edge = f.high[m] if d > 0 else f.low[m]
         return bool(np.isfinite(target) and (edge - target) * d >= 0)
 
+    def _fib_reached(self, data: StrategyData, bar: int, m: int, d: int) -> bool:
+        """Whether management bar ``m`` reached the Fibonacci extension target.
+
+        The leg is the one in force while ``m`` traded (the LWC bar before ``m``'s close), with
+        a confirmed retracement ``C`` and running the trade's way; the target is projected from
+        ``C`` on a log scale. No leg or no ``C`` yet: no target.
+        """
+        p = self.p
+        if bar < 1 or p.fib_target == "off":
+            return False
+        i = int(data.positions[p.fib_role][bar - 1])
+        if i < 0:
+            return False
+        t = fib_track(data, p.fib_role, p.fib_pivot_bars, p.fib_min_impulse_atr)
+        if int(t.direction[i]) != d or not np.isfinite(t.c[i]):
+            return False
+        target = extension(float(t.a[i]), float(t.b[i]), float(t.c[i]), float(p.fib_target))
+        f = data.frames[self.ROLE]
+        edge = f.high[m] if d > 0 else f.low[m]
+        return bool((edge - target) * d >= 0)
+
     def _unhealthy(self, data: StrategyData, m: int, d: int) -> bool:
         """The trade's trend shows ``health_min_signals`` or more weaknesses at management bar ``m``."""
         p = self.p
@@ -1509,6 +1538,8 @@ class ProfitChain(ExitBlock[ProfitChainParams]):
                 return CloseMove("pivot_r4")
             if p.pivot_exit == "r3" and self._pivot_reached(data, bar, m, d, "r3"):
                 return CloseMove("pivot_r3")
+            if self._fib_reached(data, bar, m, d):
+                return CloseMove(f"fib_ext_{p.fib_target}")
         if p.sma_flatten_exit and position.steps_filled >= 1 and not held:
             k = p.sma_slope_bars
             line, rng = data.sma(self.ROLE, p.sma_period), data.atr(self.ROLE)
