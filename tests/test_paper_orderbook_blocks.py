@@ -157,7 +157,16 @@ def test_old_states_are_forgotten_but_the_latest_before_the_cutoff_still_answers
     assert data.at(SYM, T, params, age) is not None
     tl = data._timeline(SYM, params)
     assert len(tl.times) == 10
-    data.refresh(forget_before=T - pd.Timedelta(seconds=35))
+    data.refresh(now=T, keep=pd.Timedelta(seconds=35))
     assert len(tl.times) == 4  # the latest state before the cutoff is kept, then the 3 after
     assert data.at(SYM, T, params, age) is not None
     assert BookData().refresh() is None  # no source: nothing to do
+
+
+def test_a_replay_of_old_bars_reads_the_books_of_its_own_days(tmp_path: Path):
+    rec = tmp_path / "rec"
+    write(rec, standing(**WALLS))  # recorded in March 2024; the real clock is much later
+    reader = LiveRecordedOrderBook(rec, history=pd.Timedelta(days=2))
+    data = BookData(reader)
+    data.refresh(now=T, keep=pd.Timedelta(days=2))
+    assert len(reader.snapshots(SYM, T - pd.Timedelta(hours=1), T)) == 3

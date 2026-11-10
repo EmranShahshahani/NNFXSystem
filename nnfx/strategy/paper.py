@@ -257,7 +257,7 @@ class PaperManager:
         inst = {s: self.instruments[s] for s in info.symbols}
         cfg = document_config(doc, self.config)
         if self.book is not None:
-            self.book.refresh(now - BOOK_HISTORY)  # what the recorder wrote since the last cycle
+            self.book.refresh(now, BOOK_HISTORY)  # what the recorder wrote since the last cycle
         compiled = compile_document(doc, frames, inst, cfg.session, None, self.book)
         gaps = []
         if compiled.book_blocks:

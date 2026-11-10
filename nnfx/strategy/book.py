@@ -105,22 +105,23 @@ class BookData:
             self._timelines[key] = tl
         return self._timelines[key]
 
-    def refresh(self, forget_before: pd.Timestamp | None = None) -> None:
+    def refresh(self, now: pd.Timestamp | None = None, keep: pd.Timedelta | None = None) -> None:
         """Take in what a growing source recorded since the last call (a paper run's cycle).
 
         Wall trackers are fed only the new snapshots, so a cycle costs what is new. Nothing
-        changes for a source that does not grow. ``forget_before`` drops older states.
+        changes for a source that does not grow. With ``now`` and ``keep``, states older than
+        ``now - keep`` are dropped, the latest one before it excepted.
         """
         if self.source is None:
             return
         grow = getattr(self.source, "refresh", None)
         if callable(grow):
-            grow()
+            grow(now)
         for (symbol, _), tl in self._timelines.items():
             after = tl.times[-1] + pd.Timedelta(1, "ns") if tl.times else EPOCH
             tl.feed(self.source.snapshots(symbol, after, FAR))
-            if forget_before is not None:
-                tl.forget_before(forget_before)
+            if now is not None and keep is not None:
+                tl.forget_before(now - keep)
 
     def at(
         self, symbol: str, time: pd.Timestamp | str, params: WallParams, max_age: pd.Timedelta

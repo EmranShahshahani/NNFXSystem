@@ -230,7 +230,8 @@ class LiveRecordedOrderBook(_History):
 
     ``RecordedOrderBook`` reads a symbol's files once. This one remembers how far into each
     file it got and ``refresh()`` reads only what the recorder appended since, so a cycle's cost
-    follows what is new, not the recording's size. A line the recorder is still writing waits
+    follows what is new, not the recording's size: parsing is incremental, while the index, sort and
+    trim still pass over the (two-day) window each time. A line the recorder is still writing waits
     for its newline. Days older than ``history`` before now are never read, and snapshots that
     fall out of it are dropped (``history=None``: keep everything, for tests).
     """
@@ -245,11 +246,18 @@ class LiveRecordedOrderBook(_History):
     ) -> None:
         super().__init__(max_age)
         self.root, self.history, self.clock = Path(root), history, clock
+        self._now: pd.Timestamp | None = (
+            None  # the caller's "now" (a paper cycle's), else the clock
+        )
         self.parsed_lines = 0  # lines parsed so far, good or bad (what a cycle's cost follows)
         self.skipped_lines = 0
         self._snaps: dict[str, list[OrderBookSnapshot]] = {}
         self._offsets: dict[Path, int] = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
+
+    def _index(self, symbol: str) -> tuple[list[OrderBookSnapshot], list[pd.Timestamp]]:
+        with self._lock:  # a refresh from another thread never shows a half-built index
+            return super()._index(symbol)
 
     def _series(self, symbol: str) -> list[OrderBookSnapshot]:
         if symbol not in self._snaps:
@@ -257,14 +265,20 @@ class LiveRecordedOrderBook(_History):
             self._read(symbol)
         return self._snaps[symbol]
 
-    def refresh(self) -> None:
-        """Read what was recorded since the last call, for every symbol asked about."""
+    def refresh(self, now: pd.Timestamp | None = None) -> None:
+        """Read what was recorded since the last call, for every symbol asked about.
+
+        ``now`` (a paper cycle's time) sets the history window's end; a replay of old bars
+        thereby reads the books of its own days, not of the real ones.
+        """
+        if now is not None:
+            self._now = now
         for symbol in list(self._snaps):
             self._read(symbol)
 
     def _read(self, symbol: str) -> None:
         with self._lock:
-            cutoff = None if self.history is None else self.clock() - self.history
+            cutoff = None if self.history is None else (self._now or self.clock()) - self.history
             fresh: list[OrderBookSnapshot] = []
             for f in sorted(_symbol_dir(self.root, symbol).glob("*.jsonl")):
                 if cutoff is not None and f.stem < cutoff.date().isoformat():
@@ -282,14 +296,11 @@ class LiveRecordedOrderBook(_History):
                     except (ValueError, KeyError, TypeError):
                         self.skipped_lines += 1
             snaps = self._snaps[symbol]
-            changed = bool(fresh)
-            if fresh:
-                snaps.extend(fresh)
-                snaps.sort(key=lambda x: x.time)
-            if cutoff is not None and snaps and snaps[0].time < cutoff:
-                snaps[:] = [x for x in snaps if x.time >= cutoff]
-                changed = True
-            if changed:
+            merged = sorted([*snaps, *fresh], key=lambda x: x.time) if fresh else snaps
+            if cutoff is not None:
+                merged = [x for x in merged if x.time >= cutoff]
+            if fresh or len(merged) != len(snaps):
+                self._snaps[symbol] = merged  # a new list: readers holding the old one are safe
                 self._times.pop(symbol, None)  # the time index is rebuilt on next use
 
 

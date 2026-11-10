@@ -939,24 +939,27 @@ and reader name a symbol's directory by the same function, so a paper symbol fin
 construction, and a test checks that every paper symbol is in the deployment's recorded list.
 The server takes the recorder's directory (`nnfx ui --orderbook DIR`, else `NNFX_ORDERBOOK`) and the
 deployment mounts the recorder's volume into it read-only. This ticket only gives the server the
-directory (`App.orderbook_root`); reading it into a run's decisions, and keeping the book fresh
-across cycles (`BookData` caches a symbol's whole timeline on first read), is ticket 25. Without the
-option nothing changes. Limit: the recorder must be running for books to exist; an existing
+directory (`App.orderbook_root`); reading it into a run's decisions follows below (ticket 25).
+Without the option nothing changes. Limit: the recorder must be running for books to exist; an existing
 deployment has to restart it with the new symbol list (the volume keeps older recordings).
 
-*Reading the books (ticket 25).* A paper run's order-book Blocks read the recordings as of each
+*Reading the books (ticket 25).* The window ends at the cycle's own `now`, so a replay of old
+bars reads the books of its own days. A paper run's order-book Blocks read the recordings as of each
 cycle. `LiveRecordedOrderBook` remembers its byte offset in each day file and, on `refresh()`,
 parses only the lines appended since (a line the recorder is still writing waits for its
 newline); days older than two days before now are never read and older snapshots are dropped.
 `BookData.refresh()` feeds each wall tracker only the new snapshots, so a cycle's cost follows
-what was recorded since the last cycle, not the recording's size, and `forget_before` bounds the
+what was recorded since the last cycle (the time index, sort and trim still pass over the
+two-day window), not the recording's size, and `forget_before` bounds the
 timeline's memory (the latest state before the cutoff is kept, so it still answers). The state at
 a candidate's time depends only on snapshots up to then, so a paper run decides exactly as the
-order-book backtest over the same recording (tested, including a restart on every bar and books
+order-book backtest over the same recording, as far as the two-day window reaches (tested, including a restart on every bar and books
 recorded while the run goes). A run whose document has order-book Blocks stores `book_gaps`: the
 stretches of the last two days with no snapshot fresher than the Blocks' `max_age`, shown in the
 paper tab; `book_missing` is on a candidate only where no fresh two-sided snapshot existed.
-Limits: walls older than the two-day window are forgotten at the start (a freshly restarted
+Limits: a snapshot that arrives stamped earlier than one already taken in is not fed to a wall
+tracker (the recorder stamps with its own monotonic clock); the offsets of day files are kept for
+the process's life; walls older than the two-day window are forgotten at the start (a freshly restarted
 server rebuilds from the last two days only); a wall tracker built after the first cycle for new
 parameters starts from the snapshots then held.
 
